@@ -47,7 +47,7 @@ Data.Files = wildcardsearch(Data.Dir,'*.mat');
 for d = 1:numel(Data.Files)
     [a,Data.Filenames{d},c] = fileparts(Data.Files{d});
 end
-[Data.Selected,ok] = listdlg('PromptString','Select data', 'SelectionMode','single','ListString',Data.Filenames,'ListSize',[250, 120]);
+[Data.Selected,ok] = listdlg('PromptString','Select data', 'SelectionMode','single','ListString',Data.Filenames,'ListSize',[300, 250]);
 load(Data.Files{Data.Selected});                                                          	% Load selected data file
 if ~exist('Contact','var')                                                                  % Check that file contained Contact structure
 	error(sprintf('No ''contact'' structure was found in %s!', Data.Files{Data.Selected})); 
@@ -158,7 +158,7 @@ Structures.CurrentStructure = 1;
 Structures.Smoothing = zeros(1, numel(Structures.Names));
 Structures.On = zeros(1, numel(Structures.Names));
 Structures.On([2,5,6,8,9]) = 1;                             
-Structures.Wire = zeros(1, numel(Structures.Names));
+Structures.Wire = ones(1, numel(Structures.Names));
 for s = 1:numel(Structures.Handles)
     if Structures.On(s)==1
         set(Structures.Handles{s},'visible','on');

@@ -72,15 +72,17 @@ Session.RootDir = RootDir;
 
 
 %================== LOAD SUBJECT PARAMETERS & DIRECTORIES =================
-if ismac
-    DefaultParametersFile = 'DefaultParamsFileOSX.mat';
+[t, CompName] = system('hostname');
+DefaultFilename = sprintf('ParamsFile_%s.mat', CompName(1:end-1));
+if exist(DefaultFilename)
+    DefaultParametersFile = DefaultFilename;
 else
-    DefaultParametersFile = 'DefaultParamsFile.mat';
+    DefaultParametersFile = [];
 end
 if exist('SubjectID','var')
-    Defaults = InitializeElectroNav(DefaultParametersFile, SubjectID);
+    Defaults = EN_Initialize(DefaultParametersFile, SubjectID);
 else
-    Defaults = InitializeElectroNav(DefaultParametersFile);
+    Defaults = EN_Initialize(DefaultParametersFile);
 end
 Defaults.MRIRootDir = [];
 Defaults.DateFormats = {'yyyymmdd','ddmmyy'};   
@@ -150,17 +152,17 @@ Electrode.DateStrings(end+1,:) = date;                          % Add todays dat
 Electrode.CurrentDate = size(Electrode.DateStrings,1);          % Default to todays date   
 
 
-%============== 3D SURFACE PARAMS
+%============== SET DEFAULT 3D SURFACE PARAMS
 Brain.Specular = 0.6;
 Brain.Ambient = 0.2;
 Brain.Diffuse = 0.6;
 Brain.Alpha = 0.6;
 Brain.RGB = [0.7 0.6 0.6];
-Brain.DefaultView = [-120 20];
+Brain.DefaultView = [-120 20];                                  
 Brain.SurfaceColors = [1 0 0;0 1 0;0 0 1;1 1 0;1 0 1;0 1 1];
-Brain.Sag.PlanesAlpha = 0.4;
-Brain.Sag.PlanesRGB = [1 0 0];
-Brain.Sag.PlanesOn = 1;
+Brain.PlanesAlpha = 0.4;                                    
+Brain.PlanesRGB = [1 0 0];                                  
+Brain.PlanesOn = 1;                                         
 
 
 %===================== LOAD GRID SCAN AND ATLAS VOLUMES ===================
@@ -248,8 +250,8 @@ switch Surface.Atlas
         Surface.Ylim = [-60 30];
         Surface.Zlim = [-20 40];
     case 'NeuroMaps'
-        Surface.VTKfile = fullfile('Subjects',Session.Subject,'VTKs/Cortical_surface.vtk');
-        Surface.StructFolder = 'Niftii/inia19/Structures';
+        Surface.VTKfile = fullfile(Defaults.VTKdir,'Cortical_surface.vtk');
+        Surface.StructFolder = Defaults.VTKdir;
        	Surface.Xlim = [-32 32];
         Surface.Ylim = [-50 30];
         Surface.Zlim = [-25 45];
@@ -358,7 +360,7 @@ end
 Fig.HelpMenuH{1} = uimenu(Fig.Handle,'Label','Help');
 Fig.HelpLabels = {'Documentation','About'};
 for n = 1:numel(Fig.HelpLabels)
-    Fig.HelpMenuH{2}(n) = uimenu(Fig.HelpMenuH{1},'Label',Fig.HelpLabels{n},'Callback','AboutElectroNav','Enable','on');
+    Fig.HelpMenuH{2}(n) = uimenu(Fig.HelpMenuH{1},'Label',Fig.HelpLabels{n},'Callback','EN_About','Enable','on');
 end
 
 %====================== DISABLE UNAVAILABLE MENU OPTIONS
@@ -404,7 +406,7 @@ set(Fig.PlotHandle, 'fontsize', Fig.FontSize);
 
 
 %% ======================= INITIALIZE UI CONTROLS =========================
-Logo= imread(fullfile('Documentation','Images','ElectroNav_5.png'),'BackgroundColor',Fig.Background);
+Logo= imread(fullfile('Documentation','ElectroNavLogo1.png'),'BackgroundColor',Fig.Background);
 LogoAx = axes('box','off','units','pixels','position', [20, Fig.Rect(4)-150, Fig.UIControlDim(1), 42],'color',Fig.Background);
 image(Logo);
 axis equal off
@@ -751,7 +753,7 @@ function Electrode = DrawElectrode(Target, Electrode)
     DrawCurrentContact(Target, Electrode);
     
     %========================= Plot corsshair planes in 3D view
-    if Brain.Sag.PlanesOn == 1
+    if Brain.PlanesOn == 1
         set(Fig.Handle, 'currentaxes', Fig.PlotHandle(2));
         Xlim = get(gca,'Xlim');
         Ylim = get(gca,'Ylim');
@@ -770,9 +772,9 @@ function Electrode = DrawElectrode(Target, Electrode)
             set(Fig.Handle, 'currentaxes', Fig.PlotHandle(3));
             Electrode.E{5}(3) = patch(repmat(X,[1,4]), [Ylim, Ylim([2,1])], [Zlim(1),Zlim(1),Zlim(2),Zlim(2)],'r');
             Electrode.E{5}(4) = patch([Xlim, Xlim([2,1])], [Ylim(1),Ylim(1),Ylim(2),Ylim(2)], repmat(Z,[1,4]),'r');
-            set(Electrode.E{5},'FaceAlpha',Brain.Sag.PlanesAlpha);
-            set(Electrode.E{5},'Facecolor',Brain.Sag.PlanesRGB);
-            set(Electrode.E{5},'EdgeColor',Brain.Sag.PlanesRGB);
+            set(Electrode.E{5},'FaceAlpha',Brain.PlanesAlpha);
+            set(Electrode.E{5},'Facecolor',Brain.PlanesRGB);
+            set(Electrode.E{5},'EdgeColor',Brain.PlanesRGB);
         end
     end
     
@@ -1484,7 +1486,7 @@ function FileSelect(hObj, Event, Indx, Indx2)
             uiwait(h);                                                                  
 
         case 3      %============================= EDIT DEFAULTS
-            Defaults = InitializeElectroNav;
+            Defaults = EN_Initialize;
             
             
         case 4      %============================= LOAD STRUCTURE VOLUMES

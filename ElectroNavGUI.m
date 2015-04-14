@@ -677,7 +677,7 @@ function Electrode = DrawElectrode(Target, Electrode)
     global Fig Grid Brain Layer
     
     %========================= 2D grid view    
-    if isfield(Electrode,'E')
+    if isfield(Electrode,'E') && isgraphics(Electrode.E{1}(1))
         CurrXData = get(Electrode.E{1}(1), 'Xdata');
         CurrYData = get(Electrode.E{1}(1), 'Ydata');
         NewXData = CurrXData + diff([mean(CurrXData), Target(1)]);
@@ -685,7 +685,7 @@ function Electrode = DrawElectrode(Target, Electrode)
         set(Electrode.E{1}(1), 'Xdata', NewXData, 'Ydata', NewYData);
         set(Electrode.E{1}(2), 'Xdata', repmat(Target(1),[1,2]));
         set(Electrode.E{1}(3), 'Ydata', repmat(Target(2),[1,2]));
-    elseif ~isfield(Electrode,'E')
+    elseif ~isfield(Electrode,'E') || ~isgraphics(Electrode.E{1}(1))
         set(Fig.Handle, 'currentaxes', Fig.PlotHandle(1));
         Electrode.E{1}(1) = FillCircle(Target([1,2]),Grid.HoleDiameter/2,100,'r');
         Electrode.E{1}(2) = plot(repmat(Target(1),[1,2]),[-Grid.OuterRadius,Grid.OuterRadius],'-r');

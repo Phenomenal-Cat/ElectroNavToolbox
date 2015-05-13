@@ -46,11 +46,9 @@ function [Contact] = GetContactCoordinates(HistoryFile, Contact, Xform)
 % REVISIONS:
 %   27/04/2014 - Written by APM
 %
-%     ___  ______  __   __
-%    /   ||  __  \|  \ |  \    APM SUBFUNCTIONS
-%   / /| || |__/ /|   \|   \   Aidan P. Murphy - murphyap@mail.nih.gov
-%  / __  ||  ___/ | |\   |\ \  Section of Cognitive Neurophysiology and Imaging
-% /_/  |_||_|     |_| \__| \_\ Laboratory of Neuropsychology, NIMH
+% ELECTRONAV TOOLBOX
+% Developed by Aidan Murphy
+% © Copyleft 2014, GNU General Public License
 %==========================================================================
 global Fig Contact
 if nargin == 0

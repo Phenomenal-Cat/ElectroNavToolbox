@@ -6,11 +6,10 @@
 % REVISIONS:
 %   03/04/2014 - Written by APM
 %   30/01/2015 - Updated
-%     ___  ______  __   __
-%    /   ||  __  \|  \ |  \    APM SUBFUNCTIONS
-%   / /| || |__/ /|   \|   \   Aidan P. Murphy - murphyap@mail.nih.gov
-%  / __  ||  ___/ | |\   |\ \  Section of Cognitive Neurophysiology and Imaging
-% /_/  |_||_|     |_| \__| \_\ Laboratory of Neuropsychology, NIMH
+%
+% ELECTRONAV TOOLBOX
+% Developed by Aidan Murphy
+% © Copyleft 2014, GNU General Public License
 %==========================================================================
 
 function ParamsOut = EN_Initialize(DefaultParamsFile, SubjectID)

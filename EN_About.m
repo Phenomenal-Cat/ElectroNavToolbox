@@ -39,9 +39,9 @@ function FigHandle = EN_About(Loading, temp)
     
     %============= Add text and links to figure window
     Text1 = 'A MATLAB® Toolbox for MRI-guided Electrode Navigation';
-    Text2 = sprintf(['Version %.1f, developed by Aidan Murphy %s Copyleft 2014\n',...
+    Text2 = sprintf(['Version %.1f, developed by Aidan Murphy %s Copyleft %s\n',...
                     'Section on Cognitive Neurophysiology and Imaging, NIMH\n\n',...
-                    'Contact:\n\nDownload:'],Info.Version, char(169));
+                    'Contact:\n\nDownload:'],Info.Version, char(169), datestr(now, 'YYYY'));
   	TextAxH(1) = axes('Units','pixels','position',[FigMargin,FigMargin-10,FigAboutRect(3)-(2*FigMargin),FigAboutRect(4)*0.38],'visible','off');
   	TextH(1) = text(0,1,Text1,'FontWeight','bold','FontUnits','pixels','FontSize',15,'HorizontalAlignment','left','VerticalAlignment','top');
     TextAxH(2) = axes('Units','pixels','position',[FigMargin,40,FigAboutRect(3)-(2*FigMargin),FigAboutRect(4)*0.18],'visible','off');

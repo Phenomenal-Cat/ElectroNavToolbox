@@ -16,7 +16,8 @@ function ParamsOut = EN_Initialize(DefaultParamsFile, SubjectID)
 
 persistent Params 
 persistent Fig
-addpath(genpath('ENSubfunctions'));
+RootDir = fileparts(mfilename('fullpath'));
+addpath(genpath(RootDir));
 
 %======================= CHECK INPUT
 if nargin ==0 || ~exist(DefaultParamsFile,'file')

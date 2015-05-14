@@ -2,12 +2,13 @@ function [ContactCoords, SessionParams] = EN_GetContactCoordinates(Dates, Subjec
 
 %======================== EN_GetContactCoordinates.m ======================
 % This file reads the recording history file for the specified subject, which
-% contains electrode positions for each past recording session. The function
-% returns the 3D coordinates of all electrode contact positions in: 
+% contains grid coordinates and electrode depth for each past recording 
+% session. The function returns the 3D coordinates of all electrode contact 
+% positions in: 
 %
 %       1)  a world-centred reference frame, where the anterior comissure or 
-%           the interaural line is the origin, depending on the alignment of
-%           the MRI volume from which the transform matrix was derived.
+%           the interaural line is the origin (depending on the alignment of
+%           the MRI volume from which the transform matrix was derived).
 %       2)  If no transfromation matrix file is found then a warning appears 
 %           and grid-centred coordinates are returned, where the centre grid 
 %           hole at the base of the grid is the origin.
@@ -37,12 +38,11 @@ function [ContactCoords, SessionParams] = EN_GetContactCoordinates(Dates, Subjec
 %               	requested.
 %
 % REVISIONS:
-%   12/10/2014 - Written by Aidan Murphy
 %   16/10/2014 - Manual date selection added
 %   17/03/2015 - Simplified and grid -> ACPC coordinate transform added
 %
 %                       *** ELECTRONAV TOOLBOX ***
-% Developed by Aidan Murphy, © Copyleft 2014, GNU General Public License
+% Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
 %========================================================================== 
 
 
@@ -65,9 +65,10 @@ end
 TformFile = wildcardsearch(SubjectDir,'*.mat');
 if ~isempty(TformFile)
     load(TformFile{1});
-else
-    fprintf(['WARNING: no transformation matrix (.mat) was found in %s!\n',...
-    'Returned coordinates with be in grid-centred space!\n'], SubjectDir);
+end
+if ~exist('T','var')  
+    fprintf(['\nWARNING: \tno transformation matrix (.mat) was found in %s!\n',...
+    '\t\tReturned coordinates with be in grid-centred space!\n'], SubjectDir);
 end
 if ~isempty(Dates)
     if numel(Dates{1})==8 && strcmp(Dates{1}(1:2),'20')             	% If input was format YYYYMMDD...
@@ -98,5 +99,7 @@ for d = 1:numel(SessionParams)                                          % For ea
         GridCoords(d,4,:) = 1;                                          % Pad 4th row with 1s
         temp = T*squeeze(GridCoords(d,:,:));                            % Apply transformation
         ContactCoords(d,:,:) = temp(1:3,:);                             % Remove 4th row
+    else
+        ContactCoords(d,:,:) = GridCoords(d,:,:);
     end
 end

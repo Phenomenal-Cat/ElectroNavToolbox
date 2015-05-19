@@ -1,4 +1,4 @@
-function [Contact] = EN_DataViewer(Filename)
+function [Contact] = EN_DataViewer(DataPath)
 
 %=========================== EN_DataViewer.m ==============================
 % This function loads analysed physiology data from multiple prior sessions 
@@ -6,7 +6,7 @@ function [Contact] = EN_DataViewer(Filename)
 % stuctures for visualization of spatial patterns.
 %
 % INPUTS:
-%   The input 'Filename' should be the full path of a .mat file containing 
+%   The input 'DataPath' should be the directory of .mat files containing 
 %   the following structure:
 %
 %       Contact.Dates:      A 1 x d cell array of date strings of recording
@@ -29,11 +29,9 @@ function [Contact] = EN_DataViewer(Filename)
 % REVISIONS:
 %   27/04/2014 - Written by APM
 %   19/03/2015 - GUI developed
-%     ___  ______  __   __
-%    /   ||  __  \|  \ |  \    APM SUBFUNCTIONS
-%   / /| || |__/ /|   \|   \   Aidan P. Murphy - murphyap@mail.nih.gov
-%  / __  ||  ___/ | |\   |\ \  Section of Cognitive Neurophysiology and Imaging
-% /_/  |_||_|     |_| \__| \_\ Laboratory of Neuropsychology, NIMH
+%
+% ELECTRONAV TOOLBOX
+% Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
 %==========================================================================
 
 clear all;
@@ -42,7 +40,11 @@ addpath(genpath(root));
 global Fig Contact Structures Data
 
 %==================== LOAD PHYSIOLOGY RESULTS DATA
-Data.Dir = fullfile(root,'MapData');                          
+if nargin == 0
+    Data.Dir = uigetdir(root, 'Select data directory');
+else
+    Data.Dir = DataPath;
+end                         
 Data.Files = wildcardsearch(Data.Dir,'*.mat');  
 for d = 1:numel(Data.Files)
     [a,Data.Filenames{d},c] = fileparts(Data.Files{d});
@@ -57,7 +59,7 @@ if ~any(isfield(Contact,{'Dates','ColorVals','Alpha','rad','XYZ','CellIndxData'}
 end
 
 %========================= OPEN FIGURE WINDOW =============================
-LoadingFig = AboutElectroNav(1);                                               	% Open loading screen
+LoadingFig = EN_About(1);                                                       % Open loading screen
 Fig.scnsize = get(0,'ScreenSize');                                              % Get screen resolution
 Fig.Rect = [0 0 Fig.scnsize(3), Fig.scnsize(4)];                                % Set figure winow to fullscreen
 Fig.FontSize = 14;                                                              % Set defualt font size

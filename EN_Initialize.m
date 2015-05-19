@@ -8,8 +8,7 @@
 %   30/01/2015 - Updated
 %
 % ELECTRONAV TOOLBOX
-% Developed by Aidan Murphy
-% © Copyleft 2014, GNU General Public License
+% Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
 %==========================================================================
 
 function ParamsOut = EN_Initialize(DefaultParamsFile, SubjectID)

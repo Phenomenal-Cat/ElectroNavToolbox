@@ -10,13 +10,15 @@ function [SessionParams] = EN_LoadSessionParams(HistoryFile, SessionDate)
 %                       parameters for, in DD-MMM-YYYY format. If not provided,
 %                       user must select from a list.
 %
-%                       *** ELECTRONAV TOOLBOX ***
-% Developed by Aidan Murphy, © Copyleft 2014, GNU General Public License
-%========================================================================== 
+% ELECTRONAV TOOLBOX
+% Developed by Aidan Murphy
+% ? Copyleft 2014, GNU General Public License
+%==========================================================================
 
 %========================== Check inputs
 if nargin == 0
-    HistoryFile = 'LaylaElectrodeLocations.xls';
+    [file, path] = uigetfile({'*.xls;*.csv'},'Select recording history');
+    HistoryFile = fullfile(path, file);
 end
 if ~exist(HistoryFile,'file')
     error('Session history file %s does not exist!', HistoryFile);
@@ -24,7 +26,7 @@ end
 
 %========================== Load recording history data
 [a,b,HistoryFormat] = fileparts(HistoryFile);
-if exist('readtable.m','file')                   	%============ MATLAB R2014a and later
+if exist('datetime.m','file')                   	%============ MATLAB R2014a and later
     if strcmpi(HistoryFormat, '.xls')
         T = readtable(HistoryFile);
         T.Date = datetime(T.Date,'ConvertFrom','excel');
@@ -45,7 +47,7 @@ if exist('readtable.m','file')                   	%============ MATLAB R2014a an
     else
         error('File ''%s'' is not a valid spreadsheet format!', HistoryFile);
     end
-else                                                %============ MATLAB R201bb and earlier    
+else                                                %============ MATLAB R2013b and earlier    
     [num,txt,raw] =  xlsread(HistoryFile,1,'');                 % Read data from Excel file
     Headers = txt{1,:};                                       	% Skip row containing column titles
     num(1,:) = [];                                            	% Remove nans

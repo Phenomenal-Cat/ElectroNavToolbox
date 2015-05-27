@@ -7,12 +7,12 @@
 %==========================================================================
 
 
-VTKdir = '/Volumes/APM_1/ElectroNavToolbox/Subjects/Layla/VTKs/';
+VTKdir = '/Volumes/projects/murphya/EN_data/Subjects/Layla/VTKs/';
 VTKfiles = dir([VTKdir,'*.vtk']);
 
-ENRootDir = '/Users/aidanmurphy/Pulvinar_project/ElectroNavToolbox';
-Atlasfile = fullfile(ENRootDir,'/Atlases/NeuroMaps/inia19-NeuroMaps.nii');
-MRIfile = fullfile(ENRootDir,'/Atlases/NeuroMaps/inia19-t1-brain.nii');
+ENRootDir = '/Volumes/projects/murphya/Toolboxes/ElectroNavToolbox';
+Atlasfile = '/Volumes/projects/murphya/EN_data/Atlases/inia19/inia19-NeuroMaps.nii';
+MRIfile = '/Volumes/projects/murphya/EN_data/Atlases/inia19/inia19-t1-brain.nii';
 Skullfile = '/Volumes/APM_1/MacaqueAtlasTools/Niftii/Skulls/Skull_ITK_2.vtk';
 
 Save = 0;                                   % Automatically save figure image?
@@ -21,10 +21,10 @@ thresh = 50;                                % -Inf = Otsu's method; Inf = median
 reduce = 0.15;                              % Reduce mesh complexity to X % of original      
     
 FigureBackground = [0 0 0];
-VTK.fc = {'w','g','b','m','c','r','y'};   	% Set surface mesh face color
+VTK.fc = {'g','g','b','m','c','r','y'};   	% Set surface mesh face color
 VTK.ec = 'none';                          	% Set surface mesh edge color
 VTK.bf = 'reverselit';                      % Set surface mesh backface lighting
-VTK.alpha =  ones(1,numel(VTKfiles))*0.1;	% Set surface mesh face alpha
+VTK.alpha =  1;%ones(1,numel(VTKfiles))*0.1;	% Set surface mesh face alpha
 
 
 SliceView = -1;                             % <1 = 3D; 0 = axial; 1 = sagittal; 2 = coronal;
@@ -110,7 +110,7 @@ AtlasNii = load_nii(Atlasfile);
 
 
 %% ================== Load VTK surfaces
-for v = 1:numel(VTKfiles)
+for v = 1%:numel(VTKfiles)
     [verts,faces] = read_vtk(fullfile(VTKdir, VTKfiles(v).name));
     VTK.handle(v) = patch('vertices', verts','faces', faces',...
                             'edgecolor',VTK.ec,'BackFaceLighting',VTK.bf,...

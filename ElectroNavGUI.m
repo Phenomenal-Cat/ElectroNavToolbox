@@ -121,30 +121,28 @@ Electrode.CurrentDepth = 0;                               	% Set default start d
 
 
 %=============== LOAD RECORDING HISTORY FROM SPREADSHEET
-if exist(Defaults.HistoryFile, 'file') ==2                    	% If recording history file was found...
+if exist(Defaults.HistoryFile, 'file') ==2                          % If recording history file was found...
     [a,b,HistoryFormat] = fileparts(Defaults.HistoryFile);      
-    if exist('readtable.m','file')                              % MATLAB R2014a and later
-        if strcmpi(HistoryFormat, '.xls')
+    if strcmpi(HistoryFormat, '.xls')                               % If file format was Excel...
+     	if exist('readtable.m','file')                              % For MATLAB R2014a and later...
             T = readtable(Defaults.HistoryFile);
             T.Date = datetime(T.Date,'ConvertFrom','excel');
             Electrode.DateStrings = char(datetime(T.Date,'format','dd-MMM-yyyy'));   
-        elseif strcmpi(HistoryFormat, '.csv')                    
-%             formatSpec = '%{dd-MMM-yyyy}D%f%f%f%f%f%C';
-%             T = readtable(Defaults.HistoryFile,'Delimiter',',','Format',formatSpec);
-            fid = fopen(Defaults.HistoryFile,'rt');
-            Headers = textscan(fid, '%s%s%s%s%s%s%s\n', 1, 'delimiter', ',');
-            data = textscan(fid, '%f %d %d %f %f %f %s','headerlines',1,'delimiter',',');
-            fclose(fid);
-            Dates = data{1};   
-            Electrode.DateStrings = datestr(Dates); 
-        end               
-    else                                                        % MATLAB R201bb and earlier    
-    	[num,txt,raw] =  xlsread(Defaults.HistoryFile,1,'');     	% Read data from Excel file
-        Headers = txt{1,:};                                       	% Skip row containing column titles
-        num(1,:) = [];                                            	% Remove nans
-        Dates = num(:,1)+datenum('30-Dec-1899');                 	% Convert Excel dates to Matlab dates
-        Electrode.DateStrings = datestr(Dates);                     
-    end
+        else                                                        % MATLAB R2013b and earlier...    
+            [num,txt,raw] =  xlsread(Defaults.HistoryFile,1,'');  	% Read data from Excel file
+            Headers = txt{1,:};                                  	% Skip row containing column titles
+            num(1,:) = [];                                       	% Remove nans
+            Dates = num(:,1)+datenum('30-Dec-1899');             	% Convert Excel dates to Matlab dates
+            Electrode.DateStrings = datestr(Dates);                     
+        end
+    elseif strcmpi(HistoryFormat, '.csv')                           % If file format was csv...
+        fid = fopen(Defaults.HistoryFile,'rt');
+        Headers = textscan(fid, '%s%s%s%s%s%s%s\n', 1, 'delimiter', ',');
+        data = textscan(fid, '%f %d %d %f %f %f %s','headerlines',1,'delimiter',',');
+        fclose(fid);
+        Dates = data{1};   
+        Electrode.DateStrings = datestr(Dates); 
+    end           
 else
     Electrode.DateStrings = [];
 end
@@ -153,10 +151,10 @@ Electrode.CurrentDate = size(Electrode.DateStrings,1);          % Default to tod
 
 
 %============== SET DEFAULT 3D SURFACE PARAMS
-Brain.Specular = 0.6;
+Brain.Specular = 0.2;
 Brain.Ambient = 0.2;
 Brain.Diffuse = 0.6;
-Brain.Alpha = 0.6;
+Brain.Alpha = 0.5;
 Brain.RGB = [0.7 0.6 0.6];
 Brain.DefaultView = [-120 20];                                  
 Brain.SurfaceColors = [1 0 0;0 1 0;0 0 1;1 1 0;1 0 1;0 1 1];

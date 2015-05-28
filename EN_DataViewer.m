@@ -74,7 +74,7 @@ Fig.Handles.Figure = figure('Name',sprintf('ElectroNav%c - Data Viewer',char(169
                     'menu','none','toolbar','none',...                          % Remove toolbar etc
                     'NumberTitle','off',...                                     % Remove figure number from title
                     'IntegerHandle','off');                                     % Don't use integer handles
-Fig.Colormap = 'parula';                                                        % Set default colormap
+Fig.Colormap = 'jet';                                                           % Set default colormap
 Fig.HighlightColor = [1 0 0];                                                  	% Set color for highlighted contacts
 Fig.HighlightAlpha = 0.3;                                                       % Set alpha transparency for outer highlight volume
 Fig.HighlightRad = 0.5;                                                         % Set radius (mm) of outer highlight volume

@@ -12,12 +12,11 @@ if nargin == 0
     VolumeFiles = wildcardsearch(fullfile(SubjectDir,'StructureVolumes'),'*.nii');
     MeshFiles = wildcardsearch(fullfile(SubjectDir,'VTKs'),'*.vtk');
 end
-
-
    
 Cmap = hsv;
 facecolors = Cmap(round(linspace(1,64,numel(MeshFiles))),:);
 alpha = 0.25;           
+
 
 %================= LOAD MESH DATA
 RevStr = '';

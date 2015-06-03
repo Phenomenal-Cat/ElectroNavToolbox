@@ -122,27 +122,8 @@ Electrode.CurrentDepth = 0;                               	% Set default start d
 
 %=============== LOAD RECORDING HISTORY FROM SPREADSHEET
 if exist(Defaults.HistoryFile, 'file') ==2                          % If recording history file was found...
-    [a,b,HistoryFormat] = fileparts(Defaults.HistoryFile);      
-    if strcmpi(HistoryFormat, '.xls')                               % If file format was Excel...
-     	if exist('readtable.m','file')                              % For MATLAB R2014a and later...
-            T = readtable(Defaults.HistoryFile);
-            T.Date = datetime(T.Date,'ConvertFrom','excel');
-            Electrode.DateStrings = char(datetime(T.Date,'format','dd-MMM-yyyy'));   
-        else                                                        % MATLAB R2013b and earlier...    
-            [num,txt,raw] =  xlsread(Defaults.HistoryFile,1,'');  	% Read data from Excel file
-            Headers = txt{1,:};                                  	% Skip row containing column titles
-            num(1,:) = [];                                       	% Remove nans
-            Dates = num(:,1)+datenum('30-Dec-1899');             	% Convert Excel dates to Matlab dates
-            Electrode.DateStrings = datestr(Dates);                     
-        end
-    elseif strcmpi(HistoryFormat, '.csv')                           % If file format was csv...
-        fid = fopen(Defaults.HistoryFile,'rt');
-        Headers = textscan(fid, '%s%s%s%s%s%s%s\n', 1, 'delimiter', ',');
-        data = textscan(fid, '%f %d %d %f %f %f %s','headerlines',1,'delimiter',',');
-        fclose(fid);
-        Dates = data{1};   
-        Electrode.DateStrings = datestr(Dates); 
-    end           
+    Hist = EN_LoadHistory(Defaults.HistoryFile);        
+    Electrode.DateStrings = Hist.DateStrings;
 else
     Electrode.DateStrings = [];
 end

@@ -64,7 +64,7 @@ if isempty(HistoryFile)
 end
 TformFile = wildcardsearch(SubjectDir,'*.mat');
 if ~isempty(TformFile)
-%     load(TformFile{1});
+	load(TformFile{1});
 end
 if ~exist('T','var')  
     fprintf(['\nWARNING: \tno transformation matrix (.mat) was found in %s!\n',...

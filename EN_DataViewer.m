@@ -150,8 +150,10 @@ Fig.ZoomH = zoom;                                                               
 
 %================ Plot structures
 SubjectDir = '/projects/murphya/EN_data/Subjects/Layla';
+MRI.DefaultFile = '/projects/murphya/EN_data/Subjects/Layla/Layla_GridScan_ACPC.nii';
 if ismac
     SubjectDir = fullfile('/Volumes',SubjectDir); 
+    MRI.DefaultFile = fullfile('/Volumes', MRI.DefaultFile); 
 end
 MeshFiles = wildcardsearch(fullfile(SubjectDir,'VTKs'),'*.vtk');
 Structures = Plot3DMeshes(MeshFiles);
@@ -273,10 +275,11 @@ set(Fig.Handles.DataInput(7), 'value', Fig.Data.InvertAlpha);
 
 %======================== MRI PANEL
 MRI.SelectedAxis = 2;
-Fig.MRI.LabelStrings = {'MR volume','Slice axis','Position (mm)','Slice opacity'};
+MRI.SliceAlpha = 1;
+Fig.MRI.LabelStrings = {'MR volume','Slice axis','Position (mm)', sprintf('Opacity = %d %%', round(MRI.SliceAlpha*100))};
 Fig.MRI.InputType = {'Pushbutton','popupmenu','slider','slider'};
-Fig.MRI.InputStrings = {{'Select volume'}, {'Medial-lateral','Anterior-posterior','Ventral-Dorsal'}};
-Fig.MRI.InputValue = {0, MRI.SelectedAxis, 0, 0};
+Fig.MRI.InputStrings = {{'Select volume'}, {'Sagittal','Coronal','Axial'}};
+Fig.MRI.InputValue = {0, MRI.SelectedAxis, 0, MRI.SliceAlpha};
 Ypos = (0:-30:(-30*(numel(Fig.MRI.LabelStrings)+1))) + BoxPos(5,4)-50;
 for i = 1:numel(Fig.MRI.LabelStrings)
     Fig.Handles.MRILabel(i) = uicontrol('Style','text', 'string', Fig.MRI.LabelStrings{i},'HorizontalAlignment','Left', 'pos', [10, Ypos(i), 80, 25],'parent',Fig.Handles.UIpannel(5));
@@ -286,6 +289,7 @@ for i = 1:numel(Fig.MRI.LabelStrings)
         Fig.Handles.MRIInput(i) = uicontrol('Style',Fig.MRI.InputType{i},'value',Fig.MRI.InputValue{i}, 'pos',[100, Ypos(i), 150, 25],'parent',Fig.Handles.UIpannel(5),'Callback',{@MRIView,i});
     end
 end
+set(Fig.Handles.MRIInput(4),'min',0,'max',1,'StepSize',[0.05 0.05]);
 set(Fig.Handles.MRIInput([2,3,4]), 'enable', 'off');
 
 
@@ -439,6 +443,7 @@ global Fig Contact
         Fig.Data.Hist = bar(HistData);
         set(Fig.Data.Hist, 'EdgeColor', 'none');
     end
+    axis tight;
 
     axes(Fig.Handles.DataAx(2));                                                         	% Select data axes
     Allpos = reshape(Contact.XYZ(:,:,Fig.AxisSelected)',[size(Contact.XYZ,1)*size(Contact.XYZ,2), 1]);
@@ -752,40 +757,44 @@ function MRIView(hObj, Event, Indx)
 global Contact Fig Structures MRI
     switch Indx
      	case 1      %====================== LOAD MRI VOLUME
-            default = '/Volumes/projects/murphya/EN_data/Subjects/Layla/Layla_GridScan_ACPC.nii';
-            [file, path] = uigetfile('*.nii;*.img;', 'Select MR volume', default);
-            MRI.Nii = load_nii(fullfile(path, file));
-            set(Fig.Handles.MRIInput(1),'string',file);
-            
-            %============== THRESHOLD MRI VOLUME
-            ThreshFig = figure('name','Select threshold');
-            hist(double(MRI.Nii.img(:)),100);
-            title('Select upper voxel intensity threshold','fontsize',18);
-            ylabel('Frequency');
-            xlabel('Voxel intensity');
-            [x,y] = ginput(1);
-            close(ThreshFig);
-            MRI.Nii.img = double(MRI.Nii.img);
-            MRI.Nii.img(MRI.Nii.img>x) = x;                         % Apply threshold
-        	MRI.Nii.img = MRI.Nii.img/x;                            % Normalize intensity range (0-1)
-            
+            if ~isfield(MRI, 'DefaultFile') || ~exist(MRI.DefaultFile, 'file')
+                [file, path] = uigetfile('*.nii;*.img;', 'Select MR volume');
+            else
+                [file, path] = uigetfile('*.nii;*.img;', 'Select MR volume', MRI.DefaultFile);
+            end
+            if file ~= 0    
+                MRI.Nii = load_nii(fullfile(path, file));
+                set(Fig.Handles.MRIInput(1),'string',file);
 
-            %============== GET VOLUME PARAMETERS
-            MRI.Res = MRI.Nii.hdr.dime.pixdim(2:4);
-            MRI.DimsVox = size(MRI.Nii.img);
-            MRI.DimsMM = MRI.DimsVox.*MRI.Res;
-            MRI.OriginVox = MRI.Nii.hdr.hist.originator(1:3);      
-            MRI.OriginMM = MRI.OriginVox.*MRI.Res;
-            
-            axes(Fig.Handles.MainAx);                                                             	% Select main figure
-            Axlims = [get(gca,'xlim'); get(gca,'ylim'); get(gca,'zlim')];                         	% Get all axis limits
-            MRI.AxisRangeMM = range(Axlims(MRI.SelectedAxis,:));                                    % Find range of current axis (mm)
-            set(Fig.Handles.MRIInput(3), 'Min', 0, 'Max', MRI.AxisRangeMM);                       	% Set the slice position slider range
-            set(Fig.Handles.MRIInput(3), 'value',0);                                              	% Position defaults to minimum
-            set(Fig.Handles.MRIInput(3), 'SliderStep', repmat(MRI.Res(MRI.SelectedAxis)/MRI.AxisRangeMM,[1,2]));	% Set slider step size (mm)
-            UpdateSlice;                                                                            % Draw MRI slice
-            set(Fig.Handles.MRIInput([2,3,4]), 'enable', 'on');                                    % Enable MRI view panel controls
-            
+                %============== THRESHOLD MRI VOLUME
+                ThreshFig = figure('name','Select threshold');
+                hist(double(MRI.Nii.img(:)),100);
+                title('Select upper voxel intensity threshold','fontsize',18);
+                ylabel('Frequency');
+                xlabel('Voxel intensity');
+                [x,y] = ginput(1);
+                close(ThreshFig);
+                MRI.Nii.img = double(MRI.Nii.img);
+                MRI.Nii.img(MRI.Nii.img>x) = x;                         % Apply threshold
+                MRI.Nii.img = MRI.Nii.img/x;                            % Normalize intensity range (0-1)
+
+
+                %============== GET VOLUME PARAMETERS
+                MRI.Res = MRI.Nii.hdr.dime.pixdim(2:4);
+                MRI.DimsVox = size(MRI.Nii.img);
+                MRI.DimsMM = MRI.DimsVox.*MRI.Res;
+                MRI.OriginVox = MRI.Nii.hdr.hist.originator(1:3);      
+                MRI.OriginMM = MRI.OriginVox.*MRI.Res;
+
+                axes(Fig.Handles.MainAx);                                                             	% Select main figure
+                Axlims = [get(gca,'xlim'); get(gca,'ylim'); get(gca,'zlim')];                         	% Get all axis limits
+                MRI.AxisRangeMM = range(Axlims(MRI.SelectedAxis,:));                                    % Find range of current axis (mm)
+                set(Fig.Handles.MRIInput(3), 'Min', 0, 'Max', MRI.AxisRangeMM);                       	% Set the slice position slider range
+                set(Fig.Handles.MRIInput(3), 'value',0);                                              	% Position defaults to minimum
+                set(Fig.Handles.MRIInput(3), 'SliderStep', repmat(MRI.Res(MRI.SelectedAxis)/MRI.AxisRangeMM,[1,2]));	% Set slider step size (mm)
+                UpdateSlice;                                                                            % Draw MRI slice
+                set(Fig.Handles.MRIInput([2,3,4]), 'enable', 'on');                                    % Enable MRI view panel controls
+            end
                 
         case 2      %====================== CHANGE SLICE ORIENTATION
             MRI.SelectedAxis = get(hObj,'Value');                                                   % Get currently selected axis
@@ -807,11 +816,13 @@ global Contact Fig Structures MRI
             MRI.AxisRangeMM = range(Axlims(MRI.SelectedAxis,:));                                        % Find range of current axis (mm)
             MRI.SlicePosMM = Axlims(MRI.SelectedAxis,1)+MRI.SlicePos;                                   % Get slice position (mm)
             MRI.SlicePosVox = MRI.OriginVox(MRI.SelectedAxis)+(MRI.SlicePosMM/MRI.Res(MRI.SelectedAxis));
+            set(Fig.Handles.MRILabel(3),'String',sprintf('Position = %.2f mm', MRI.SlicePosMM)); 
             UpdateSlice;
             
         case 4      %====================== CHANGE SLICE OPACITY
             MRI.SliceAlpha = get(hObj,'Value');    
             set(MRI.SlicePatchHandle, 'facealpha', MRI.SliceAlpha);
+            set(Fig.Handles.MRILabel(4),'String',sprintf('Opacity = %d %%', round(MRI.SliceAlpha*100)));       
             
     end
 end

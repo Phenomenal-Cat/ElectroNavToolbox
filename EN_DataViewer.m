@@ -710,6 +710,16 @@ global Contact Fig Structures MRI
         MRI.SlicePosVox = AxLimsVox(MRI.SelectedAxis,1);
     end
     
+    %============ CHECK AXIS LIMITS ARE WITHIN BOUNDS
+    AxLimsVox(AxLimsVox(:,1)< 1,1) = 1;                             
+    AxLims(AxLimsVox(:,1)< 1,1) = -MRI.OriginMM(AxLimsVox(:,1)< 1);     
+    for n = 1:3
+        if AxLimsVox(n,2)>MRI.DimsVox(n)
+            AxLimsVox(n,2) = MRI.DimsVox(n)-MRI.OriginVox(n);
+            AxLims(n,2) = MRI.DimsMM(n)-MRI.OriginMM(n);
+        end
+    end
+    
     %============= DRAW SLICE 
     switch MRI.SelectedAxis                                             
         case 1
@@ -808,7 +818,7 @@ end
 
 %====================== MAIN OPTIONS PANNEL ===============================
 function OptionsInput(hObj, Event, Indx)
-global Contact Fig Structures
+global Contact Fig Structures MRI
     switch Indx
         case 1      %====================== MANUAL ROTATE
             if get(hObj,'Value')==1
@@ -838,10 +848,20 @@ global Contact Fig Structures
             Zlim = get(gca,'zlim');
             ans = inputdlg({'Medial-lateral (mm)','Anterior-posterior (mm)','Inferior-Superior (mm)'},'Set axes limits',1,{num2str(Xlim),num2str(Ylim),num2str(Zlim)});
             if ~isempty(ans)
-                Xlim = str2double(ans{1});
-                Ylim = str2double(ans{2});
-                Zlim = str2double(ans{3});
+                Xlim = [str2double(ans{1}(1:strfind(ans{1}, ' '))), str2double(ans{1}(strfind(ans{1}, ' '):end))];
+                Ylim = [str2double(ans{2}(1:strfind(ans{2}, ' '))), str2double(ans{2}(strfind(ans{2}, ' '):end))];
+                Zlim = [str2double(ans{3}(1:strfind(ans{3}, ' '))), str2double(ans{3}(strfind(ans{3}, ' '):end))];
                 set(gca,'xlim',Xlim','ylim',Ylim,'zlim',Zlim);
+            end
+            if isfield(MRI, 'Nii')  
+                Axlims = [Xlim; Ylim; Zlim];                                                            % Get all axis limits
+                MRI.AxisRangeMM = range(Axlims(MRI.SelectedAxis,:));                                    % Find range of current axis (mm)
+                set(Fig.Handles.MRIInput(3), 'Min', 0, 'Max', MRI.AxisRangeMM);                       	% Set the slice position slider range
+                set(Fig.Handles.MRIInput(3), 'value',0);                                              	% Position defaults to minimum
+                set(Fig.Handles.MRIInput(3), 'SliderStep', repmat(MRI.Res(MRI.SelectedAxis)/MRI.AxisRangeMM,[1,2]));	% Set slider step size (mm)
+                MRI.SlicePosMM = Axlims(MRI.SelectedAxis,1);                                            % Get slice position (mm)
+                MRI.SlicePosVox = MRI.OriginVox(MRI.SelectedAxis)+(MRI.SlicePosMM/MRI.Res(MRI.SelectedAxis));
+                UpdateSlice;
             end
             
         case 5      %====================== SAVE APPEARANCE SETTINGS

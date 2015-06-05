@@ -150,7 +150,9 @@ Fig.ZoomH = zoom;                                                               
 
 %================ Plot structures
 SubjectDir = '/projects/murphya/EN_data/Subjects/Layla';
-MRI.DefaultFile = '/projects/murphya/EN_data/Subjects/Layla/Layla_GridScan_ACPC.nii';
+% MRI.DefaultFile = '/projects/murphya/EN_data/Subjects/Layla/Layla_GridScan_ACPC.nii';
+% MRI.DefaultFile = '/rawdata/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_MDEFT_postelgiloy_025mm_BET_Masked_rot.nii';
+MRI.DefaultFile = '/rawdata/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_FLASH_postelgiloy_iso_BET_aligned_rot.nii';
 if ismac
     SubjectDir = fullfile('/Volumes',SubjectDir); 
     MRI.DefaultFile = fullfile('/Volumes', MRI.DefaultFile); 
@@ -167,13 +169,16 @@ material(cell2mat(struct2cell(Structures.Materials))');
 Structures.CurrentStructure = 1;
 Structures.Smoothing = zeros(1, numel(Structures.Names));
 Structures.On = zeros(1, numel(Structures.Names));
-Structures.On([2,5,6,8,9]) = 1;                             
+% Structures.On([2,5,6,8,9]) = 1;                             
 Structures.Wire = ones(1, numel(Structures.Names));
 for s = 1:numel(Structures.Handles)
     if Structures.On(s)==1
         set(Structures.Handles{s},'visible','on');
     else
         set(Structures.Handles{s},'visible','off');
+    end
+    if Structures.Wire(s)==1
+        set(Structures.Handles{s},'edgecolor',Structures.Colors(s,:),'facecolor','none');
     end
 end
 
@@ -289,7 +294,7 @@ for i = 1:numel(Fig.MRI.LabelStrings)
         Fig.Handles.MRIInput(i) = uicontrol('Style',Fig.MRI.InputType{i},'value',Fig.MRI.InputValue{i}, 'pos',[100, Ypos(i), 150, 25],'parent',Fig.Handles.UIpannel(5),'Callback',{@MRIView,i});
     end
 end
-set(Fig.Handles.MRIInput(4),'min',0,'max',1,'StepSize',[0.05 0.05]);
+set(Fig.Handles.MRIInput(4),'min',0,'max',1,'SliderStep',[0.05 0.05]);
 set(Fig.Handles.MRIInput([2,3,4]), 'enable', 'off');
 
 

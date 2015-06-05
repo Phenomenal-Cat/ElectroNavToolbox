@@ -71,6 +71,9 @@ if ~exist('T','var')
     '\t\tReturned coordinates with be in grid-centred space!\n'], SubjectDir);
 end
 if exist('Dates','var') && ~isempty(Dates)
+    if ~iscell(Dates)                                                   % If dates were not provided in a cell array...
+        Dates = cellstr(Dates);                                       	% Convert to cell array
+    end
     if numel(Dates{1})==8 && strcmp(Dates{1}(1:2),'20')             	% If input was format YYYYMMDD...
         for d = 1:numel(Dates)
             Dates{d} = YMD2DMY(Dates{d});                           	% Convert to DD-MMM-YYYY format

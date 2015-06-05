@@ -10,7 +10,7 @@ function Hist = EN_LoadHistory(HistoryFile)
 
 if nargin ==0 || exist(HistoryFile, 'file') ~=2                 % If recording history file was not found...
     [file, path] = uigetfile({'*.xls;*.csv'}, 'Select recording history');
-    HistoryFile = fullfile(file, path);
+    HistoryFile = fullfile(path, file);
 end
 
 [a,b,HistoryFormat] = fileparts(HistoryFile);                   % Check file format   

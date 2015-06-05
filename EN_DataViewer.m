@@ -32,7 +32,7 @@ function [Contact] = EN_DataViewer(DataPath)
 %   02/06/2015 - MRI slice viewer added
 %
 % ELECTRONAV TOOLBOX
-% Developed by Aidan Murphy, ï¿½ Copyleft 2015, GNU General Public License
+% Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
 %==========================================================================
 
 clear all;

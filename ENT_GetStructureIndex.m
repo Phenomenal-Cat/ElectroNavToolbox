@@ -33,7 +33,7 @@ end
 LabelsFile = 'Atlases/inia19/inia19-NeuroMaps.txt';          	% Specify filename of NeuroMaps structure data
 if exist(LabelsFile,'file')==0
     uiwait(msgbox(sprintf('Atlas structure file ''%s'' was not found!\n', LabelsFile),'Error', 'error'));
-    [path, file] = uigetfile('.txt', 'Select atlas label file');
+    [file, path] = uigetfile('.txt', 'Select atlas label file');
     LabelsFile = fullfile(path, file);
 end
 Stringformat = '%d %s %d %d %d %d';                             % Specify format of NeuroMaps structure data

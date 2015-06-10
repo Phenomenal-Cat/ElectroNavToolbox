@@ -91,6 +91,16 @@ Fig.Data.InvertAlpha = 0;                                                       
 
 
 %================ PLOT 3D DATA
+if min(size(Contact.rad))>1                                                         % If data was not provided in vector format...
+    Contact.rad = reshape(Contact.rad, [numel(Contact.rad), 1]);                    % Reshape Session# x Contact# matrix into vector
+end
+if min(size(Contact.Alpha))>1                                                       % If data was not provided in vector format...
+    Contact.Alpha = reshape(Contact.Alpha, [numel(Contact.Alpha), 1]);           	% Reshape Session# x Contact# matrix into vector
+end
+if min(size(Contact.ColorVals))>1                                                 	% If data was not provided in vector format...
+    Contact.ColorVals = reshape(Contact.ColorVals, [numel(Contact.ColorVals), 1]);	% Reshape Session# x Contact# matrix into vector
+end
+
 RadRange = [min(Contact.rad), max(Contact.rad)];                                    % Get range of radius values
 if numel(unique(Contact.rad))>1
     Contact.NormRad = (Contact.rad-RadRange(1))/ diff(RadRange);                  	% Normalize radius values (0-1)
@@ -457,6 +467,7 @@ global Fig Contact
     end
     Fig.Data.Spatial.ph = plot(Allpos(PosIndx), Contact.ColorVals,'.b');                % Plot position versus data
  	AllLims = [Fig.Xlim; Fig.Ylim; Fig.Zlim];
+    Thresh
     set(Fig.Handles.DataAx(1), 'xlim', Thresh);
     set(Fig.Handles.DataAx(2), 'ylim', Thresh);
  	set(Fig.Handles.DataAx(2),'xlim', AllLims(Fig.AxisSelected,:));

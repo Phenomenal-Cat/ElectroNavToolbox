@@ -1,5 +1,5 @@
 
-%==========================================================================
+%========================== ENT_ApplyMask.m ===============================
 % Apply a binary mask volume to another volume of identical size. 
 %
 % INPUTS:
@@ -10,9 +10,11 @@
 %                   1 = all voxels of intensity one in the mask image
 %                   become zero in the volume image.
 %
+% ELECTRONAV TOOLBOX
+% Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
 %==========================================================================
 
-function ApplyMask(MaskNiiFile, VolNiiFile, Subtract)
+function ENT_ApplyMask(MaskNiiFile, VolNiiFile, Subtract)
 
 if nargin == 0
     [Filename,Pathname,Indx] = uigetfile('*.nii','Select mask file');

@@ -1,7 +1,9 @@
-function FigHandle = GridHistory(SessionHistory, Mode, GridID)
+function FigHandle = EN_GridHistory(SessionHistory, Mode, GridID)
 
-%============================ GridHistory.m ===============================
-% 
+%============================ EN_GridHistory.m ============================
+% This function plots a figure containing a schematic of the recording grid
+% where each grid hole is colored to represent some statistic, acquired
+% from the session history spreadsheet.
 %
 % INPUTS:
 %   SessionHistory:  spreadsheet file (.xls/.csv) containing recording session
@@ -20,11 +22,14 @@ function FigHandle = GridHistory(SessionHistory, Mode, GridID)
 %   GridID:     string corresponding to one of the grid types defined in 
 %               GetGridParams.m.
 %
+% ELECTRONAV TOOLBOX
+% Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
 %==========================================================================
 
 if nargin == 0
     Mode = 1;
-    SessionHistory = 'ElectrodeLocations.xls';
+    [file, path] = uigetfile('*.xls;*.csv', 'Select recording history file');
+    SessionHistory = fullfile(path, file);
 end
 
 %=========================== Set grid parameters
@@ -45,37 +50,17 @@ for i = 1:Grid.HolesPerDim
     end
 end
 
-
 %========================== Load recording history data
-[a,b,Ext] = fileparts(SessionHistory);
-switch Ext
-    case '.xls'
-     	DateSheet = 1;
-        [num,txt,raw] =  xlsread(SessionHistory,DateSheet,'');        	% Read data from Excel file
-        Headers = txt{1,:};                                             % Skip row containing column titles
-        num(1,:) = [];                                                  % Remove nans
-        Dates = num(:,1)+datenum('30-Dec-1899');                        % Convert Excel dates to Matlab dates
-    case '.csv'
-        fid = fopen(SessionHistory,'rt');
-        Headers = textscan(fid, '%s%s%s%s%s%s%s\n', 1, 'delimiter', ',');
-        data = textscan(fid, '%f %f %f %f %f %f %s','headerlines',1,'delimiter',',');
-        fclose(fid);
-        Dates = data{1};   
-        num(:,2:3) = cell2mat(data(:,2:3));
-        num(:,4) = cell2mat(data(:,4));
-end
-DateStrings = datestr(Dates);  
-[Selection,ok] = listdlg('ListString',DateStrings,'SelectionMode','multi','PromptString','Select sessions to include:');
+Hist = EN_LoadHistory(SessionHistory);
+[Selection,ok] = listdlg('ListString',Hist.DateStrings,'SelectionMode','multi','PromptString','Select sessions to include:');
 if ok==0
     FigHandle = [];
     return;
 end
 Target = num(Selection,[2,3]);
-% Target(:,2) = -Target(:,2);                                     % Invert AP axis for 2013 recording sessions
 TargetDepth = num(Selection,4);                                 
 Session.Date = datestr(Dates(Selection));  
 DaysElapsed = datenum(date)-Dates(Selection);                   % Days since each recording
-
 
 %========================== Set visualization parameters
 if Mode == 1
@@ -105,7 +90,6 @@ elseif Mode == 2
     ColormapMode = [cool; Grid.RGB*0.7];
 end
 
-
 %========================= Plot data
 FigBackground = [0.7 0.7 0.7];
 FigHandle = figure( 'Name','Recording History',...          % Open a figure window with specified title
@@ -113,7 +97,7 @@ FigHandle = figure( 'Name','Recording History',...          % Open a figure wind
                     'Color',FigBackground,...               % Set the figure window background color
                     'Menu','none','Toolbar','none');       	% Turn off toolbars to save space
 GridObject = DrawGrid(Grid);
-title(sprintf('Total recordings: %s - %s',DateStrings(Selection(1),:),DateStrings(Selection(end),:)),'FontWeight','bold','FontSize',14);
+title(sprintf('Total recordings: %s - %s',Hist.DateStrings(Selection(1),:),Hist.DateStrings(Selection(end),:)),'FontWeight','bold','FontSize',14);
 set(gca,'XTick',-8:2:8);
 set(gca,'YTick',-8:2:8);
 set(gca,'fontsize',12);

@@ -41,7 +41,7 @@ ENTroot = '/Volumes/PROJECTS/murphya/EN_data';
 %============== TEMPORARY!!! Hardcoded file paths
 TemplateFile = fullfile(ENTroot, 'Atlases/inia19/inia19-T1-brain.nii');
 NativeFile = fullfile(ENTroot,'Subjects/Layla/Layla_GridScan_ACPC_BET_Masked.nii');
-AtlasFiles = fullfile(ENTroot, 'Atlases/inia19/inia19-NeuroMaps.nii');
+% AtlasFiles = fullfile(ENTroot, 'Atlases/inia19/inia19-NeuroMaps.nii');
 MaskFile = fullfile(ENTroot,'Subjects/Layla/Layla_ACPC_LesionMask.nii');
 
 %============== Check inputs
@@ -54,9 +54,12 @@ if ~exist('NativeFile','var') || ~exist(NativeFile,'file')
     NativeFile = fullfile(path, file);
 end
 if ~exist('AtlasFiles','var') || ~exist(AtlasFiles,'file')
-
+    AtlasFiles = uipickfiles('REFilter','.nii;.img', 'Prompt', 'Select volumes to transform');
 end
-
+if ischar(AtlasFiles)
+    AtlasFiles = {AtlasFiles};
+end
+    
 %=============== Calculate paramaters of native space
 NativeNii = load_nii(NativeFile);                                               % load native volume
 NativeNii.VoxDim = NativeNii.hdr.dime.pixdim(2:4);                              % get pixel dimensions (mm)
@@ -67,12 +70,15 @@ NativeNii.BB(2,:) = (size(NativeNii.img)-NativeNii.Origin).*NativeNii.VoxDim;
 %=============== Estimate non-linear transform
 NativeS = spm_vol(NativeFile);                                                  % Get structure for Native MRI volume
 NativeH = spm_read_vols(NativeS);                                               % Load Native MRI volume
-NativeMaskH = spm_read_vols(spm_vol(MaskFile));                                 
 TemplateH = spm_read_vols(spm_vol(TemplateFile));
-Matname = fullfile(ENTroot,'Subjects/Layla/INIA19_to_Layla_sn.mat');            
-
+Matname = fullfile(ENTroot,'Subjects/Layla/INIA19_to_Layla_sn.mat');  
+if exist('MaskFile','var')
+    NativeMaskH = spm_read_vols(spm_vol(MaskFile));
+else
+    NativeMaskH = [];
+end  
 flags.smosrc = 0;                   % template image is already smoothed, so don't smooth again.
-flags.smosrcsmoref = 8;             % smooth native volume to match template (8 mm FWHM Gaussian).
+flags.smosrcsmoref = 4;             % smooth native volume to match template (4 mm FWHM Gaussian).
 flags.smosrcregtype = 'rigid';      % regularisation type for affine registration. Use 'none' or 'rigid'
 flags.smosrccutoff = 25;           	% Cutoff of the DCT bases.  Lower values mean more basis functions are used
 flags.smosrcnits = 16;              % number of nonlinear iterations
@@ -84,7 +90,7 @@ flags.preserve = 0;
 flags.bb = NativeNii.BB;            % Destination bounding box (mm)
 flags.vox = NativeNii.VoxDim;     	% Destination voxel size (mm)
 flags.Interp = 1;                   % Interpolation, 1 = trilinear?
-flags.Wrap = [0 0 0];               % don't apply warpping
+flags.Wrap = [0 0 0];               % don't apply wrapping
 flags.prefix = 'warped_';           % prefix added to warped volumes
 
 for v = 1:numel(AtlasFiles)

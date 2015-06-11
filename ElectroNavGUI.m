@@ -1671,7 +1671,7 @@ switch Indx1
 
         
     case 3      %======================= VIEW GENERAL RECORDING HISTORY DATA
-        GridHistHandle = GridHistory(Defaults.HistoryFile,Indx2, Defaults.GridID);
+        GridHistHandle = EN_GridHistory(Defaults.HistoryFile,Indx2, Defaults.GridID);
 
 end
 end

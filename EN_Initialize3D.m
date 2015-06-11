@@ -24,14 +24,8 @@
 %   Params.Background:      4 element [RGBA] vector specifying background color
 %   Params.
 %
-%
-% REVISIONS:
-%   05/04/2014 - Written by APM
-%     ___  ______  __   __
-%    /   ||  __  \|  \ |  \    APM SUBFUNCTIONS
-%   / /| || |__/ /|   \|   \   Aidan P. Murphy - murphyap@mail.nih.gov
-%  / __  ||  ___/ | |\   |\ \  Section of Cognitive Neurophysiology and Imaging
-% /_/  |_||_|     |_| \__| \_\ Laboratory of Neuropsychology, NIMH
+% ELECTRONAV TOOLBOX
+% Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
 %==========================================================================
 
 function ParamsOut = EN_Initialize3D(DefaultInputs)

@@ -167,7 +167,7 @@ if ismac
     SubjectDir = fullfile('/Volumes',SubjectDir); 
     MRI.DefaultFile = fullfile('/Volumes', MRI.DefaultFile); 
 end
-MeshFiles = wildcardsearch(fullfile(SubjectDir,'VTKs'),'*.vtk');
+MeshFiles = wildcardsearch(fullfile(SubjectDir,'VTKs2'),'*.vtk');
 Structures = Plot3DMeshes(MeshFiles);
 Structures.Materials.Ambient = 0.3;                              
 Structures.Materials.Diffuse = 0.5;          

@@ -66,24 +66,22 @@ set(Fig.MenuInputH([5,6]),'value',1);
 
 
 %======================= PLOT DATA               
-Fig.ax(1) = axes('units','normalized','position',[0.05 0.1 0.3 0.6]);
+Fig.ax(1) = subplot(1,3,1);
 Fig.Im(1) = imagesc(Fig.AxLims(2,1):Fig.AxLims(2,2), Fig.AxLims(1,1):Fig.AxLims(1,2), Nii{1}.img(:,:,Nii{1}.hdr.hist.originator(3)));
 axis equal tight;
 hold on;
 Fig.OriginHx(1) = plot(xlim, [0 0],'--c');
 Fig.OriginHy(1) = plot([0 0], ylim,'--c');
 [path, name, ext] = fileparts(NiiFile1);
-name(strfind(name,'_'))=' ';
 title(name, 'fontsize',18);
 
-Fig.ax(2) = axes('units','normalized','position',[0.4 0.1 0.3 0.6]);
+Fig.ax(2) = subplot(1,3,2);
 Fig.Im(2) = imagesc(Fig.AxLims(2,1):Fig.AxLims(2,2), Fig.AxLims(1,1):Fig.AxLims(1,2), Nii{2}.img(:,:,Nii{2}.hdr.hist.originator(3)));
 axis equal tight;
 hold on;
 Fig.OriginHx(2) = plot(xlim, [0 0],'--c');
 Fig.OriginHy(2) = plot([0 0], ylim,'--c');
 [path, name, ext] = fileparts(NiiFile2);
-name(strfind(name,'_'))=' ';
 title(name, 'fontsize',18);
 
 linkaxes(Fig.ax([1,2]));
@@ -163,12 +161,8 @@ global Fig Nii
           	set(Fig.Im, 'xdata', Fig.AxLims(2,1):Fig.AxLims(2,2), 'ydata', Fig.AxLims(1,1):Fig.AxLims(1,2));
             set(Fig.Im(1), 'cdata', Nii{1}.img(:,:,Fig.SlicePosition(Fig.SliceOrientation)));
             set(Fig.Im(2), 'cdata', Nii{2}.img(:,:,Fig.SlicePosition(Fig.SliceOrientation)));
+
     end
-    
-    %======= CURRENT VOXEL DATA
-    
-    
-    
 end
 
 function PointerCallback(objectHandle, eventData)
@@ -176,18 +170,13 @@ global Fig
 	axesHandle  = get(objectHandle,'Parent');
     coordinates = get(axesHandle,'CurrentPoint');
     CoordinateMM = coordinates(1,:);
-%     CoordinateVox = CoordinateMM-Fig.*Fig.VoxelDim;
+    CoordinateVox = CoordinateMM-Fig.*Fig.VoxelDim;
     
     if ~isfield(Fig, 'SelectedVoxH')
-        for a = 1:2
-            axes(Fig.ax(a));
-            Fig.SelectedVoxH(1,a) = plot(repmat(CoordinateMM(1), [1,2]), Fig.AxLims(3,:), '-r');
-            Fig.SelectedVoxH(2,a) = plot(Fig.AxLims(1,:), repmat(CoordinateMM(2), [1,2]), '-r');
-        end
-        set(Fig.SelectedVoxH, 'PickableParts','none');
+        Fig.SelectedVoxH(1) = plot(repmat(CoordinateMM(1), [1,2]), ylim, '-r');
+        Fig.SelectedVoxH(2) = plot(CoordinateMM
     else
-        set(Fig.SelectedVoxH(1,:),'xdata',repmat(CoordinateMM(1), [1,2]));
-        set(Fig.SelectedVoxH(2,:),'ydata',repmat(CoordinateMM(2), [1,2]));
+        set(Fig.SelectedVoxH(1),
     end
     
 end

@@ -15,6 +15,9 @@ function ENT_VolumeToSurface(Volumes, SurfFormat, OutputDir, SaveSurf)
 % Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
 %==========================================================================
 
+[root, temp] = fileparts(mfilename('fullpath'));
+addpath(genpath(root));
+
 %============ CHECK INPUTS
 if ~exist('Volumes', 'var')
     Volumes = uipickfiles('REFilter', '\.nii$|\.img$', 'Prompt', 'Select volume(s) to convert');
@@ -46,8 +49,9 @@ if SaveSurf==0
 end
         
 for s = 1:numel(Volumes)
-    fprintf('Loading volume: %s (%d/%d)...\n', Volumes{s}, s, numel(Volumes));      
-	SurfFilename{s} = sprintf('%s.%s', Volumes{s}(1:end-4), SurfFormat)           	% Create filename for new surface
+    fprintf('Loading volume: %s (%d/%d)...\n', Volumes{s}, s, numel(Volumes));  
+    [a,File,c] = fileparts(Volumes{s});                                             
+    SurfFilename{s} = fullfile(OutputDir,sprintf('%s.%s', File, SurfFormat));       % Create filename for new surface
     nii = load_nii(Volumes{s});                                                     % Load volume
     Origin = nii.hdr.hist.originator(1:3);                                          % Find volume origin
     VoxelSize = nii.hdr.dime.pixdim(2:4);                                           % Find voxel dimensions (mm)
@@ -55,8 +59,9 @@ for s = 1:numel(Volumes)
         nii.img = smooth3(nii.img,'gaussian',round(smooth));                        
     end
     FV = isosurface(nii.img,thresh);                                                % Create surface mesh from volume
-    FV.vertices = FV.vertices - repmat(Origin([2,1,3])-1,[size(FV.vertices,1),1]); 	% Translate surface relative to atlas origin (AC)
+    FV.vertices = FV.vertices - repmat(Origin,[size(FV.vertices,1),1]);             % Translate surface relative to atlas origin (AC)
     FV.vertices = FV.vertices.*repmat(VoxelSize,[size(FV.vertices,1),1]);           % Scale voxels to mm
+	FV.vertices(:,[1,2]) = FV.vertices(:,[2,1]);                                    % Switch x and y axes?
     
     %========= PLOT OR SAVE SURFACES
     if SaveSurf==0

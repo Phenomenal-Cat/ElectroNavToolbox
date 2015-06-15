@@ -43,7 +43,4 @@ if exist(StructVolDir,'dir')==0
 end                                                     
 StructFilenames = ENT_CreateStructureMask(StructIndex, StructNames, AtlasFile, StructVolDir); 	% Create the structure volumes
 StructFilenames = ENT_ApplyTransform(StructFilenames, Transform);           % Transform atlas structures to native (AC-PC) space
-
-
-%=========== Create surface meshes of structures, view in 3D and save
-fh = RenderVolumes(StructVolDir);
+ENT_VolumeToSurface(StructFilenames, 'vtk', OutputDir, 1);                  % Create surface meshes of structures, view in 3D and save

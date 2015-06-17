@@ -42,7 +42,8 @@ global Fig Contact Structures Data MRI
 
 %==================== LOAD PHYSIOLOGY RESULTS DATA
 if nargin == 0
-    Data.Dir = uigetdir(root, 'Select data directory');
+    Data.Dir = '/Volumes/projects/murphya/Physio/MapPlotTools/MapData/';
+%     Data.Dir = uigetdir(root, 'Select data directory');
 else
     Data.Dir = DataPath;
 end                         
@@ -196,12 +197,12 @@ end
 %% =========================== ADD GUI PANELS ===============================
 Fig.Handles.OuterPannel = uipanel('BackgroundColor',Fig.Background,'Units','normalized','Position',[0.5,0.05,0.48,0.9]);
 
-PanelNames = {'Selected cell', 'Atlas structures', 'Options', 'Data', 'MRI'};
-BoxPos(1,:) = [400, 600, 260, 240];
-BoxPos(2,:) = [BoxPos(1,1), BoxPos(1,2)-BoxPos(1,4)-20, BoxPos(1,3), 240];
-BoxPos(3,:) = [680, 500, 140, 340];
-BoxPos(5,:) = [BoxPos(1,1), BoxPos(2,2)-BoxPos(2,4)-80, BoxPos(1,3), 300];
-BoxPos(4,:) = [20, BoxPos(2,2)-BoxPos(2,4)-20, 360, sum(BoxPos([1,2,5],4))+40];
+PanelNames = {'Selected cell', 'Atlas structures', 'MRI', 'Data', 'Options'};       % Set GUI pannel titles
+BoxPos(1,:) = [400, 600, 260, 240];                                                 % Pannel 1 = cell info
+BoxPos(2,:) = [400, 380, 260, 210];                                                 % Pannel 2 = atlas structures
+BoxPos(3,:) = [400, 20, 260, 350];                                                  % Pannel 3 = MRI
+BoxPos(5,:) = [680, 500, 140, 340];                                                 % Pannel 5 = options pannel
+BoxPos(4,:) = [20, 20, 360, sum(BoxPos([1,2,3],4))+20];                             % Pannel 4 = Data
 for i = 1:numel(PanelNames)
     Fig.Handles.UIpannel(i) = uipanel('Title',PanelNames{i},'FontSize',14,'BackgroundColor',Fig.Background,'Units','pixels','Position',BoxPos(i,:),'Parent',Fig.Handles.OuterPannel);
 end
@@ -240,7 +241,7 @@ Fig.Struct.LabelStrings = {'Current structure','Color','Opacity','Smoothing','',
 Fig.Struct.InputType = {'popupmenu','PushButton','slider','slider', 'checkbox','checkbox'};
 Fig.Struct.InputStrings = {Structures.Names, [], [], [], 'Visible','Wireframe'};
 Fig.Struct.InputValue = {Structures.CurrentStructure, [], Structures.Opacity(Structures.CurrentStructure), Structures.Smoothing(Structures.CurrentStructure), Structures.On(Structures.CurrentStructure), Structures.Wire(Structures.CurrentStructure)};
-Fig.Struct.ButtonPos = [repmat(10,[numel(Fig.Struct.LabelStrings),1]), [0:30:((numel(Fig.Struct.LabelStrings)-1)*30)]'+30];
+Fig.Struct.ButtonPos = [repmat(10,[numel(Fig.Struct.LabelStrings),1]), [0:30:((numel(Fig.Struct.LabelStrings)-1)*30)]'+10];
 Fig.Struct.ButtonPos = Fig.Struct.ButtonPos(end:-1:1,:);
 for i = 1:numel(Fig.Struct.LabelStrings)
     Fig.Handles.StructLabel(i) = uicontrol('Style','text', 'string', Fig.Struct.LabelStrings{i},'HorizontalAlignment','Left', 'pos', [Fig.Struct.ButtonPos(i,:), Fig.Struct.ButtonDim],'parent',Fig.Handles.UIpannel(2));
@@ -262,25 +263,25 @@ for n = 1:numel(Fig.Labels)
                              	'HorizontalAlignment','Left',...
                               	'pos',ButtonPos,...
                                 'Callback',{@OptionsInput,n},...
-                              	'parent',Fig.Handles.UIpannel(3));
+                              	'parent',Fig.Handles.UIpannel(5));
 end
 set(Fig.Handles.OptionsInput([1,7]),'value',0);                                 % Zoom and rotate default to 'off'
 
 %======================== DATA PANEL
 Fig.Data.AxisLabels = {'Medial-lateral','Anterior-posterior','Ventral-Dorsal'};
 Fig.AxisSelected = 3;
-Fig.Data.LabelStrings = {'Filename:','Number of sessions:','Number of neurons:','Selected axis:','Color thresholds:','Alpha thresholds:','Invert alpha:'};
-Fig.Data.InputType = {'popupmenu','text','text','popupmenu','edit','edit','checkbox','edit','edit'};
+Fig.Data.LabelStrings = {'Filename:','Number of sessions:','Number of neurons:','Selected axis:','Color thresholds:','Alpha thresholds:','Invert alpha:','Load mask:'};
+Fig.Data.InputType = {'popupmenu','text','text','popupmenu','edit','edit','checkbox','pushbutton','edit','edit'};
 ColorThresh = [min(Contact.ColorVals), max(Contact.ColorVals)];
 AlphaThresh = [min(Contact.Alpha), max(Contact.Alpha)];
-Fig.Data.InputStrings = {Data.Filenames, num2str(numel(Contact.Dates)),num2str(size(Contact.CellIndxData,1)),Fig.Data.AxisLabels, num2str(ColorThresh(1)), num2str(AlphaThresh(1)), 'Inverted',num2str(ColorThresh(2)), num2str(AlphaThresh(2))};
-Fig.Data.InputValue = {Data.Selected, [], [], Fig.AxisSelected, [], [], Fig.Data.InvertAlpha, [], []};
+Fig.Data.InputStrings = {Data.Filenames, num2str(numel(Contact.Dates)),num2str(size(Contact.CellIndxData,1)),Fig.Data.AxisLabels, num2str(ColorThresh(1)), num2str(AlphaThresh(1)), 'Inverted','Load', num2str(ColorThresh(2)), num2str(AlphaThresh(2))};
+Fig.Data.InputValue = {Data.Selected, [], [], Fig.AxisSelected, [], [], Fig.Data.InvertAlpha, [], [], []};
 Ypos = (0:-30:(-30*(numel(Fig.Data.LabelStrings)+1))) + BoxPos(4,4)-50;
-Ypos([8,9]) = Ypos([5,6]);
-InputXpos = [140 140 140 140 140 140 140 240 240];
-InputWidth = [180 180 180 180 80 80 180 80 80];
+Ypos([9,10]) = Ypos([5,6]);
+InputXpos = [140 140 140 140 140 140 140 140 240 240];
+InputWidth = [180 180 180 180 80 80 180 180 80 80];
 for i = 1:numel(Fig.Data.LabelStrings)+2
-    if i<=7
+    if i<=8
         Fig.Handles.DataLabel(i) = uicontrol('Style','text', 'string', Fig.Data.LabelStrings{i},'HorizontalAlignment','Left', 'pos', [10, Ypos(i), 120, 25],'parent',Fig.Handles.UIpannel(4));
     end
 	Fig.Handles.DataInput(i) = uicontrol('Style',Fig.Data.InputType{i},'String',Fig.Data.InputStrings{i},'value',Fig.Data.InputValue{i}, 'pos',[InputXpos(i), Ypos(i), InputWidth(i), 25],'parent',Fig.Handles.UIpannel(4),'Callback',{@DataView,i});
@@ -297,23 +298,24 @@ Fig.MRI.InputStrings = {{'Select volume'}, {'Sagittal','Coronal','Axial'}};
 Fig.MRI.InputValue = {0, MRI.SelectedAxis, 0, MRI.SliceAlpha, 0, 1};
 Ypos = (0:-30:(-30*(numel(Fig.MRI.LabelStrings)+1))) + BoxPos(5,4)-50;
 for i = 1:numel(Fig.MRI.LabelStrings)
-    Fig.Handles.MRILabel(i) = uicontrol('Style','text', 'string', Fig.MRI.LabelStrings{i},'HorizontalAlignment','Left', 'pos', [10, Ypos(i), 80, 25],'parent',Fig.Handles.UIpannel(5));
+    Fig.Handles.MRILabel(i) = uicontrol('Style','text', 'string', Fig.MRI.LabelStrings{i},'HorizontalAlignment','Left', 'pos', [10, Ypos(i), 80, 25],'parent',Fig.Handles.UIpannel(3));
     if i <= 2
-        Fig.Handles.MRIInput(i) = uicontrol('Style',Fig.MRI.InputType{i},'String',Fig.MRI.InputStrings{i},'value',Fig.MRI.InputValue{i}, 'pos',[100, Ypos(i), 150, 25],'parent',Fig.Handles.UIpannel(5),'Callback',{@MRIView,i});
+        Fig.Handles.MRIInput(i) = uicontrol('Style',Fig.MRI.InputType{i},'String',Fig.MRI.InputStrings{i},'value',Fig.MRI.InputValue{i}, 'pos',[100, Ypos(i), 150, 25],'parent',Fig.Handles.UIpannel(3),'Callback',{@MRIView,i});
     else
-        Fig.Handles.MRIInput(i) = uicontrol('Style',Fig.MRI.InputType{i},'value',Fig.MRI.InputValue{i}, 'pos',[100, Ypos(i), 150, 25],'parent',Fig.Handles.UIpannel(5),'Callback',{@MRIView,i});
+        Fig.Handles.MRIInput(i) = uicontrol('Style',Fig.MRI.InputType{i},'value',Fig.MRI.InputValue{i}, 'pos',[100, Ypos(i), 150, 25],'parent',Fig.Handles.UIpannel(3),'Callback',{@MRIView,i});
     end
 end
 set(Fig.Handles.MRIInput(4),'min',0,'max',1,'SliderStep',[0.05 0.05]);
 set(Fig.Handles.MRIInput([2,3,4]), 'enable', 'off');
 set(Fig.Handles.MRIInput([5,6]),'min',0,'max',1,'SliderStep',[0.01 0.01],'backgroundcolor',[0.4, 0.4, 0.4]);
-Fig.Handles.MRIint = axes('parent',Fig.Handles.UIpannel(5), 'units','pixels','position',[20 20 220 80]);
-
+Fig.Handles.MRIint = axes('parent',Fig.Handles.UIpannel(3), 'units','pixels','position',[40 40 200 80]);
+xlabel('Voxel intensities');
+ylabel('# voxels');
 
 
 %========= SET FIGURE/ PANNEL COLORS
 Fig.Handles.AllPannels = [Fig.Handles.UIpannel, Fig.Handles.OuterPannel, Fig.Handles.CellLabel, Fig.Handles.OptionsInput, Fig.Handles.DataLabel, Fig.Handles.DataInput(2:3), Fig.Handles.DataInput, Fig.Handles.StructLabel, Fig.Handles.StructInput([5,6]), Fig.Handles.MRILabel];
-Fig.Handles.AllInputs = [Fig.Handles.CellInput, Fig.Handles.DataInput([5,6,8,9])];
+Fig.Handles.AllInputs = [Fig.Handles.CellInput, Fig.Handles.DataInput([5,6,9,10])];
 set(Fig.Handles.AllPannels, 'BackgroundColor',Fig.Background);
 set(Fig.Handles.AllInputs, 'BackgroundColor',Fig.InputBackground);
 set(Fig.Handles.Figure, 'Color', Fig.Background);
@@ -688,7 +690,7 @@ global Contact Fig Structures Data
             AllLims = [Fig.Xlim; Fig.Ylim; Fig.Zlim];
             set(Fig.Handles.DataAx(2),'xlim', AllLims(Fig.AxisSelected,:));
             
-        case {5, 8}	%==================== CHANGE DATA THRESHOLDS
+        case {5, 9}	%==================== CHANGE DATA THRESHOLDS
             Thresh = [str2double(get(Fig.Handles.DataInput(5),'string')), str2double(get(Fig.Handles.DataInput(8),'string'))];
             set(Fig.Handles.DataAx(1), 'xlim', Thresh);
             set(Fig.Handles.DataAx(2), 'ylim', Thresh);
@@ -703,8 +705,8 @@ global Contact Fig Structures Data
                 set(Fig.Highlight, 'cdata', repmat(mean(NewCdata), size(get(Fig.Highlight, 'ZData'))));
             end
             
-    	case {6, 9}	%==================== CHANGE ALPHA THRESHOLDS
-            AlphaThresh = [str2double(get(Fig.Handles.DataInput(6),'string')), str2double(get(Fig.Handles.DataInput(9),'string'))];
+    	case {6, 10}	%==================== CHANGE ALPHA THRESHOLDS
+            AlphaThresh = [str2double(get(Fig.Handles.DataInput(6),'string')), str2double(get(Fig.Handles.DataInput(10),'string'))];
             TempAlpha = Contact.Alpha;                                                          % Copy raw alpha values to temp variable
             TempAlpha(TempAlpha < AlphaThresh(1)) = AlphaThresh(1);                             % Threshold the alpha values
             TempAlpha(TempAlpha > AlphaThresh(2)) = AlphaThresh(2);
@@ -717,6 +719,27 @@ global Contact Fig Structures Data
             Fig.Data.InvertAlpha = get(hObj,'Value');
             Contact.Alpha = 1-Contact.Alpha; 
             DataView([], [], 6);                                                                % Threshold alpha
+            
+        case 8  	%==================== LOAD MASK FROM ALPHA VALUES
+            [file, path] = uigetfile([Data.Dir,'*.mat'], 'Select transparency data');
+            Alpha = load(fullfile(path, file));
+            DateNums1 = datenum(Contact.Dates,Contact.DateFormat);
+            DateNums2 = datenum(Alpha.Contact.Dates,Alpha.Contact.DateFormat);
+            if ~isequal(DateNums1, DateNums2)                                                   % If sessions in 'data' and 'alpha' files don't match...
+              	DateMatch = zeros(1, numel(DateNums2));                                     
+                for d = 1:numel(DateNums2)                                                      % For each session in 'data'...
+                    MatchIndex(d) = find(DateNums1==DateNums2(d));                             	% Find index of matching session in 'alpha'
+                end
+                find(isempty(MatchIndex))
+                Contact.Alpha = Alpha.Contact.Alpha;
+                
+                
+            else
+            	Contact.Alpha = Alpha.Contact.Alpha;
+            end
+
+            DataView([], [], 6);
+            set(Fig.Handles.DataInput(8),'string',file);
     end
 
 end

@@ -26,10 +26,14 @@ function [Contact] = EN_DataViewer(DataPath)
 %       Contact.Alpha:      A d x n matrix containing a scalar value to specify the
 %                           opacity (1-transparency) of each data point.
 %   
+% EXAMPLE:  DataPath = '/Volumes/projects/murphya/Physio/MapPlotTools/MapData/';
+%         	EN_DataViewer(DataPath)
+%
 % REVISIONS:
 %   27/04/2014 - Written by APM
 %   19/03/2015 - GUI developed
 %   02/06/2015 - MRI slice viewer added
+%   17/06/2015 - Data masking and alpha load functions added
 %
 % ELECTRONAV TOOLBOX
 % Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
@@ -42,7 +46,7 @@ global Fig Contact Structures Data MRI
 
 %==================== LOAD PHYSIOLOGY RESULTS DATA
 if nargin == 0
-    Data.Dir = '/Volumes/projects/murphya/Physio/MapPlotTools/MapData/';
+    Data.Dir = '/Volumes/projects/murphya/Physio/MapPlotTools/MapData/';        % <<< Hardcoded path is TEMPORARY!
 %     Data.Dir = uigetdir(root, 'Select data directory');
 else
     Data.Dir = DataPath;
@@ -723,21 +727,30 @@ global Contact Fig Structures Data
         case 8  	%==================== LOAD MASK FROM ALPHA VALUES
             [file, path] = uigetfile([Data.Dir,'*.mat'], 'Select transparency data');
             Alpha = load(fullfile(path, file));
-            DateNums1 = datenum(Contact.Dates,Contact.DateFormat);
+            DateNums1 = datenum(Contact.Dates,Contact.DateFormat);                              % Convert date strings to numbers
             DateNums2 = datenum(Alpha.Contact.Dates,Alpha.Contact.DateFormat);
-            if ~isequal(DateNums1, DateNums2)                                                   % If sessions in 'data' and 'alpha' files don't match...
-              	DateMatch = zeros(1, numel(DateNums2));                                     
-                for d = 1:numel(DateNums2)                                                      % For each session in 'data'...
-                    MatchIndex(d) = find(DateNums1==DateNums2(d));                             	% Find index of matching session in 'alpha'
+            if ~isequal(DateNums1, DateNums2)                                                   % If dates in 'data' and 'alpha' files don't match...
+              	DateMatch = zeros(1, numel(DateNums1));                                         
+                for d = 1:numel(DateNums1)                                                      % For each session in 'data'...
+                    MatchIndex = find(DateNums2==DateNums1(d));                                 % Find index of matching session in 'alpha'
+                    if ~isempty(MatchIndex)
+                        DateMatch(d) = MatchIndex;
+                    end
                 end
-                find(isempty(MatchIndex))
-                Contact.Alpha = Alpha.Contact.Alpha;
-                
-                
+                MissingDates = find(DateMatch==0);
+                AvailableDates = find(DateMatch~=0)
+                if numel(MissingDates) > 0
+                    WarnMsg = sprintf(['Selected mask data %s does not specify mask values for %d/%d sessions ',...
+                        'of %s! Data from these sessions will not be displayed.'], file, numel(MissingDates), numel(DateMatch), Data.Files{Data.Selected});
+                    uiwait(warndlg(WarnMsg));
+                    AvailableCellIndices = find(ismember(Contact.CellIndxData(:,2)== AvailableDates));
+                    Contact.Mask = zeros(1,numel(Contact.ColorVals));                                   
+                    Contact.Mask(AvailableCellIndices) = 1;
+                end
             else
-            	Contact.Alpha = Alpha.Contact.Alpha;
+            	Contact.Mask = Alpha.Contact.Alpha;
             end
-
+         	Contact.Alpha = Contact.Mask;
             DataView([], [], 6);
             set(Fig.Handles.DataInput(8),'string',file);
     end

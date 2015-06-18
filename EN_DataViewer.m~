@@ -714,7 +714,9 @@ global Contact Fig Structures Data
             TempAlpha = Contact.Alpha;                                                          % Copy raw alpha values to temp variable
             TempAlpha(TempAlpha < AlphaThresh(1)) = AlphaThresh(1);                             % Threshold the alpha values
             TempAlpha(TempAlpha > AlphaThresh(2)) = AlphaThresh(2);
-            Contact.NormAlpha = (TempAlpha-AlphaThresh(1))/ diff(AlphaThresh);                  % Normalize alpha values (0-1)                                     
+            Contact.NormAlpha = (TempAlpha-AlphaThresh(1))/ diff(AlphaThresh);                  % Normalize alpha values (0-1) 
+            min(Contact.NormAlpha(:))
+            max(Contact.NormAlpha(:))
             for i = 1:numel(Contact.Handles)                                                    % For each data point...
                 set(Contact.Handles(i),'facealpha', Contact.NormAlpha(i));                      % Update scaled alpha
             end
@@ -727,7 +729,6 @@ global Contact Fig Structures Data
         case 8  	%==================== LOAD MASK FROM ALPHA VALUES
             [file, path] = uigetfile([Data.Dir,'*.mat'], 'Select transparency data');
             Alpha = load(fullfile(path, file));
-            Contact.Mask = zeros(1,numel(Contact.ColorVals));                                   
             DateNums1 = datenum(Contact.Dates,Contact.DateFormat);                              % Convert date strings to numbers
             DateNums2 = datenum(Alpha.Contact.Dates,Alpha.Contact.DateFormat);
             if ~isequal(DateNums1, DateNums2)                                                   % If dates in 'data' and 'alpha' files don't match...
@@ -739,20 +740,29 @@ global Contact Fig Structures Data
                     end
                 end
                 MissingDates = find(DateMatch==0);
-                AvailableDates = find(DateMatch~=0)
+                AvailableDates = find(DateMatch~=0);
                 if numel(MissingDates) > 0
                     WarnMsg = sprintf(['Selected mask data %s does not specify mask values for %d/%d sessions ',...
                         'of %s! Data from these sessions will not be displayed.'], file, numel(MissingDates), numel(DateMatch), Data.Files{Data.Selected});
                     uiwait(warndlg(WarnMsg));
-                    MissingCellIndices = find(ismember(Contact.CellIndxData(:,2)== MissingDates));
-                    AvailableCellIndices = find(ismember(Contact.CellIndxData(:,2)== AvailableDates));
-
-                    Contact.Mask(AvailableCellIndices) = Alpha.Contact.Alpha;
                 end
-                Contact.Alpha = Alpha.Contact.Alpha;
+                AvailableCellIndices = find(ismember(Contact.CellIndxData(:,2), AvailableDates));
+                
+                Contact.Mask = zeros(1,numel(Contact.ColorVals));                                   
+                Contact.Mask(AvailableCellIndices) = 1;
+                for d = 1:numel(DateNums1)                                                                              % For each session in 'data'...
+                    for Ch = 1:numel(find(Contact.CellIndxData(:,2)==d))                                                % For each channel in that session...
+                        if DateMatch(d)~=0
+                            ChannelIndicesA = find(ismember(Contact.CellIndxData(:,[2,3]),[d,Ch]));                     % Find indices for that channel
+                            ChannelIndicesB = find(ismember(Alpha.Contact.CellIndxData(:,[2,3]),[DateMatch(d),Ch])); 	% Find indices for that channel
+                            Contact.Mask(ChannelIndicesA) = Alpha.Contact.Alpha(ChannelIndicesB);
+                        end
+                    end
+                end
             else
-            	Contact.Alpha = Alpha.Contact.Alpha;
+            	Contact.Mask = Alpha.Contact.Alpha;
             end
+         	Contact.Alpha = Contact.Mask;
             DataView([], [], 6);
             set(Fig.Handles.DataInput(8),'string',file);
     end

@@ -695,7 +695,7 @@ global Contact Fig Structures Data
             set(Fig.Handles.DataAx(2),'xlim', AllLims(Fig.AxisSelected,:));
             
         case {5, 9}	%==================== CHANGE DATA THRESHOLDS
-            Thresh = [str2double(get(Fig.Handles.DataInput(5),'string')), str2double(get(Fig.Handles.DataInput(8),'string'))];
+            Thresh = [str2double(get(Fig.Handles.DataInput(5),'string')), str2double(get(Fig.Handles.DataInput(9),'string'))];
             set(Fig.Handles.DataAx(1), 'xlim', Thresh);
             set(Fig.Handles.DataAx(2), 'ylim', Thresh);
             axes(Fig.Handles.MainAx);
@@ -714,7 +714,9 @@ global Contact Fig Structures Data
             TempAlpha = Contact.Alpha;                                                          % Copy raw alpha values to temp variable
             TempAlpha(TempAlpha < AlphaThresh(1)) = AlphaThresh(1);                             % Threshold the alpha values
             TempAlpha(TempAlpha > AlphaThresh(2)) = AlphaThresh(2);
-            Contact.NormAlpha = (TempAlpha-AlphaThresh(1))/ diff(AlphaThresh);                  % Normalize alpha values (0-1)                                     
+            Contact.NormAlpha = (TempAlpha-AlphaThresh(1))/ diff(AlphaThresh);                  % Normalize alpha values (0-1) 
+            min(Contact.NormAlpha(:))
+            max(Contact.NormAlpha(:))
             for i = 1:numel(Contact.Handles)                                                    % For each data point...
                 set(Contact.Handles(i),'facealpha', Contact.NormAlpha(i));                      % Update scaled alpha
             end
@@ -738,14 +740,21 @@ global Contact Fig Structures Data
                     end
                 end
                 MissingDates = find(DateMatch==0);
-                AvailableDates = find(DateMatch~=0)
+                AvailableDates = find(DateMatch~=0);
                 if numel(MissingDates) > 0
                     WarnMsg = sprintf(['Selected mask data %s does not specify mask values for %d/%d sessions ',...
                         'of %s! Data from these sessions will not be displayed.'], file, numel(MissingDates), numel(DateMatch), Data.Files{Data.Selected});
                     uiwait(warndlg(WarnMsg));
-                    AvailableCellIndices = find(ismember(Contact.CellIndxData(:,2)== AvailableDates));
-                    Contact.Mask = zeros(1,numel(Contact.ColorVals));                                   
-                    Contact.Mask(AvailableCellIndices) = 1;
+                end
+                Contact.Mask = zeros(1,numel(Contact.ColorVals));                                   
+                for d = 1:numel(DateNums1)                                                                                  % For each session in 'data'...
+                    for Ch = 1:numel(find(Contact.CellIndxData(:,2)==d))                                                    % For each channel in that session...
+                        if DateMatch(d)~=0
+                            ChannelIndicesA = find(ismember(Contact.CellIndxData(:,[2,3]),[d,Ch],'rows'));                  % Find indices for that channel
+                            ChannelIndicesB = find(ismember(Alpha.Contact.CellIndxData(:,[2,3]),[DateMatch(d),Ch],'rows'));	% Find indices for that channel
+                            Contact.Mask(ChannelIndicesA) = Alpha.Contact.Alpha(ChannelIndicesB);
+                        end
+                    end
                 end
             else
             	Contact.Mask = Alpha.Contact.Alpha;

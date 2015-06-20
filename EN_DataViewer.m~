@@ -452,10 +452,10 @@ global Fig Contact
     set(Fig.Handles.DataInput(3),'string',num2str(size(Contact.CellIndxData,1)));    
     Thresh = [min(Contact.ColorVals), max(Contact.ColorVals)];                      % Get minimum and maximum data values
     set(Fig.Handles.DataInput(5),'string',num2str(Thresh(1)));                    	% Set lower threshold value
-    set(Fig.Handles.DataInput(8),'string',num2str(Thresh(2)));                     	% Set upper threshold value
+    set(Fig.Handles.DataInput(9),'string',num2str(Thresh(2)));                     	% Set upper threshold value
  	AlphaThresh = [min(Contact.Alpha), max(Contact.Alpha)];                         % Get minimum and maximum data values
     set(Fig.Handles.DataInput(6),'string',num2str(AlphaThresh(1)));              	% Set lower threshold value
-    set(Fig.Handles.DataInput(9),'string',num2str(AlphaThresh(2)));               	% Set upper threshold value
+    set(Fig.Handles.DataInput(10),'string',num2str(AlphaThresh(2)));               	% Set upper threshold value
 
     %=========== Plot new data to graphs
     axes(Fig.Handles.DataAx(1));                                                            % Select histogram axes
@@ -695,7 +695,7 @@ global Contact Fig Structures Data
             set(Fig.Handles.DataAx(2),'xlim', AllLims(Fig.AxisSelected,:));
             
         case {5, 9}	%==================== CHANGE DATA THRESHOLDS
-            Thresh = [str2double(get(Fig.Handles.DataInput(5),'string')), str2double(get(Fig.Handles.DataInput(8),'string'))];
+            Thresh = [str2double(get(Fig.Handles.DataInput(5),'string')), str2double(get(Fig.Handles.DataInput(9),'string'))];
             set(Fig.Handles.DataAx(1), 'xlim', Thresh);
             set(Fig.Handles.DataAx(2), 'ylim', Thresh);
             axes(Fig.Handles.MainAx);
@@ -729,6 +729,9 @@ global Contact Fig Structures Data
         case 8  	%==================== LOAD MASK FROM ALPHA VALUES
             [file, path] = uigetfile([Data.Dir,'*.mat'], 'Select transparency data');
             Alpha = load(fullfile(path, file));
+            if ~isfield(Contact,'DateFormat')
+                Contact,'DateFormat
+            end
             DateNums1 = datenum(Contact.Dates,Contact.DateFormat);                              % Convert date strings to numbers
             DateNums2 = datenum(Alpha.Contact.Dates,Alpha.Contact.DateFormat);
             if ~isequal(DateNums1, DateNums2)                                                   % If dates in 'data' and 'alpha' files don't match...
@@ -746,15 +749,12 @@ global Contact Fig Structures Data
                         'of %s! Data from these sessions will not be displayed.'], file, numel(MissingDates), numel(DateMatch), Data.Files{Data.Selected});
                     uiwait(warndlg(WarnMsg));
                 end
-                AvailableCellIndices = find(ismember(Contact.CellIndxData(:,2), AvailableDates));
-                
                 Contact.Mask = zeros(1,numel(Contact.ColorVals));                                   
-                Contact.Mask(AvailableCellIndices) = 1;
-                for d = 1:numel(DateNums1)                                                                              % For each session in 'data'...
-                    for Ch = 1:numel(find(Contact.CellIndxData(:,2)==d))                                                % For each channel in that session...
+                for d = 1:numel(DateNums1)                                                                                  % For each session in 'data'...
+                    for Ch = 1:numel(find(Contact.CellIndxData(:,2)==d))                                                    % For each channel in that session...
                         if DateMatch(d)~=0
-                            ChannelIndicesA = find(ismember(Contact.CellIndxData(:,[2,3]),[d,Ch]));                     % Find indices for that channel
-                            ChannelIndicesB = find(ismember(Alpha.Contact.CellIndxData(:,[2,3]),[DateMatch(d),Ch])); 	% Find indices for that channel
+                            ChannelIndicesA = find(ismember(Contact.CellIndxData(:,[2,3]),[d,Ch],'rows'));                  % Find indices for that channel
+                            ChannelIndicesB = find(ismember(Alpha.Contact.CellIndxData(:,[2,3]),[DateMatch(d),Ch],'rows'));	% Find indices for that channel
                             Contact.Mask(ChannelIndicesA) = Alpha.Contact.Alpha(ChannelIndicesB);
                         end
                     end

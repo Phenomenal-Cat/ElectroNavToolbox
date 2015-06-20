@@ -452,10 +452,10 @@ global Fig Contact
     set(Fig.Handles.DataInput(3),'string',num2str(size(Contact.CellIndxData,1)));    
     Thresh = [min(Contact.ColorVals), max(Contact.ColorVals)];                      % Get minimum and maximum data values
     set(Fig.Handles.DataInput(5),'string',num2str(Thresh(1)));                    	% Set lower threshold value
-    set(Fig.Handles.DataInput(8),'string',num2str(Thresh(2)));                     	% Set upper threshold value
+    set(Fig.Handles.DataInput(9),'string',num2str(Thresh(2)));                     	% Set upper threshold value
  	AlphaThresh = [min(Contact.Alpha), max(Contact.Alpha)];                         % Get minimum and maximum data values
     set(Fig.Handles.DataInput(6),'string',num2str(AlphaThresh(1)));              	% Set lower threshold value
-    set(Fig.Handles.DataInput(9),'string',num2str(AlphaThresh(2)));               	% Set upper threshold value
+    set(Fig.Handles.DataInput(10),'string',num2str(AlphaThresh(2)));               	% Set upper threshold value
 
     %=========== Plot new data to graphs
     axes(Fig.Handles.DataAx(1));                                                            % Select histogram axes
@@ -729,8 +729,11 @@ global Contact Fig Structures Data
         case 8  	%==================== LOAD MASK FROM ALPHA VALUES
             [file, path] = uigetfile([Data.Dir,'*.mat'], 'Select transparency data');
             Alpha = load(fullfile(path, file));
+            if ~isfield(Contact,'DateFormat')
+                Contact.DateFormat = 'yyyymmdd';
+            end
             DateNums1 = datenum(Contact.Dates,Contact.DateFormat);                              % Convert date strings to numbers
-            DateNums2 = datenum(Alpha.Contact.Dates,Alpha.Contact.DateFormat);
+            DateNums2 = datenum(Alpha.Contact.Dates,Alpha.Contact.DateFormat);                  
             if ~isequal(DateNums1, DateNums2)                                                   % If dates in 'data' and 'alpha' files don't match...
               	DateMatch = zeros(1, numel(DateNums1));                                         
                 for d = 1:numel(DateNums1)                                                      % For each session in 'data'...

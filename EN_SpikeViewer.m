@@ -21,6 +21,7 @@ if nargin == 0
 end
 
 %================= LOAD SPIKE WAVEFORM DATA
+FH = EN_About(1);
 load(Data.File);
 Data.Dates = unique({SpikeData.Date});
 Data.Channels = strread(num2str(1:24),'%s');
@@ -32,7 +33,7 @@ Fig.SpikeIdMat(:,[2,3]) = [cell2mat({SpikeData.Channel})', cell2mat({SpikeData.C
 Fig.Current.DateNo = 1;
 Fig.Current.ChannelNo = 1;
 Fig.Current.CellNo = 1;
-
+close(FH);
 
 %===================== OPEN FIGURE WINDOW
 Fig.Background = repmat(0.75,[1,3]);                                            % Set figure background color  
@@ -49,10 +50,10 @@ Fig.Handles.Figure = figure('Name',sprintf('ElectroNav%c - Spike Viewer',char(16
 Fig.Current.DateNo = 1;
 Fig.Current.ChannelNo = 1;
 Fig.Current.CellNo = 1;
-Fig.Pannel.Handle = uipanel('BackgroundColor',Fig.Background,'Units','normalized','Position',[0.7,0.05,0.25,0.75],'Title','Current cell','FontSize',14);
+Fig.Pannel.Handle = uipanel('BackgroundColor',Fig.Background,'Units','normalized','Position',[0.7,0.1,0.25,0.75],'Title','Current cell','FontSize',14);
 Fig.Pannel.Labels = {'Data file','Session date','Channel #','Cell #','X-axis','Y-axis'};
 Fig.Pannel.InputType = {'pushbutton','popup','popup','popup','popup','popup'};
-Fig.AxisLabels = {'Frequency','Spike width (us)','Spike amplitude (uV)','Inter-spike interval (ms)','Inter-burst interval (ms)'};
+Fig.AxisLabels = {'Frequency','Spike width (ms)','Spike amplitude (uV)','Median inter-spike interval (ms)','Median inter-burst interval (ms)'};
 Fig.Pannel.Inputs = {Data.File, Data.Dates, Data.Channels, Data.Cells, Fig.AxisLabels, Fig.AxisLabels};
 set(Fig.Pannel.Handle,'units','pixels')
 PannelSize = get(Fig.Pannel.Handle,'position');
@@ -61,15 +62,15 @@ for n = 1:numel(Fig.Pannel.Labels);
     Fig.Pannel.LabelsH(n) = uicontrol('Style','Text','String',Fig.Pannel.Labels{n},'HorizontalAlignment','Left','pos',[10, Ypos(n), 80, 25],'parent',Fig.Pannel.Handle);
     Fig.Pannel.InputsH(n) = uicontrol('Style',Fig.Pannel.InputType{n},'String',Fig.Pannel.Inputs{n},'pos',[100, Ypos(n), 150, 25],'parent',Fig.Pannel.Handle,'callback',{@MenuInput,n});
 end
-ThreshBoxPos = [270, Ypos(5), 40, 20; 330, Ypos(5), 40, 20; 270, Ypos(6), 40, 20; 330, Ypos(6), 40, 20]; 
+ThreshBoxPos = [270, Ypos(5), 60, 20; 350, Ypos(5), 60, 20; 270, Ypos(6), 60, 20; 350, Ypos(6), 60, 20]; 
 for th = 1:size(ThreshBoxPos,1)
     Fig.Pannel.ThreshInput(th) = uicontrol('Style', 'edit', 'String', '0','parent',Fig.Pannel.Handle,'position',ThreshBoxPos(th,:), 'callback',{@MenuInput,n+th});
 end
-
+Fig.Xaxis = 2;
+Fig.Yaxis = 3;
 set(Fig.Pannel.LabelsH, 'backgroundcolor', Fig.Background);
-set(Fig.Pannel.InputsH([4,5]), 'value', 1);
-Fig.Xaxis = 1;
-Fig.Yaxis = 1;
+set(Fig.Pannel.InputsH(5), 'value', Fig.Xaxis);
+set(Fig.Pannel.InputsH(6), 'value', Fig.Yaxis);
 
 %===================== DRAW INDIVIDUAL CELL AXES
 Fig.Pannel.AxPos(1,:) = [0.15, 0.6, 0.7, 0.18];
@@ -78,8 +79,6 @@ Fig.Pannel.AxPos(3,:) = [0.15, 0.1, 0.7, 0.18];
 for a = 1:size(Fig.Pannel.AxPos,1)
     Fig.Pannel.AxH(a) = axes('units','normalized','position',Fig.Pannel.AxPos(a,:),'parent',Fig.Pannel.Handle);
 end
-
-
 
 %===================== DRAW MAIN AXES
 Fig.AxPos(1,:) = [0.1, 0.15, 0.55, 0.75];
@@ -93,7 +92,12 @@ box off;
 grid on;
 xlabel(Fig.AxisLabels{Fig.Xaxis},'fontsize',18);
 ylabel(Fig.AxisLabels{Fig.Yaxis},'fontsize',18);
-
+Fig.Xlims = get(Fig.AxH, 'xlim');
+Fig.Ylims = get(Fig.AxH, 'ylim');
+for i = 1:2
+    set(Fig.Pannel.ThreshInput(i), 'String', num2str(Fig.Xlims(i)));
+    set(Fig.Pannel.ThreshInput(i+2), 'String', num2str(Fig.Ylims(i)));
+end
 
 PlotCellData;   %===== Plot data for current selected cell
 
@@ -102,8 +106,8 @@ end
 %========================================================================= 
 function DataSelect(objectHandle, eventData, Indx)
 global Fig Waveform Data SpikeData
-    Fig.Current.CellIndx = Indx;                                                        % Get cell index number
-    set(Fig.Data.Handle, 'MarkerFaceColor',[0 0 1],'MarkerEdgeColor',[0 0 1],'MarkerSize',10);                        % Reset all cells
+    Fig.Current.CellIndx = Indx;                                                                                        % Get cell index number
+    set(Fig.Data.Handle, 'MarkerFaceColor',[0 0 1],'MarkerEdgeColor',[0 0 1],'MarkerSize',10);                          % Reset all cells
     set(Fig.Data.Handle(Fig.Current.CellIndx),'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'MarkerSize',30);  	% Highlight selected
     
     %=========== UPDATE UI CONTROLS
@@ -122,33 +126,48 @@ end
 
 %======================== REPLOT POPULATION DATA ========================== 
 function PlotPopData
-global Fig Data Waveform SpikeData
+global Fig Data Waveform SpikeData Burst
     axes(Fig.AxH(1));                                           % Select main plot
     xlabel(Fig.AxisLabels{Fig.Xaxis},'fontsize',18);            % Update axis labels
     ylabel(Fig.AxisLabels{Fig.Yaxis},'fontsize',18);
     
-    switch Fig.Xaxis
-        case 1	%================== SPIKE WIDTH
+    for i = 1:numel(Fig.Data.Handle)
+        switch Fig.Xaxis
+            case 1	%================== HISTOGRAM
 
-          	set(Fig.Data.Handle(i), 'xdata', Waveform(i).PeakToTroughDuration);
-            
-            
-        case 2	%================== SPIKE AMPLITUDE
-            
-            
-        case 3	%================== ISI
-            
-        case 4	%================== IBI
-              
+            case 2	%================== SPIKE WIDTH
+                set(Fig.Data.Handle(i), 'XData', Waveform(i).PeakToTroughDuration);
+            case 3	%================== SPIKE AMPLITUDE
+                set(Fig.Data.Handle(i), 'XData', abs(Waveform(i).PeakToTroughAmp));
+            case 4	%================== ISI
+                set(Fig.Data.Handle(i), 'XData', Burst(i).ISIPercentiles(3));
+            case 5	%================== IBI
+                set(Fig.Data.Handle(i), 'XData', Burst(i).IBIPercentiles(3));  
+        end
+
+        switch Fig.Yaxis
+            case 1  % FREQUENCY = HISTOGRAM
+
+            case 2	%================== SPIKE WIDTH
+                set(Fig.Data.Handle(i), 'YData', Waveform(i).PeakToTroughDuration);   
+            case 3
+                set(Fig.Data.Handle(i), 'YData', abs(Waveform(i).PeakToTroughAmp));
+            case 4
+                set(Fig.Data.Handle(i), 'YData', Burst(i).ISIPercentiles(3));
+            case 5
+                set(Fig.Data.Handle(i), 'YData', Burst(i).IBIPercentiles(3)); 
+        end
     end
     
-    switch Fig.Yaxis
-        case 1  % FREQUENCY = HISTOGRAM
-            
-        case 2	%================== SPIKE WIDTH
-            
-            
+    %=========== Update axes limits
+    Fig.Xlims = [min(cell2mat(get(Fig.Data.Handle, 'xdata'))), max(cell2mat(get(Fig.Data.Handle, 'xdata')))];
+    Fig.Ylims = [min(cell2mat(get(Fig.Data.Handle, 'ydata'))), max(cell2mat(get(Fig.Data.Handle, 'ydata')))];
+  	set(Fig.AxH, 'xlim',Fig.Xlims, 'ylim', Fig.Ylims);
+    for i = 1:2
+        set(Fig.Pannel.ThreshInput(i), 'String', sprintf('%.2f', Fig.Xlims(i)));
+        set(Fig.Pannel.ThreshInput(i+2), 'String', sprintf('%.2f', Fig.Ylims(i)));
     end
+
 end
 
 %===================== PLOT SELECTED CELL DATA
@@ -267,12 +286,10 @@ global Fig Data SpikeData
         case 5
             Fig.Xaxis = get(hObj,'value');
             PlotPopData;
-            xlabel(Fig.AxisLabels{Fig.Xaxis});
             
         case 6
             Fig.Yaxis = get(hObj,'value');
             PlotPopData;
-            ylabel(Fig.AxisLabels{Fig.Yaxis});
             
         case {7,8}
             Fig.Xlims = str2double(get(Fig.Pannel.ThreshInput([1,2]),'string'))';

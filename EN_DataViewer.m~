@@ -42,11 +42,12 @@ function [Contact] = EN_DataViewer(DataPath)
 clear all;
 [root, temp] = fileparts(mfilename('fullpath'));
 addpath(genpath(root));
-global Fig Contact Structures Data MRI
+global Fig Contact Structures Data MRI Mask
 
 %==================== LOAD PHYSIOLOGY RESULTS DATA
 if nargin == 0
     Data.Dir = '/Volumes/projects/murphya/Physio/MapPlotTools/MapData/';        % <<< Hardcoded path is TEMPORARY!
+    DefaultMaskFile = '/MapData/Layla_SpikeOrNot_Mask.mat';
 %     Data.Dir = uigetdir(root, 'Select data directory');
 else
     Data.Dir = DataPath;
@@ -113,9 +114,14 @@ if numel(unique(Contact.rad))>1
 else
     Contact.NormRad = ones(size(Contact.rad))*Fig.SphereRadii(2);                   % If all radii supplied are same, use max
 end
+if exist('DefaultMaskFile', 'var')
+    Mask = load(DefaultMaskFile);                                                 	% Load default mask data
+    MaskData(Mask);
+end
 AlphaRange = [min(Contact.Alpha), max(Contact.Alpha)];                              % Get range of alpha values
 if diff(AlphaRange)==0
-    Contact.NormAlpha = ones(size(Contact.Alpha));                                  
+    Contact.NormAlpha = ones(size(Contact.Alpha));    
+    AlphaRange = [0 1];
 else
     Contact.NormAlpha = (Contact.Alpha-AlphaRange(1))/ diff(AlphaRange);         	% Normalize radius values (0-1)
 end
@@ -165,9 +171,9 @@ Fig.ZoomH = zoom;                                                               
 
 %================ Plot structures
 SubjectDir = '/projects/murphya/EN_data/Subjects/Layla';
-% MRI.DefaultFile = '/projects/murphya/EN_data/Subjects/Layla/Layla_GridScan_ACPC.nii';
+MRI.DefaultFile = '/projects/murphya/EN_data/Subjects/Layla/Layla_GridScan_ACPC.nii';
 % MRI.DefaultFile = '/rawdata/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_MDEFT_postelgiloy_025mm_BET_Masked_rot.nii';
-MRI.DefaultFile = '/rawdata/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_FLASH_postelgiloy_iso_BET_aligned_rot.nii';
+% MRI.DefaultFile = '/rawdata/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_FLASH_postelgiloy_iso_BET_aligned_rot.nii';
 if ismac
     SubjectDir = fullfile('/Volumes',SubjectDir); 
     MRI.DefaultFile = fullfile('/Volumes', MRI.DefaultFile); 
@@ -454,6 +460,9 @@ global Fig Contact
     set(Fig.Handles.DataInput(5),'string',num2str(Thresh(1)));                    	% Set lower threshold value
     set(Fig.Handles.DataInput(9),'string',num2str(Thresh(2)));                     	% Set upper threshold value
  	AlphaThresh = [min(Contact.Alpha), max(Contact.Alpha)];                         % Get minimum and maximum data values
+    if diff(AlphaThresh)==0
+        AlphaThresh(1) = 0;
+    end
     set(Fig.Handles.DataInput(6),'string',num2str(AlphaThresh(1)));              	% Set lower threshold value
     set(Fig.Handles.DataInput(10),'string',num2str(AlphaThresh(2)));               	% Set upper threshold value
 
@@ -708,6 +717,7 @@ global Contact Fig Structures Data
             if isfield(Fig,'Highlight') && ishandle(Fig.Highlight)
                 set(Fig.Highlight, 'cdata', repmat(mean(NewCdata), size(get(Fig.Highlight, 'ZData'))));
             end
+            set(Fig.Handles.MainAx,'clim', Thresh);
             
     	case {6, 10}	%==================== CHANGE ALPHA THRESHOLDS
             AlphaThresh = [str2double(get(Fig.Handles.DataInput(6),'string')), str2double(get(Fig.Handles.DataInput(10),'string'))];
@@ -715,8 +725,6 @@ global Contact Fig Structures Data
             TempAlpha(TempAlpha < AlphaThresh(1)) = AlphaThresh(1);                             % Threshold the alpha values
             TempAlpha(TempAlpha > AlphaThresh(2)) = AlphaThresh(2);
             Contact.NormAlpha = (TempAlpha-AlphaThresh(1))/ diff(AlphaThresh);                  % Normalize alpha values (0-1) 
-            min(Contact.NormAlpha(:))
-            max(Contact.NormAlpha(:))
             for i = 1:numel(Contact.Handles)                                                    % For each data point...
                 set(Contact.Handles(i),'facealpha', Contact.NormAlpha(i));                      % Update scaled alpha
             end
@@ -729,40 +737,41 @@ global Contact Fig Structures Data
         case 8  	%==================== LOAD MASK FROM ALPHA VALUES
             [file, path] = uigetfile([Data.Dir,'*.mat'], 'Select transparency data');
             Alpha = load(fullfile(path, file));
-            if ~isfield(Contact,'DateFormat')
-                Contact,'DateFormat
-            end
-            DateNums1 = datenum(Contact.Dates,Contact.DateFormat);                              % Convert date strings to numbers
-            DateNums2 = datenum(Alpha.Contact.Dates,Alpha.Contact.DateFormat);
-            if ~isequal(DateNums1, DateNums2)                                                   % If dates in 'data' and 'alpha' files don't match...
-              	DateMatch = zeros(1, numel(DateNums1));                                         
-                for d = 1:numel(DateNums1)                                                      % For each session in 'data'...
-                    MatchIndex = find(DateNums2==DateNums1(d));                                 % Find index of matching session in 'alpha'
-                    if ~isempty(MatchIndex)
-                        DateMatch(d) = MatchIndex;
-                    end
-                end
-                MissingDates = find(DateMatch==0);
-                AvailableDates = find(DateMatch~=0);
-                if numel(MissingDates) > 0
-                    WarnMsg = sprintf(['Selected mask data %s does not specify mask values for %d/%d sessions ',...
-                        'of %s! Data from these sessions will not be displayed.'], file, numel(MissingDates), numel(DateMatch), Data.Files{Data.Selected});
-                    uiwait(warndlg(WarnMsg));
-                end
-                Contact.Mask = zeros(1,numel(Contact.ColorVals));                                   
-                for d = 1:numel(DateNums1)                                                                                  % For each session in 'data'...
-                    for Ch = 1:numel(find(Contact.CellIndxData(:,2)==d))                                                    % For each channel in that session...
-                        if DateMatch(d)~=0
-                            ChannelIndicesA = find(ismember(Contact.CellIndxData(:,[2,3]),[d,Ch],'rows'));                  % Find indices for that channel
-                            ChannelIndicesB = find(ismember(Alpha.Contact.CellIndxData(:,[2,3]),[DateMatch(d),Ch],'rows'));	% Find indices for that channel
-                            Contact.Mask(ChannelIndicesA) = Alpha.Contact.Alpha(ChannelIndicesB);
-                        end
-                    end
-                end
-            else
-            	Contact.Mask = Alpha.Contact.Alpha;
-            end
-         	Contact.Alpha = Contact.Mask;
+            MaskData(Alpha)
+%             if ~isfield(Contact,'DateFormat')
+%                 Contact.DateFormat = 'yyyymmdd';
+%             end
+%             DateNums1 = datenum(Contact.Dates,Contact.DateFormat);                              % Convert date strings to numbers
+%             DateNums2 = datenum(Alpha.Contact.Dates,Alpha.Contact.DateFormat);                  
+%             if ~isequal(DateNums1, DateNums2)                                                   % If dates in 'data' and 'alpha' files don't match...
+%               	DateMatch = zeros(1, numel(DateNums1));                                         
+%                 for d = 1:numel(DateNums1)                                                      % For each session in 'data'...
+%                     MatchIndex = find(DateNums2==DateNums1(d));                                 % Find index of matching session in 'alpha'
+%                     if ~isempty(MatchIndex)
+%                         DateMatch(d) = MatchIndex;
+%                     end
+%                 end
+%                 MissingDates = find(DateMatch==0);
+%                 AvailableDates = find(DateMatch~=0);
+%                 if numel(MissingDates) > 0
+%                     WarnMsg = sprintf(['Selected mask data %s does not specify mask values for %d/%d sessions ',...
+%                         'of %s! Data from these sessions will not be displayed.'], file, numel(MissingDates), numel(DateMatch), Data.Files{Data.Selected});
+%                     uiwait(warndlg(WarnMsg));
+%                 end
+%                 Contact.Mask = zeros(size(Contact.Alpha));                                   
+%                 for d = 1:numel(DateNums1)                                                                                  % For each session in 'data'...
+%                     for Ch = 1:numel(find(Contact.CellIndxData(:,2)==d))                                                    % For each channel in that session...
+%                         if DateMatch(d)~=0
+%                             ChannelIndicesA = find(ismember(Contact.CellIndxData(:,[2,3]),[d,Ch],'rows'));                  % Find indices for that channel
+%                             ChannelIndicesB = find(ismember(Alpha.Contact.CellIndxData(:,[2,3]),[DateMatch(d),Ch],'rows'));	% Find indices for that channel
+%                             Contact.Mask(ChannelIndicesA) = Alpha.Contact.Alpha(ChannelIndicesB);
+%                         end
+%                     end
+%                 end
+%             else
+%             	Contact.Mask = Alpha.Contact.Alpha;
+%             end
+%          	Contact.Alpha = Contact.Alpha.*Contact.Mask;
             DataView([], [], 6);
             set(Fig.Handles.DataInput(8),'string',file);
     end
@@ -817,6 +826,45 @@ global Contact Fig Structures MRI
         set(MRI.SlicePatchHandle, 'Xdata', XCoords, 'Ydata', YCoords, 'Zdata', ZCoords, 'Cdata', repmat(MRI.CurrentSlice,[1,1,3]));
     end
 
+end
+
+%========================== MASK DATA =====================================
+function MaskData(Alpha)
+global Contact
+    if ~isfield(Contact,'DateFormat')
+        Contact.DateFormat = 'yyyymmdd';
+    end
+    DateNums1 = datenum(Contact.Dates,Contact.DateFormat);                              % Convert date strings to numbers
+    DateNums2 = datenum(Alpha.Contact.Dates,Alpha.Contact.DateFormat);                  
+    if ~isequal(DateNums1, DateNums2)                                                   % If dates in 'data' and 'alpha' files don't match...
+        DateMatch = zeros(1, numel(DateNums1));                                         
+        for d = 1:numel(DateNums1)                                                      % For each session in 'data'...
+            MatchIndex = find(DateNums2==DateNums1(d));                                 % Find index of matching session in 'alpha'
+            if ~isempty(MatchIndex)
+                DateMatch(d) = MatchIndex;
+            end
+        end
+        MissingDates = find(DateMatch==0);
+        AvailableDates = find(DateMatch~=0);
+        if numel(MissingDates) > 0
+            WarnMsg = sprintf(['Selected mask data %s does not specify mask values for %d/%d sessions ',...
+                'of %s! Data from these sessions will not be displayed.'], file, numel(MissingDates), numel(DateMatch), Data.Files{Data.Selected});
+            uiwait(warndlg(WarnMsg));
+        end
+        Contact.Mask = zeros(size(Contact.Alpha));                                   
+        for d = 1:numel(DateNums1)                                                                                  % For each session in 'data'...
+            for Ch = 1:numel(find(Contact.CellIndxData(:,2)==d))                                                    % For each channel in that session...
+                if DateMatch(d)~=0
+                    ChannelIndicesA = find(ismember(Contact.CellIndxData(:,[2,3]),[d,Ch],'rows'));                  % Find indices for that channel
+                    ChannelIndicesB = find(ismember(Alpha.Contact.CellIndxData(:,[2,3]),[DateMatch(d),Ch],'rows'));	% Find indices for that channel
+                    Contact.Mask(ChannelIndicesA) = Alpha.Contact.Alpha(ChannelIndicesB);
+                end
+            end
+        end
+    else
+        Contact.Mask = Alpha.Contact.Alpha;
+    end
+    Contact.Alpha = Contact.Alpha.*Contact.Mask;
 end
 
 %========================== MRI VIEW PANNEL ===============================
@@ -890,7 +938,6 @@ global Contact Fig Structures MRI
             MRI.IntensityRange = [min(double(MRI.Nii.Original(:))), max(double(MRI.Nii.Original(:)))];	% Get range of intensity values in MRI
             Thresh = get(Fig.Handles.MRIint, 'xlim');                                                   % Get current thresholds
             Thresh(Indx-4) = MRI.IntensityRange(1)+get(hObj,'Value')*MRI.IntensityRange(2);             % Update selected threshold
-            Thresh
             set(Fig.Handles.MRIint, 'xlim', Thresh);                                                    % Update intensity histogram
           	MRI.Nii.img = double(MRI.Nii.Original);                      
             MRI.Nii.img(MRI.Nii.img<Thresh(1)) = Thresh(1);                                             % Apply thresholds

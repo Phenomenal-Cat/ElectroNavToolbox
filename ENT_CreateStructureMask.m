@@ -17,7 +17,7 @@
 function Filenames = ENT_CreateStructureMask(StructIndex, StructNames, AtlasFile, OutputDir)
 
 if nargin == 0
-    [StructIndex, StructNames] = GetStructureIndex;
+    [StructIndex, StructNames] = ENT_GetStructureIndex;
     if isempty(StructIndex)
         return;
     end
@@ -25,7 +25,7 @@ end
 if exist('OutputDir','var')==0
     OutputDir = cd;
 end
-if exist('AtlasFile','var')==0 || exist('AtlasFile','file')==0
+if exist('AtlasFile','var')==0 || exist(AtlasFile,'file')==0
     [file, path] = uigetfile('*.nii;*.img', 'Select atlas volume file');
     AtlasFile = fullfile(path, file);
 end

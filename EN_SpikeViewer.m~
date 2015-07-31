@@ -14,6 +14,8 @@
 function EN_SpikeViewer(DataFile)
 global Fig Data Waveform Burst SpikeData
 
+[ENroot, b, c]= fileparts(mfilename('fullpath'));
+addpath(genpath(ENroot));
 if nargin == 0
     Data.File = '/Volumes/PROJECTS/murphya/Physio/Analysis/SpikeAnalysis/SpikeWaveformData_20140130-20150319.mat';
 end
@@ -59,54 +61,62 @@ for n = 1:numel(Fig.Pannel.Labels);
     Fig.Pannel.LabelsH(n) = uicontrol('Style','Text','String',Fig.Pannel.Labels{n},'HorizontalAlignment','Left','pos',[10, Ypos(n), 80, 25],'parent',Fig.Pannel.Handle);
     Fig.Pannel.InputsH(n) = uicontrol('Style',Fig.Pannel.InputType{n},'String',Fig.Pannel.Inputs{n},'pos',[100, Ypos(n), 150, 25],'parent',Fig.Pannel.Handle,'callback',{@MenuInput,n});
 end
+ThreshBoxPos = [270, Ypos(5), 40, 25; 330, Ypos(5), 40, 25; 270, Ypos(6), 40, 25; 330, Ypos(6), 40, 25]; 
+for th = 1:size(ThreshBoxPos,1)
+    Fig.Pannel.ThreshInput(th) = uicontrol('Style', 'edit', 'String', '0','parent',Fig.Pannel.Handle,'position',ThreshBoxPos(th,:), 'callback',{@MenuInput,n+th});
+end
+
 set(Fig.Pannel.LabelsH, 'backgroundcolor', Fig.Background);
 set(Fig.Pannel.InputsH([4,5]), 'value', 1);
 Fig.Xaxis = 1;
 Fig.Yaxis = 1;
 
 %===================== DRAW INDIVIDUAL CELL AXES
-Fig.Pannel.AxPos(1,:) = [0.15, 0.6, 0.7, 0.15];
-Fig.Pannel.AxPos(2,:) = [0.15, 0.35, 0.7, 0.15];
-Fig.Pannel.AxPos(3,:) = [0.15, 0.1, 0.7, 0.15];
-Xlabels = {'Time (us)','ISI (ms)', 'IBI (ms)'};
-Ylabels = {'Voltage (uV)','No. spikes','No. bursts'};
+Fig.Pannel.AxPos(1,:) = [0.15, 0.6, 0.7, 0.18];
+Fig.Pannel.AxPos(2,:) = [0.15, 0.35, 0.7, 0.18];
+Fig.Pannel.AxPos(3,:) = [0.15, 0.1, 0.7, 0.18];
 for a = 1:size(Fig.Pannel.AxPos,1)
     Fig.Pannel.AxH(a) = axes('units','normalized','position',Fig.Pannel.AxPos(a,:),'parent',Fig.Pannel.Handle);
-  	xlabel(Xlabels{a});
-    ylabel(Ylabels{a});
 end
+
+
 
 %===================== DRAW MAIN AXES
-Fig.AxPos(1,:) = [0.05, 0.1, 0.6, 0.8];
+Fig.AxPos(1,:) = [0.1, 0.15, 0.55, 0.75];
 Fig.AxH = axes('units','normalized','position',Fig.AxPos(1,:));
-xlabel(Fig.AxisLabels{Fig.Xaxis});
-ylabel(Fig.AxisLabels{Fig.Yaxis});
 for i = 1:numel(SpikeData)
-    Fig.Data.Handle(i) = plot(Waveform(i).PeakToTroughDuration, Waveform(i).PeakToTroughAmp ,'.b','ButtonDownFcn',{@DataSelect, i});
+    Fig.Data.Handle(i) = plot(Waveform(i).PeakToTroughDuration, abs(Waveform(i).PeakToTroughAmp) ,'.b','ButtonDownFcn',{@DataSelect, i});
     hold on;
 end
+set(Fig.Data.Handle, 'MarkerFaceColor',[0 0 1],'MarkerEdgeColor',[0 0 1],'MarkerSize',10);
 box off;
 grid on;
+xlabel(Fig.AxisLabels{Fig.Xaxis},'fontsize',18);
+ylabel(Fig.AxisLabels{Fig.Yaxis},'fontsize',18);
 
-PlotCellData;
+
+PlotCellData;   %===== Plot data for current selected cell
 
 end
 
 %========================================================================= 
 function DataSelect(objectHandle, eventData, Indx)
-global Fig Waveform
+global Fig Waveform Data SpikeData
     Fig.Current.CellIndx = Indx;                                                        % Get cell index number
     set(Fig.Data.Handle, 'MarkerFaceColor',[0 0 1],'MarkerEdgeColor',[0 0 1],'MarkerSize',10);                        % Reset all cells
     set(Fig.Data.Handle(Fig.Current.CellIndx),'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'MarkerSize',30);  	% Highlight selected
     
+    %=========== UPDATE UI CONTROLS
     Fig.Current.DateNo = Fig.SpikeIdMat(Fig.Current.CellIndx, 1);               
     Fig.Current.ChannelNo = Fig.SpikeIdMat(Fig.Current.CellIndx, 2);
     Fig.Current.CellNo = Fig.SpikeIdMat(Fig.Current.CellIndx, 3);
-    set(Fig.Pannel.InputsH(2), 'value', Fig.Current.DateNo);
-    set(Fig.Pannel.InputsH(3), 'value', Fig.Current.ChannelNo);
-	set(Fig.Pannel.InputsH(4), 'value', Fig.Current.CellNo);
-     
-     
+  	Data.Channels = strread(num2str(unique(Fig.SpikeIdMat(find(Fig.SpikeIdMat(:,1)==Fig.Current.DateNo),2))),'%s');
+    Data.Cells = strread(num2str(unique(Fig.SpikeIdMat(find(ismember(Fig.SpikeIdMat(:,[1,2]), [Fig.Current.DateNo, Fig.Current.ChannelNo],'rows')),3))),'%s');
+    Data.Channels
+ 	set(Fig.Pannel.InputsH(2), 'value', Fig.Current.DateNo);
+    set(Fig.Pannel.InputsH(3), 'string', Data.Channels,'value',Fig.Current.ChannelNo);
+    set(Fig.Pannel.InputsH(4), 'string', Data.Cells,'value',Fig.Current.CellNo);
+
     PlotCellData;                   
 
 end
@@ -142,14 +152,13 @@ end
 %===================== PLOT SELECTED CELL DATA
 function PlotCellData
 global Fig Data Waveform Burst
-    if isfield(Fig.Current,'Handles') && ishandle(Fig.Current.Handles)
+    if isfield(Fig.Current,'Handles') && ishandle(Fig.Current.Handles(1))
         delete(Fig.Current.Handles);
     end
     Fig.Current.CellIndx = find(ismember(Fig.SpikeIdMat, [Fig.Current.DateNo, Fig.Current.ChannelNo, Fig.Current.CellNo],'rows'));
-    
-    if isfield(Fig.Current,'Handles')
-        delete(Fig.Current.Handles);
-    end
+   	set(Fig.Data.Handle, 'MarkerFaceColor',[0 0 1],'MarkerEdgeColor',[0 0 1],'MarkerSize',10);                          % Reset all cells
+    set(Fig.Data.Handle(Fig.Current.CellIndx),'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'MarkerSize',30);  	% Highlight selected
+    uistack(Fig.Data.Handle(Fig.Current.CellIndx), 'top');                                                              % Bring selected to front
     
     axes(Fig.Pannel.AxH(1)); 	%================ plot spike waveform
     [Ha Hb Hc] = shadedplot(Waveform(Fig.Current.CellIndx).Times, Waveform(Fig.Current.CellIndx).Mean-Waveform(Fig.Current.CellIndx).Std, Waveform(Fig.Current.CellIndx).Mean+Waveform(Fig.Current.CellIndx).Std);
@@ -162,25 +171,33 @@ global Fig Data Waveform Burst
     ph(3) = plot([Waveform(Fig.Current.CellIndx).PeakTime,Waveform(Fig.Current.CellIndx).TroughTime],[Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).PeakAmp],'-r','linewidth',5);
     ph(4) = plot([Waveform(Fig.Current.CellIndx).TroughTime,Waveform(Fig.Current.CellIndx).TroughTime],[Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).TroughAmp],'--r');
     axis tight
-    set(gca, 'box','off');
     
     axes(Fig.Pannel.AxH(2)); 	%================ plot inter-spike interval distribution
     [N,X] = hist(Burst(Fig.Current.CellIndx).ISIs, 0:20:1000);
     ph(5) = bar(X,N);
     hold on;
-    ph(5) = plot(repmat(median(Burst.ISIs),[1,2]),ylim,'-r');
-    ph(6) = plot(repmat(mean(Burst.ISIs),[1,2]),ylim,'-m');
+    ph(6) = plot(repmat(median(Burst(Fig.Current.CellIndx).ISIs),[1,2]),ylim,'-r');
+    ph(7) = plot(repmat(mean(Burst(Fig.Current.CellIndx).ISIs),[1,2]),ylim,'-m');
 	axis tight
+    legend({'','median','mean'});
     
     axes(Fig.Pannel.AxH(3)); 	%================ plot inter-burst interval distribution
-    [N,X] = hist(Burst.IBIs, 0:20:1000);
-	ph(6) = bar(X,N);
+    [N,X] = hist(Burst(Fig.Current.CellIndx).IBIs, 0:20:1000);
+	ph(8) = bar(X,N);
     hold on;
-    ph(7) = plot(repmat(median(Burst.IBIs),[1,2]),ylim,'-r');
-    ph(8) = plot(repmat(mean(Burst.IBIs),[1,2]),ylim,'-m');
+    ph(9) = plot(repmat(median(Burst(Fig.Current.CellIndx).IBIs),[1,2]),ylim,'-r');
+    ph(10) = plot(repmat(mean(Burst(Fig.Current.CellIndx).IBIs),[1,2]),ylim,'-m');
 	axis tight
     
+    Xlabels = {'Time (us)','ISI (ms)', 'IBI (ms)'};
+    Ylabels = {'Voltage (uV)','No. spikes','No. bursts'};
+    for a = 1:size(Fig.Pannel.AxPos,1)
+        axes(Fig.Pannel.AxH(a))
+        xlabel(Xlabels{a}, 'fontsize', 16);
+        ylabel(Ylabels{a}, 'fontsize', 16);
+    end
     Fig.Current.Handles = [Ha, Hb, Hc, Hd, ph];
+	set(Fig.Pannel.AxH, 'box','off');
 end
 
 %===================== MENU CONTROLS
@@ -254,5 +271,9 @@ global Fig Data SpikeData
             Fig.Yaxis = get(hObj,'value');
             PlotPopData;
             ylabel(Fig.AxisLabels{Fig.Yaxis});
+        case {7,8}
+            get(Fig.Pannel.ThreshInput([1,2]),'string')
+            
+        case {9,10}
     end
 end

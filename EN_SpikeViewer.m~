@@ -65,14 +65,16 @@ Fig.Xaxis = 1;
 Fig.Yaxis = 1;
 
 %===================== DRAW INDIVIDUAL CELL AXES
-Fig.Pannel.AxPos(1,:) = [0.15, 0.6, 0.7, 0.18];
-Fig.Pannel.AxPos(2,:) = [0.15, 0.35, 0.7, 0.18];
-Fig.Pannel.AxPos(3,:) = [0.15, 0.1, 0.7, 0.18];
+Fig.Pannel.AxPos(1,:) = [0.15, 0.6, 0.7, 0.15];
+Fig.Pannel.AxPos(2,:) = [0.15, 0.35, 0.7, 0.15];
+Fig.Pannel.AxPos(3,:) = [0.15, 0.1, 0.7, 0.15];
+Xlabels = {'Time (us)','ISI (ms)', 'IBI (ms)'};
+Ylabels = {'Voltage (uV)','No. spikes','No. bursts'};
 for a = 1:size(Fig.Pannel.AxPos,1)
     Fig.Pannel.AxH(a) = axes('units','normalized','position',Fig.Pannel.AxPos(a,:),'parent',Fig.Pannel.Handle);
+  	xlabel(Xlabels{a});
+    ylabel(Ylabels{a});
 end
-
-
 
 %===================== DRAW MAIN AXES
 Fig.AxPos(1,:) = [0.05, 0.1, 0.6, 0.8];
@@ -83,7 +85,6 @@ for i = 1:numel(SpikeData)
     Fig.Data.Handle(i) = plot(Waveform(i).PeakToTroughDuration, Waveform(i).PeakToTroughAmp ,'.b','ButtonDownFcn',{@DataSelect, i});
     hold on;
 end
-set(Fig.Data.Handle, 'MarkerFaceColor',[0 0 1],'MarkerEdgeColor',[0 0 1],'MarkerSize',10);
 box off;
 grid on;
 
@@ -141,13 +142,14 @@ end
 %===================== PLOT SELECTED CELL DATA
 function PlotCellData
 global Fig Data Waveform Burst
-    if isfield(Fig.Current,'Handles') && ishandle(Fig.Current.Handles(1))
+    if isfield(Fig.Current,'Handles') && ishandle(Fig.Current.Handles)
         delete(Fig.Current.Handles);
     end
     Fig.Current.CellIndx = find(ismember(Fig.SpikeIdMat, [Fig.Current.DateNo, Fig.Current.ChannelNo, Fig.Current.CellNo],'rows'));
-   	set(Fig.Data.Handle, 'MarkerFaceColor',[0 0 1],'MarkerEdgeColor',[0 0 1],'MarkerSize',10);                          % Reset all cells
-    set(Fig.Data.Handle(Fig.Current.CellIndx),'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'MarkerSize',30);  	% Highlight selected
     
+    if isfield(Fig.Current,'Handles')
+        delete(Fig.Current.Handles);
+    end
     
     axes(Fig.Pannel.AxH(1)); 	%================ plot spike waveform
     [Ha Hb Hc] = shadedplot(Waveform(Fig.Current.CellIndx).Times, Waveform(Fig.Current.CellIndx).Mean-Waveform(Fig.Current.CellIndx).Std, Waveform(Fig.Current.CellIndx).Mean+Waveform(Fig.Current.CellIndx).Std);
@@ -160,33 +162,25 @@ global Fig Data Waveform Burst
     ph(3) = plot([Waveform(Fig.Current.CellIndx).PeakTime,Waveform(Fig.Current.CellIndx).TroughTime],[Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).PeakAmp],'-r','linewidth',5);
     ph(4) = plot([Waveform(Fig.Current.CellIndx).TroughTime,Waveform(Fig.Current.CellIndx).TroughTime],[Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).TroughAmp],'--r');
     axis tight
+    set(gca, 'box','off');
     
     axes(Fig.Pannel.AxH(2)); 	%================ plot inter-spike interval distribution
     [N,X] = hist(Burst(Fig.Current.CellIndx).ISIs, 0:20:1000);
     ph(5) = bar(X,N);
     hold on;
-    ph(6) = plot(repmat(median(Burst(Fig.Current.CellIndx).ISIs),[1,2]),ylim,'-r');
-    ph(7) = plot(repmat(mean(Burst(Fig.Current.CellIndx).ISIs),[1,2]),ylim,'-m');
+    ph(5) = plot(repmat(median(Burst.ISIs),[1,2]),ylim,'-r');
+    ph(6) = plot(repmat(mean(Burst.ISIs),[1,2]),ylim,'-m');
 	axis tight
-    legend({'','median','mean'});
     
     axes(Fig.Pannel.AxH(3)); 	%================ plot inter-burst interval distribution
-    [N,X] = hist(Burst(Fig.Current.CellIndx).IBIs, 0:20:1000);
-	ph(8) = bar(X,N);
+    [N,X] = hist(Burst.IBIs, 0:20:1000);
+	ph(6) = bar(X,N);
     hold on;
-    ph(9) = plot(repmat(median(Burst(Fig.Current.CellIndx).IBIs),[1,2]),ylim,'-r');
-    ph(10) = plot(repmat(mean(Burst(Fig.Current.CellIndx).IBIs),[1,2]),ylim,'-m');
+    ph(7) = plot(repmat(median(Burst.IBIs),[1,2]),ylim,'-r');
+    ph(8) = plot(repmat(mean(Burst.IBIs),[1,2]),ylim,'-m');
 	axis tight
     
-    Xlabels = {'Time (us)','ISI (ms)', 'IBI (ms)'};
-    Ylabels = {'Voltage (uV)','No. spikes','No. bursts'};
-    for a = 1:size(Fig.Pannel.AxPos,1)
-        axes(Fig.Pannel.AxH(a))
-        xlabel(Xlabels{a});
-        ylabel(Ylabels{a});
-    end
     Fig.Current.Handles = [Ha, Hb, Hc, Hd, ph];
-	set(Fig.Pannel.AxH, 'box','off');
 end
 
 %===================== MENU CONTROLS

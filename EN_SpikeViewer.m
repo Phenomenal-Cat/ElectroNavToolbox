@@ -121,7 +121,6 @@ global Fig Waveform Data SpikeData
     set(Fig.Pannel.InputsH(4), 'string', Data.Cells,'value',Fig.Current.CellNo);
 
     PlotCellData;                   
-
 end
 
 %======================== REPLOT POPULATION DATA ========================== 
@@ -158,7 +157,8 @@ global Fig Data Waveform SpikeData Burst
     %================== HISTOGRAM?
     if Fig.Yaxis == 1
         set(Fig.AxH(1), 'visible','off');
-        [n,x] = hist(cell2mat(get(Fig.Data.Handle, 'XData')), 100);
+        set(Fig.Data.Handle, 'visible','off');
+        [n,x] = hist(cell2mat(get(Fig.Data.Handle, 'XData')), 100)
         if isfield(Fig,'HistAx') && ishandle(Fig.HistAx)
             set(Fig.HistAx, 'visible','on');
          	delete(Fig.HistH);
@@ -166,14 +166,16 @@ global Fig Data Waveform SpikeData Burst
             Fig.HistAx = axes('units','normalized','position',Fig.AxPos(1,:));
         end
        	Fig.HistH = bar(x,n);
-        set(Fig.HistAx, 'box','off','tickdir','out','fontsize',14);
+        set(Fig.HistAx, 'box','off','tickdir','out','fontsize',14,'ylim',[0, max(n)]);
       	xlabel(Fig.AxisLabels{Fig.Xaxis},'fontsize',18);                    % Update axis labels
         ylabel(Fig.AxisLabels{Fig.Yaxis},'fontsize',18);
         
     else
         set(Fig.AxH(1), 'visible','on');
+        set(Fig.Data.Handle, 'visible','on');
         if ishandle(Fig.HistAx)
             set(Fig.HistAx, 'visible','off');
+            delete(Fig.HistH);
         end
         %=========== Update axes limits
         Fig.Xlims = [min(cell2mat(get(Fig.Data.Handle, 'xdata'))), max(cell2mat(get(Fig.Data.Handle, 'xdata')))];

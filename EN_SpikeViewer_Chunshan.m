@@ -133,6 +133,8 @@ global Fig Data Waveform SpikeData Burst
     
     for i = 1:numel(Fig.Data.Handle)
         switch Fig.Xaxis
+            case 1	%================== HISTOGRAM
+
             case 2	%================== SPIKE WIDTH
                 set(Fig.Data.Handle(i), 'XData', Waveform(i).PeakToTroughDuration);
             case 3	%================== SPIKE AMPLITUDE
@@ -144,6 +146,8 @@ global Fig Data Waveform SpikeData Burst
         end
 
         switch Fig.Yaxis
+            case 1  % FREQUENCY = HISTOGRAM
+
             case 2	%================== SPIKE WIDTH
                 set(Fig.Data.Handle(i), 'YData', Waveform(i).PeakToTroughDuration);   
             case 3
@@ -152,18 +156,6 @@ global Fig Data Waveform SpikeData Burst
                 set(Fig.Data.Handle(i), 'YData', Burst(i).ISIPercentiles(3));
             case 5
                 set(Fig.Data.Handle(i), 'YData', Burst(i).IBIPercentiles(3)); 
-        end
-    end
-    
-    %================== HISTOGRAM?
-    if Fig.Yaxis == 1
-        set(Fig.Data.Handle, 'visible','off');
-        [n,x] = hist(get(Fig.Data.Handle(i), 'XData'), 100);
-        Fig.HistAx = axes('units','normalized','position',Fig.AxPos(1,:));
-        bar(x,n);
-    else
-        if ishandle(Fig.HistAx)
-            delete(Fig.HistAx);
         end
     end
     

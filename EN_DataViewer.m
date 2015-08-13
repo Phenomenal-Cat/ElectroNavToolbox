@@ -47,7 +47,7 @@ global Fig Contact Structures Data MRI Mask
 %==================== LOAD PHYSIOLOGY RESULTS DATA
 if nargin == 0
     Data.Dir = '/Volumes/projects/murphya/Physio/MapPlotTools/MapData/';        % <<< Hardcoded path is TEMPORARY!
-    DefaultMaskFile = '/MapData/Layla_SpikeOrNot_Mask.mat';
+    DefaultMaskFile = fullfile(Data.Dir,'Layla_SpikeOrNot_Mask.mat');
 %     Data.Dir = uigetdir(root, 'Select data directory');
 else
     Data.Dir = DataPath;
@@ -302,8 +302,8 @@ set(Fig.Handles.DataInput(7), 'value', Fig.Data.InvertAlpha);
 %======================== MRI PANEL
 MRI.SelectedAxis = 2;
 MRI.SliceAlpha = 1;
-Fig.MRI.LabelStrings = {'MR volume','Slice axis','Position (mm)', sprintf('Opacity = %d %%', round(MRI.SliceAlpha*100)),'Lower thresh','Upper thresh'};
-Fig.MRI.InputType = {'Pushbutton','popupmenu','slider','slider','slider','slider'};
+Fig.MRI.LabelStrings = {'MR volume','Slice axis','Position (mm)', sprintf('Opacity = %d %%', round(MRI.SliceAlpha*100)),'Threshold'};
+Fig.MRI.InputType = {'Pushbutton','popupmenu','slider','slider','Jslider'};
 Fig.MRI.InputStrings = {{'Select volume'}, {'Sagittal','Coronal','Axial'}};
 Fig.MRI.InputValue = {0, MRI.SelectedAxis, 0, MRI.SliceAlpha, 0, 1};
 Ypos = (0:-30:(-30*(numel(Fig.MRI.LabelStrings)+1))) + BoxPos(5,4)-50;
@@ -312,7 +312,13 @@ for i = 1:numel(Fig.MRI.LabelStrings)
     if i <= 2
         Fig.Handles.MRIInput(i) = uicontrol('Style',Fig.MRI.InputType{i},'String',Fig.MRI.InputStrings{i},'value',Fig.MRI.InputValue{i}, 'pos',[100, Ypos(i), 150, 25],'parent',Fig.Handles.UIpannel(3),'Callback',{@MRIView,i});
     else
-        Fig.Handles.MRIInput(i) = uicontrol('Style',Fig.MRI.InputType{i},'value',Fig.MRI.InputValue{i}, 'pos',[100, Ypos(i), 150, 25],'parent',Fig.Handles.UIpannel(3),'Callback',{@MRIView,i});
+        if strcmp(Fig.MRI.InputType{i},'Jslider')
+            Fig.JavaHandles.MRIInput = javax.swing.JSlider;
+            javacomponent(Fig.JavaHandles.MRIInput,[100, Ypos(i), 150, 25], 'StateChangedCallback', {@MRIView,i});
+            
+        else
+            Fig.Handles.MRIInput(i) = uicontrol('Style',Fig.MRI.InputType{i},'value',Fig.MRI.InputValue{i}, 'pos',[100, Ypos(i), 150, 25],'parent',Fig.Handles.UIpannel(3),'Callback',{@MRIView,i});
+        end
     end
 end
 set(Fig.Handles.MRIInput(4),'min',0,'max',1,'SliderStep',[0.05 0.05]);

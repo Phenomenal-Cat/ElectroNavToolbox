@@ -133,8 +133,6 @@ global Fig Data Waveform SpikeData Burst
     
     for i = 1:numel(Fig.Data.Handle)
         switch Fig.Xaxis
-            case 1	%================== HISTOGRAM
-                
             case 2	%================== SPIKE WIDTH
                 set(Fig.Data.Handle(i), 'XData', Waveform(i).PeakToTroughDuration);
             case 3	%================== SPIKE AMPLITUDE
@@ -146,11 +144,6 @@ global Fig Data Waveform SpikeData Burst
         end
 
         switch Fig.Yaxis
-            case 1  % FREQUENCY = HISTOGRAM
-                set(Fig.Data.Handle(i), 'visible','off');
-                [n,b] = hist(get(Fig.Data.Handle(i), 'XData'), 100);
-                
-                
             case 2	%================== SPIKE WIDTH
                 set(Fig.Data.Handle(i), 'YData', Waveform(i).PeakToTroughDuration);   
             case 3
@@ -162,15 +155,32 @@ global Fig Data Waveform SpikeData Burst
         end
     end
     
-    %=========== Update axes limits
-    Fig.Xlims = [min(cell2mat(get(Fig.Data.Handle, 'xdata'))), max(cell2mat(get(Fig.Data.Handle, 'xdata')))];
-    Fig.Ylims = [min(cell2mat(get(Fig.Data.Handle, 'ydata'))), max(cell2mat(get(Fig.Data.Handle, 'ydata')))];
-  	set(Fig.AxH, 'xlim',Fig.Xlims, 'ylim', Fig.Ylims);
-    for i = 1:2
-        set(Fig.Pannel.ThreshInput(i), 'String', sprintf('%.2f', Fig.Xlims(i)));
-        set(Fig.Pannel.ThreshInput(i+2), 'String', sprintf('%.2f', Fig.Ylims(i)));
+    %================== HISTOGRAM?
+    if Fig.Yaxis == 1
+        set(Fig.AxH(1), 'visible','off');
+        [n,x] = hist(cell2mat(get(Fig.Data.Handle, 'XData')), 100);
+        if ishandle(Fig.HistAx)
+            Fig.HistAx = axes('units','normalized','position',Fig.AxPos(1,:));
+            bar(x,n);
+        set(Fig.HistAx, 'box','off','tickdir','out','fontsize',14);
+      	xlabel(Fig.AxisLabels{Fig.Xaxis},'fontsize',18);                    % Update axis labels
+        ylabel(Fig.AxisLabels{Fig.Yaxis},'fontsize',18);
+        
+    else
+        set(Fig.AxH(1), 'visible','on');
+        if ishandle(Fig.HistAx)
+            set(Fig.HistAx, 'visible','off');
+        end
+        %=========== Update axes limits
+        Fig.Xlims = [min(cell2mat(get(Fig.Data.Handle, 'xdata'))), max(cell2mat(get(Fig.Data.Handle, 'xdata')))];
+        Fig.Ylims = [min(cell2mat(get(Fig.Data.Handle, 'ydata'))), max(cell2mat(get(Fig.Data.Handle, 'ydata')))];
+        set(Fig.AxH, 'xlim',Fig.Xlims, 'ylim', Fig.Ylims);
+        for i = 1:2
+            set(Fig.Pannel.ThreshInput(i), 'String', sprintf('%.2f', Fig.Xlims(i)));
+            set(Fig.Pannel.ThreshInput(i+2), 'String', sprintf('%.2f', Fig.Ylims(i)));
+        end
     end
-
+    
 end
 
 %===================== PLOT SELECTED CELL DATA

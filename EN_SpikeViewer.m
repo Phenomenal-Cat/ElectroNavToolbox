@@ -157,25 +157,34 @@ global Fig Data Waveform SpikeData Burst
     
     %================== HISTOGRAM?
     if Fig.Yaxis == 1
-        set(Fig.Data.Handle, 'visible','off');
-        [n,x] = hist(get(Fig.Data.Handle(i), 'XData'), 100);
-        Fig.HistAx = axes('units','normalized','position',Fig.AxPos(1,:));
-        bar(x,n);
+        set(Fig.AxH(1), 'visible','off');
+        [n,x] = hist(cell2mat(get(Fig.Data.Handle, 'XData')), 100);
+        if isfield(Fig,'HistAx') && ishandle(Fig.HistAx)
+            set(Fig.HistAx, 'visible','on');
+         	delete(Fig.HistH);
+        else
+            Fig.HistAx = axes('units','normalized','position',Fig.AxPos(1,:));
+        end
+       	Fig.HistH = bar(x,n);
+        set(Fig.HistAx, 'box','off','tickdir','out','fontsize',14);
+      	xlabel(Fig.AxisLabels{Fig.Xaxis},'fontsize',18);                    % Update axis labels
+        ylabel(Fig.AxisLabels{Fig.Yaxis},'fontsize',18);
+        
     else
+        set(Fig.AxH(1), 'visible','on');
         if ishandle(Fig.HistAx)
-            delete(Fig.HistAx);
+            set(Fig.HistAx, 'visible','off');
+        end
+        %=========== Update axes limits
+        Fig.Xlims = [min(cell2mat(get(Fig.Data.Handle, 'xdata'))), max(cell2mat(get(Fig.Data.Handle, 'xdata')))];
+        Fig.Ylims = [min(cell2mat(get(Fig.Data.Handle, 'ydata'))), max(cell2mat(get(Fig.Data.Handle, 'ydata')))];
+        set(Fig.AxH, 'xlim',Fig.Xlims, 'ylim', Fig.Ylims);
+        for i = 1:2
+            set(Fig.Pannel.ThreshInput(i), 'String', sprintf('%.2f', Fig.Xlims(i)));
+            set(Fig.Pannel.ThreshInput(i+2), 'String', sprintf('%.2f', Fig.Ylims(i)));
         end
     end
     
-    %=========== Update axes limits
-    Fig.Xlims = [min(cell2mat(get(Fig.Data.Handle, 'xdata'))), max(cell2mat(get(Fig.Data.Handle, 'xdata')))];
-    Fig.Ylims = [min(cell2mat(get(Fig.Data.Handle, 'ydata'))), max(cell2mat(get(Fig.Data.Handle, 'ydata')))];
-  	set(Fig.AxH, 'xlim',Fig.Xlims, 'ylim', Fig.Ylims);
-    for i = 1:2
-        set(Fig.Pannel.ThreshInput(i), 'String', sprintf('%.2f', Fig.Xlims(i)));
-        set(Fig.Pannel.ThreshInput(i+2), 'String', sprintf('%.2f', Fig.Ylims(i)));
-    end
-
 end
 
 %===================== PLOT SELECTED CELL DATA

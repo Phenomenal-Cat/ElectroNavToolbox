@@ -55,6 +55,17 @@ function FigHandle = EN_About(Loading, temp)
     if Loading == 1                                                                                     % If input 'Loading' is 1...
         TextAxH(3) = axes('Units','pixels','position',[FigMargin,FigAboutRect(4)-(2*FigMargin),500,40],'visible','off');
         TextH(3) = text(0,1,'Loading...','FontWeight','bold','FontSize',20,'HorizontalAlignment','left','VerticalAlignment','top');
+        try
+            iconsClassName = 'com.mathworks.widgets.BusyAffordance$AffordanceSize';                      	% Add Java 'loading' widget
+            iconsSizeEnums = javaMethod('values',iconsClassName);                                           
+            SIZE_32x32 = iconsSizeEnums(2);                                                                 % (1) = 16x16,  (2) = 32x32
+            jObj = com.mathworks.widgets.BusyAffordance(SIZE_32x32);  
+            jObj.setPaintsWhenStopped(true);                                                                % default = false
+            jObj.useWhiteDots(false);                                                                       % default = false
+            javacomponent(jObj.getComponent, [FigMargin+100,FigAboutRect(4)-(2*FigMargin)+5,60,60], FigHandle);  
+            jObj.getComponent.setBackground(java.awt.Color(FigBackground(1),FigBackground(2),FigBackground(3)));                                 % Set background
+            jObj.start;
+        end
     end
     drawnow;                                                                                            % Display figure window
 end

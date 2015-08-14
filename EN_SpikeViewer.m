@@ -158,7 +158,7 @@ global Fig Data Waveform SpikeData Burst
     if Fig.Yaxis == 1
         set(Fig.AxH(1), 'visible','off');
         set(Fig.Data.Handle, 'visible','off');
-        [n,x] = hist(cell2mat(get(Fig.Data.Handle, 'XData')), 100)
+        [n,x] = hist(cell2mat(get(Fig.Data.Handle, 'XData')), 100);
         if isfield(Fig,'HistAx') && ishandle(Fig.HistAx)
             set(Fig.HistAx, 'visible','on');
          	delete(Fig.HistH);
@@ -169,7 +169,9 @@ global Fig Data Waveform SpikeData Burst
         set(Fig.HistAx, 'box','off','tickdir','out','fontsize',14,'ylim',[0, max(n)]);
       	xlabel(Fig.AxisLabels{Fig.Xaxis},'fontsize',18);                    % Update axis labels
         ylabel(Fig.AxisLabels{Fig.Yaxis},'fontsize',18);
-        
+        Fig.Ylims = [0, max(n)];
+        Fig.Xlims = [min(x), max(x)];
+
     else
         set(Fig.AxH(1), 'visible','on');
         set(Fig.Data.Handle, 'visible','on');
@@ -177,14 +179,15 @@ global Fig Data Waveform SpikeData Burst
             set(Fig.HistAx, 'visible','off');
             delete(Fig.HistH);
         end
-        %=========== Update axes limits
         Fig.Xlims = [min(cell2mat(get(Fig.Data.Handle, 'xdata'))), max(cell2mat(get(Fig.Data.Handle, 'xdata')))];
         Fig.Ylims = [min(cell2mat(get(Fig.Data.Handle, 'ydata'))), max(cell2mat(get(Fig.Data.Handle, 'ydata')))];
-        set(Fig.AxH, 'xlim',Fig.Xlims, 'ylim', Fig.Ylims);
-        for i = 1:2
-            set(Fig.Pannel.ThreshInput(i), 'String', sprintf('%.2f', Fig.Xlims(i)));
-            set(Fig.Pannel.ThreshInput(i+2), 'String', sprintf('%.2f', Fig.Ylims(i)));
-        end
+    end
+    
+   	%=========== Update axes limits
+   	set(Fig.AxH, 'xlim',Fig.Xlims, 'ylim', Fig.Ylims);
+    for i = 1:2
+        set(Fig.Pannel.ThreshInput(i), 'String', sprintf('%.2f', Fig.Xlims(i)));
+        set(Fig.Pannel.ThreshInput(i+2), 'String', sprintf('%.2f', Fig.Ylims(i)));
     end
     
 end

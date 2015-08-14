@@ -121,7 +121,6 @@ global Fig Waveform Data SpikeData
     set(Fig.Pannel.InputsH(4), 'string', Data.Cells,'value',Fig.Current.CellNo);
 
     PlotCellData;                   
-
 end
 
 %======================== REPLOT POPULATION DATA ========================== 
@@ -167,9 +166,17 @@ global Fig Data Waveform SpikeData Burst
             Fig.HistAx = axes('units','normalized','position',Fig.AxPos(1,:));
         end
        	Fig.HistH = bar(x,n);
-        set(Fig.HistAx, 'box','off','tickdir','out','fontsize',14,;ylim');
+        set(Fig.HistAx, 'box','off','tickdir','out','fontsize',14,'ylim',[0, max(n)]);
       	xlabel(Fig.AxisLabels{Fig.Xaxis},'fontsize',18);                    % Update axis labels
         ylabel(Fig.AxisLabels{Fig.Yaxis},'fontsize',18);
+        Fig.Ylims = [0, max(n)];
+        Fig.Xlims = [min(x), max(x)];
+        Fig
+        set(Fig.AxH, 'xlim',Fig.Xlims, 'ylim', Fig.Ylims);
+        for i = 1:2
+            set(Fig.Pannel.ThreshInput(i), 'String', num2str(Fig.Xlims(i)));
+            set(Fig.Pannel.ThreshInput(i+2), 'String', num2str(Fig.Ylims(i)));
+        end
         
     else
         set(Fig.AxH(1), 'visible','on');

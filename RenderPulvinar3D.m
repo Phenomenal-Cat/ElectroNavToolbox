@@ -61,8 +61,8 @@ end
 
 
 %========================= CONVERT GRID COORDINATES TO MRI COORDINATES
-GridCoords = GetGridCoordinates(Dates, Excel, 1);           % Get grid coordinates of all contacts for requested dates
-T = load(Xform);                                            % Load transformation matrix
+% GridCoords = GetGridCoordinates(Dates, Excel, 1);           % Get grid coordinates of all contacts for requested dates
+% T = load(Xform);                                            % Load transformation matrix
 % GridCoords = reshape(permute(GridCoords, [2,1,3]), [3,numel(GridCoords)/3]);    
 % MRICoords = GridCoords.*T;                                  % Transform grid coordinates to MRI coordinates
 
@@ -97,6 +97,7 @@ elseif SlicePlane==3                        % Sagittal
     SlicePos = 2:1:14;  
 end
 
+Atlas = 1;
 if Atlas == 1
     Structure = 'pulvinar';
     Bilateral = 0;      

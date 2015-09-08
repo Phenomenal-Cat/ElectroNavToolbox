@@ -35,16 +35,17 @@ if ~exist('SaveSurf','var')
     SaveSurf = 1;
 end
 if SaveSurf==1 & ~exist('OutputDir','var')
-    OutputDir = uigetdir([],'Select surface output directory');
+    [DefaultPath,~,~] = fileparts(Volumes{1});
+    OutputDir = uigetdir(DefaultPath,'Select surface output directory');
 end
 
 %=========== SET SURFACE PARAMETERS
-smooth = 0;                 % Smoothing kernel
-thresh = 0.5;               % Surface threshold intensity
-if SaveSurf==0
-    alpha = 0.25;           % Transparency (plotting only)
-    Cmap = jet;             
-    Colors = Cmap(round(linspace(1,64,numel(Volumes))),:);
+smooth      = 0;           	% Smoothing kernel
+thresh      = 0.5;         	% Surface threshold intensity
+if SaveSurf==0              % If plotting...
+    alpha   = 0.25;       	% Transparency (plotting only)
+    Cmap    = jet;       	
+    Colors  = Cmap(round(linspace(1,64,numel(Volumes))),:);
     figure;                 % Open figure window
 end
         
@@ -85,10 +86,10 @@ if SaveSurf==0
 	set(gca,'DataAspectRatio',[1 1 1]);
     grid on;
     lh = light('Position',[-1 1 0],'Style','infinite');
-    Ambient = 0.3;                          
-    Diffuse = 0.5;
-    Specular = 0.4;
-    SpecExp = 6;
-    SpecCol = 1;
+    Ambient     = 0.3;                          
+    Diffuse     = 0.5;
+    Specular    = 0.4;
+    SpecExp     = 6;
+    SpecCol     = 1;
     material([Ambient Diffuse Specular SpecExp SpecCol]);
 end

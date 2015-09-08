@@ -74,10 +74,8 @@ NativeNii.BB(2,:)   = (size(NativeNii.img)-NativeNii.Origin).*NativeNii.VoxDim;
 %=============== Estimate non-linear transform
 NativeS             = spm_vol(NativeFile);                                         	% Get structure for Native MRI volume
 NativeH             = spm_read_vols(NativeS);                                      	% Load Native MRI volume
-TemplateS           = spm_vol(TemplateFile);
-TemplateH           = spm_read_vols(TemplateS);
-[NatPath,NatFile,~]	= fileparts(NativeFile);
-Matname             = fullfile(NatPath,sprintf('%s_warp_sn.mat', NatFile));  
+TemplateH           = spm_read_vols(spm_vol(TemplateFile));
+Matname             = fullfile(ENTroot,'Subjects/Layla/INIA19_to_Layla_sn.mat');  
 if exist('MaskFile','var')
     NativeMaskH = spm_read_vols(spm_vol(MaskFile)); 
 else
@@ -89,7 +87,7 @@ flags.regtype   	= 'rigid';              % regularisation type for affine regist
 flags.cutoff        = 25;                   % Cutoff of the DCT bases.  Lower values mean more basis functions are used
 flags.nits          = 16;                   % number of nonlinear iterations
 flags.reg           = 1;                    % amount of regularisation. Default = 1. Increase if distortions appear
-spm_normalise(NativeS, TemplateS, Matname, NativeMaskH, [], flags);
+spm_normalise(NativeH, TemplateH, Matname, NativeMaskH, [], flags);
 
 %=============== Apply estimated transform to images
 flags.preserve     	= 0;

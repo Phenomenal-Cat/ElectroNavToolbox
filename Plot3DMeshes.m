@@ -19,9 +19,9 @@ if ~iscell(MeshFiles) && isdir(MeshFiles)
     MeshFiles = wildcardsearch(MeshFiles,'*.vtk');
 end
 
-Cmap = hsv;
-facecolors = Cmap(round(linspace(1,64,numel(MeshFiles))),:);
-DefaultAlpha = 0.25;           
+Cmap            = hsv;
+facecolors      = Cmap(round(linspace(1,64,numel(MeshFiles))),:);
+DefaultAlpha    = 0.25;           
 
 %================= LOAD MESH DATA
 for i = 1:numel(MeshFiles)
@@ -52,9 +52,9 @@ for i = 1:numel(MeshFiles)
     try
         handles(i).PickableParts = 'none';                  % Make surface invisible to mouse clicks so that interior data points can be selected
     end
-    MeshStruct.Handles{i} = handles(i);
-    MeshStruct.Colors(i,:) = facecolors(i,:);
-    MeshStruct.Opacity(i) = DefaultAlpha;
+    MeshStruct.Handles{i}   = handles(i);
+    MeshStruct.Colors(i,:)  = facecolors(i,:);
+    MeshStruct.Opacity(i)   = DefaultAlpha;
     hold on;
 end
 set(gca,'DataAspectRatio',[1 1 1]);                     

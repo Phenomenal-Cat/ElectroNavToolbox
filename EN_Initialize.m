@@ -13,10 +13,10 @@
 
 function ParamsOut = EN_Initialize(DefaultParamsFile, SubjectID)
 
-persistent Params 
+persistent Params
 persistent Fig
-RootDir = fileparts(mfilename('fullpath'));
-addpath(genpath(RootDir));
+Params.RootDir = fileparts(mfilename('fullpath'));                          % Get ElectroNav root path
+addpath(genpath(Params.RootDir));                                           % Add ElectroNav to Matlab path
 
 %======================= CHECK INPUT
 if nargin ==0 || ~exist(DefaultParamsFile,'file')
@@ -28,8 +28,10 @@ if nargin ==0 || ~exist(DefaultParamsFile,'file')
     Choice = questdlg(Msg,'File not found!','Select file','Continue','Cancel','Cancel');
     switch Choice
         case 'Select file'
+            [t, CompName] = system('hostname');
+          	DefaultFilename = fullfile(Params.RootDir,'Params', sprintf('ParamsFile_%s.mat', CompName(1:end-1)));
             [filename, pathname, filterindex] = uigetfile({'*.mat','Default parameters (*.mat)'},...
-                                                          'Select default parameters file');
+                                                          'Select default parameters file',DefaultFilename);
             if filename==0
                 return;
             end
@@ -57,9 +59,6 @@ if exist('SubjectID','var')
 end
 Subjects{end+1} = '*Add new subject*';                                	% Provide option to add new subject
 Params.Defaults = Defaults;                                             
-Params.RootDir = fileparts(mfilename('fullpath'));                      % Get ElectroNav root path
-
-
 
 
 %========================= OPEN GUI WINDOW ================================
@@ -185,7 +184,7 @@ uicontrol(  'Style', 'pushbutton', ...
 
         
 %=================== SELECT GRID TYPE
-Fig.GridIDs = GetGridParams;
+Fig.GridIDs = ENT_GetGridParams;
 Fig.GridIDs = {'',Fig.GridIDs{:}};
 TipStr = 'Select the style of dural recording chamber/ grid implant';
 uicontrol(  'Style', 'text',...
@@ -479,7 +478,8 @@ ParamsOut = Params;
                 Subjects{end+1} = '*Add new subject*';
                 SubjectField =  findobj('Tag', 'Subject');                          
                 set(SubjectField, 'String', Subjects, 'Value', numel(Subjects)-1);      % Set GUI list to new subject
-                mkdir(fullfile(Params.RootDir,'Subjects',Subject{1}));                	% Create subject directory
+                SubjectDir = uigetdir('','Select directory to create new subject folder in');
+                mkdir(fullfile(SubjectDir,Subject{1}));                                 % Create subject directory
                 Params.SubjectID = Subject{1};                                         	% Save subject ID to params structure
 
             case ''                     %========================== Empty subject field
@@ -497,7 +497,10 @@ ParamsOut = Params;
                     for i = 1:numel(Defaults)
                         Subjects{i} = Defaults(i).SubjectID;
                     end
-                    SubjectIndx = find(~cellfun(@isempty, strfind(Subjects,Params.SubjectID))); 
+                    SubjectIndx = find(~cellfun(@isempty, strfind(Subjects,Params.SubjectID)));
+                    if numel(SubjectIndx) > 1
+                        SubjectIndx = SubjectIndx(1);
+                    end
                     if ~isempty(SubjectIndx)                                                      	% If default parameters exist for selected subject... 
                         FillField(SubjectIndx);                                                     % Load parameters
                     end
@@ -580,13 +583,18 @@ ParamsOut = Params;
                 if strcmp(Params.SubjectID,'')
                     return;
                 end
-                Indx = structfind(Params.Defaults,'SubjectID',Params.SubjectID);
-                for f = 1:numel(Fig.Fields)
-                    eval(sprintf('Params.Defaults(Indx).%s = Params.%s;',Fig.Fields{f},Fig.Fields{f}));
+                Indx = structfind(Params.Defaults,'SubjectID',Params.SubjectID);                                % Get subject ID index
+                for f = 1:numel(Fig.Fields)                                                                     % For each field...
+                    if isfield(Params, Fig.Fields{f})                                                           % If the field exists...
+%                         sprintf('Params.Defaults(Indx).%s = Params.%s;',Fig.Fields{f}, Fig.Fields{f})       
+                        eval(sprintf('Params.Defaults(Indx).%s = Params.%s;',Fig.Fields{f}, Fig.Fields{f}));    
+                    else
+                        eval(sprintf('Params.Defaults(Indx).%s = [];',Fig.Fields{f}));
+                    end
                 end
                 Defaults = Params.Defaults;
                 [t, CompName] = system('hostname');
-                DefaultFilename = sprintf('ParamsFile_%s.mat', CompName(1:end-1));
+                DefaultFilename = fullfile(Params.RootDir,'Params', sprintf('ParamsFile_%s.mat', CompName(1:end-1)));
                 [Filename, Pathname, Indx] = uiputfile('*.mat','Save default parameters file',DefaultFilename);
                 if Filename == 0
                     return;

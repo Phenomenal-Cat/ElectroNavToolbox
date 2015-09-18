@@ -1,4 +1,4 @@
-%========================= GetGridParams.m ================================
+%========================= ENT_GetGridParams.m ============================
 % This function returns a structure ('Grid') containing information about
 % the physical properties of the recording grid specified by the input
 % variable 'GridID'. These parameters are hard coded in this function,
@@ -14,7 +14,7 @@
 % © ElectroNav Toolbox - Aidan Murphy, 2014
 %==========================================================================
 
-function Grid = GetGridParams(GridID)
+function Grid = ENT_GetGridParams(GridID)
 
 GridFormats = {'19mm_cylindrical','35mm_rectangular'};
 [RootDir mfile] = fileparts(mfilename('fullpath'));

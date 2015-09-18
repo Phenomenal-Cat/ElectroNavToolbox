@@ -62,6 +62,8 @@ function h = ElectroNavGUI(SubjectID)
 %==========================================================================
 
 % persistent Fig
+clear -global
+clear all
 global Electrode Target Fig Grid Session Button Surface Brain Contact Defaults Layer
 
 set(0,'DefaultLineLineSmoothing','on');
@@ -84,7 +86,7 @@ if exist('SubjectID','var')
 else
     Defaults = EN_Initialize(DefaultParametersFile);
 end
-LoadingHandle = EN_About(1);
+LoadingHandle           = EN_About(1);              % Open 'Loading...' window
 Defaults.MRIRootDir     = [];
 Defaults.DateFormats    = {'yyyymmdd','ddmmyy'};   
 Session.Date            = date;
@@ -173,7 +175,6 @@ for n = 1:numel(Layer.Filenames)
     Layer.MRI(n).DimVox = size(nii.img);                                            % Get full volume dimensions (voxels)
     Layer.MRI(n).DimMM = Layer.MRI(n).DimVox.*Layer.MRI(n).VoxelDim;                % Convert volume dim to mm
     Layer.MRI(n).OriginVox = nii.hdr.hist.originator(1:3);                          % Get origin coordinates (voxels)
-    Layer.MRI(n).OriginVox = nii.hdr.hist.originator([2,1,3]); % <<<<TEMP
     Layer.MRI(n).OriginMM = Layer.MRI(n).OriginVox.*Layer.MRI(n).VoxelDim;        	% Convert origin to mm
     
     if nii.hdr.hist.sform_code > 0                                                  % Use S-form?

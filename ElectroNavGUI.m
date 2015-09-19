@@ -75,12 +75,7 @@ Session.RootDir = RootDir;
 
 %================== LOAD SUBJECT PARAMETERS & DIRECTORIES =================
 [t, CompName] = system('hostname');
-DefaultFilename = sprintf('ParamsFile_%s.mat', CompName(1:end-1));
-if exist(DefaultFilename)
-    DefaultParametersFile = DefaultFilename;
-else
-    DefaultParametersFile = [];
-end
+DefaultParametersFile = sprintf('ParamsFile_%s.mat', CompName(1:end-1));
 if exist('SubjectID','var')
     Defaults = EN_Initialize(DefaultParametersFile, SubjectID);
 else

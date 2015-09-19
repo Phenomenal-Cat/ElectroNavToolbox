@@ -42,8 +42,7 @@ if nargin ==0 || ~exist(DefaultParamsFile,'file')
             DefaultFilename = fullfile(Params.RootDir,'Params', sprintf('ParamsFile_%s.mat', CompName(1:end-1)));
             [file, path] = uiputfile(DefaultFilename, 'Create new parameters file');
            	DefaultParamsFile = fullfile(path, file);
-            Defaults = struct('SubjectID',[],'ExpDir',[],'GridID',[],'MRI',[],'Atlas',[],'Xform',[],'ElectMRI',[],'HistoryFile',[]);
-            save(DefaultParamsFile, 'Defaults');
+            save(DefaultParamsFile, '
     end
 end
 

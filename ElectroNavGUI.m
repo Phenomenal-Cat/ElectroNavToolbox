@@ -1530,7 +1530,7 @@ function FileSelect(hObj, Event, Indx, Indx2)
         case 5      %============================= CAPTURE figure as print-quality image
             ImFormat = 'png';
             FileName = sprintf('Fig_%s_%s.%s',Session.Subject,datestr(datenum(Session.Date,'dd-mmm-yyyy'),'yyyy-mm-dd'), ImFormat);
-            DirName = fullfile(Session.RootDir,'Subjects',Session.Subject,'Renders');
+            DirName = fullfile(Defaults.ExpDir,'Renders');
             if ~exist(DirName, 'dir')
                 mkdir(DirName);
             end

@@ -246,11 +246,11 @@ end
 
 
 %% =========================== FIGURE SETTINGS ==============================
-Fig.Background = [0.75 0.75 0.75];                       	% Set figure window background color
-Fig.AxesBkgColor = [0.75 0.75 0.75];                       	% Set axes background color 
-Fig.FontSize = 12;                                          % Set default font size for axis labels etc
-Fig.UIFontsize = 12;                                        
-Fig.PlotSpacing = 50;                                       % Set spacing between plots (pixels)
+Fig.Background      = [0.75 0.75 0.75];                   	% Set figure window background color
+Fig.AxesBkgColor    = [0.75 0.75 0.75];                   	% Set axes background color 
+Fig.FontSize        = 12;                                 	% Set default font size for axis labels etc
+Fig.UIFontsize      = 12;                                        
+Fig.PlotSpacing    	= 50;                                	% Set spacing between plots (pixels)
 Fig.CoordinatesInMM = 1;                                    % Set units for displaying coordinates
 scnsize = get(0,'ScreenSize');                              % Get screen resolution
 Fig.Rect = [0 0 scnsize([3,4])];                            % Specify full screen rectangle
@@ -263,14 +263,14 @@ Fig.Handle = figure('Name','ElectroNav',...                 % Open a figure wind
                     'IntegerHandle','off',...               % Don't use integer handles
                     'Menu','none','Toolbar','none');       	% Turn off toolbars to save space
 Fig.Rect = get(Fig.Handle, 'Position');                     % Get dimensions of usable figure space
-Fig.UIControlDim = [220, 180];                              % Set dimensions of GUI control boxes (pixels)
-Fig.Az = 20;                                                % Set azimuth angle (deg) for 3D view
-Fig.El = 40;                                                % Set elevation angle (deg) for 3D view
-Fig.Position(1,:) = [0.15,0.75,0.25,0.25];                 	% Set axis positions (normalized units)
-Fig.Position(2,:) = [0.15,0.4,0.25,0.25];
-Fig.Position(3,:) = [0.15,0.05,0.25,0.25];
-Fig.Position(4,:) = [0.3,0.1,0.8,0.8];
-Fig.Position(5,:) = [0.90,0.05,0.10,0.9];
+Fig.UIControlDim    = [220, 180];                         	% Set dimensions of GUI control boxes (pixels)
+Fig.Az              = 20;                                 	% Set azimuth angle (deg) for 3D view
+Fig.El              = 40;                                 	% Set elevation angle (deg) for 3D view
+Fig.Position(1,:)   = [0.15,0.75,0.25,0.25];            	% Set axis positions (normalized units)
+Fig.Position(2,:)   = [0.15,0.4,0.25,0.25];
+Fig.Position(3,:)   = [0.15,0.05,0.25,0.25];
+Fig.Position(4,:)   = [0.3,0.1,0.8,0.8];
+Fig.Position(5,:)   = [0.90,0.05,0.10,0.9];
 
                 
 %============================ CREATE MENUS ==============================
@@ -368,12 +368,12 @@ Grid = Draw2DGrid(Grid,[0 0 0]);
 Fig.PlotHandle(2) = axes('position',Fig.Position(2,:));                   	% Axes 2 displays axial whole brain view (3D)
 Brain = DrawBrain3D(Brain, Electrode, Grid);
 view(0,90);
-camlight headlights;
+camlight('infinite');
         
 Fig.PlotHandle(3) = axes('position',Fig.Position(3,:));                   	% Axes 3 displays coronal whole brain view (3D)
 Brain = DrawBrain3D(Brain, Electrode, Grid);
 view(0,0);
-camlight headlights;
+camlight('infinite');
 
 Fig.PlotHandle(4) = axes('position',Fig.Position(4,:));                  	% Axes 4 displays electrode MRI sagittal view
 Layer.M = DrawMRI(Target, Electrode);

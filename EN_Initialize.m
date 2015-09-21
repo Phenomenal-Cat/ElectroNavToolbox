@@ -485,7 +485,8 @@ ParamsOut = Params;
                 SubjectDir = uigetdir('','Select directory to create new subject folder in');
                 mkdir(fullfile(SubjectDir,Subject{1}));                                 % Create subject directory
                 Params.SubjectID = Subject{1};                                         	% Save subject ID to params structure
-
+               	Params.Defaults(end+1).SubjectID = Params.SubjectID;                      % Add subject to list of subjects
+                
             case ''                     %========================== Empty subject field
                 for f = 1:numel(Fig.InputTags)
                     Handle(f) = findobj('Tag', Fig.InputTags{f});
@@ -519,7 +520,11 @@ ParamsOut = Params;
         Fig.SelectDir = [0 1 0 0 0 0 1 1];
         Fig.FileTypes = {'*.xls;*.csv','','','*.nii;*.hdr;*.img','*.nii;*.hdr;*.img','*.xform;*.mat','',''};
         Fig.SelectPrompt = {'History file','experiment directory','','anatomical volume','atlas volume','xform matrix','VTK directory','post-session MRI directory'};
-        DefaultDir = fullfile(cd, 'Subjects', Params.SubjectID);
+        if isfield(Params, 'ExpDir') && ~isempty(Params.ExpDir)
+            DefaultDir = Params.ExpDir;
+        else
+            DefaultDir = fullfile(cd, 'Subjects', Params.SubjectID);
+        end
         if Fig.SelectDir(Indx)==1
             Selection = uigetdir(DefaultDir, ['Select ',Fig.SelectPrompt{Indx}]);
             if Selection == 0
@@ -587,10 +592,9 @@ ParamsOut = Params;
                 if strcmp(Params.SubjectID,'')
                     return;
                 end
-                Indx = structfind(Params.Defaults,'SubjectID',Params.SubjectID);                                % Get subject ID index
+                Indx = structfind(Params.Defaults,'SubjectID',Params.SubjectID)                                % Get subject ID index
                 for f = 1:numel(Fig.Fields)                                                                     % For each field...
-                    if isfield(Params, Fig.Fields{f})                                                           % If the field exists...
-%                         sprintf('Params.Defaults(Indx).%s = Params.%s;',Fig.Fields{f}, Fig.Fields{f})       
+                    if isfield(Params, Fig.Fields{f})                                                           % If the field exists...      
                         eval(sprintf('Params.Defaults(Indx).%s = Params.%s;',Fig.Fields{f}, Fig.Fields{f}));    
                     else
                         eval(sprintf('Params.Defaults(Indx).%s = [];',Fig.Fields{f}));

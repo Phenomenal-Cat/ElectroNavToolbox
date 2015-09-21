@@ -108,7 +108,6 @@ end
 
 %=================== SET GRID AND ELECTRODE SPECIFICATIONS ================
 Grid = ENT_GetGridParams(Defaults.GridID);                                  % Get grid parameters based on grid ID
-Grid.GuideLength        = Session.GuideLength;                              % Set guide tube length
 ElectrodeNumbers      	= [1,2];                                            % Set default number of electrodes used
 ElectrodeColors         = {'r','b','m','g','c'};
 for e = ElectrodeNumbers                                                    % For each electrode...
@@ -122,12 +121,12 @@ for e = ElectrodeNumbers                                                    % Fo
  	Electrode(e).StartDepth         = 0;                                    % Manual start depth (relative to grid base)
     Electrode(e).MicrodriveDepth    = 0;                                    % Maicrodrive readout depth (relative to start depth)
     Electrode(e).CurrentDepth       = 0;                                    % Total depth (mm)
-    Electrode(e).IDColor            = ElectrodeColors{e};
-
+    Electrode(e).IDColor            = ElectrodeColors{e};                   % Electrode ID color
+    Electrode(e).GuideLength        = 25;                                   % Default guidetube length (mm)
     
     %=============== LOAD RECORDING HISTORY FROM SPREADSHEET
     if exist(Defaults.HistoryFile, 'file') ==2                             	% If recording history file was found...
-        Hist = EN_LoadHistory(Defaults.HistoryFile);        
+        Hist = ENT_LoadHistory(Defaults.HistoryFile);        
         Electrode(e).DateStrings = Hist.DateStrings;
     else
         Electrode(e).DateStrings = [];
@@ -362,7 +361,7 @@ end
 
 
 %% ========================== DRAW 3D VIEWS ===============================
-set(0, 'currentfigure', Fig.Handle);
+% set(0, 'currentfigure', Fig.Handle);
 set(Fig.Handle,'units','normalized');
 Fig.PlotHandle(1) = axes('units','normalized');                             % Axes 1 displays 2D grid view from above
 set(Fig.PlotHandle(1),'position',Fig.Position(1,:));
@@ -434,7 +433,7 @@ set(Session.InputHandle(3),'value', Electrode(1).Selected);
 %=============== ELECTRODE POSITION
 Button.InputDim         = [100 20];
 Button.Labels           = {'M-L','A-P','Manual depth','Microdrive depth','Total depth','Guide length'};
-Button.CurrentValues    = {Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),Electrode(Electrode(1).Selected).StartDepth, Electrode(Electrode(1).Selected).MicrodriveDepth, Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength};
+Button.CurrentValues    = {Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),Electrode(Electrode(1).Selected).StartDepth, Electrode(Electrode(1).Selected).MicrodriveDepth, Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength};
 Button.Units            = {'holes','holes','mm','mm','mm','mm'};
 Button.UIhandle     	= uipanel('Title','Electrode position','FontSize', Fig.UIFontsize,'BackgroundColor',Fig.Background,'Units','pixels','Position',Button.BoxPos);
 for i = 1:numel(Button.Labels)
@@ -650,7 +649,7 @@ function GT = DrawGuidetube(Electrode)
         [X,Y,Z] = cylinder(Grid.HoleDiameter/2,100);
         X = X+Electrode(Electrode(1).Selected).Target(1);
         Y = Y+Electrode(Electrode(1).Selected).Target(2);
-        Z = (Z*-Grid.GuideLength)+Grid.Width;
+        Z = (Z*-Electrode(Electrode(1).Selected).GuideLength)+Grid.Width;
         fvc = surf2patch(X,Y,Z);
         fvc.vertices = ApplyTform(fvc.vertices);
         GT(end+1) = patch('Faces',fvc.faces,'Vertices',fvc.vertices,'FaceColor',Electrode(Electrode(1).Selected).GuideColor,'EdgeColor','none');
@@ -1122,11 +1121,11 @@ global Electrode Session Contact Button Defaults
                 Electrode(Electrode(1).Selected).CurrentDepth = Params.Depth;
                 Session.Date = Params.Date;
                 Session.ElectrodeID = Params.ElectrodeID;
-                Session.GuideLength = Params.GuideLength;
+                Electrode(Electrode(1).Selected).GuideLength = Params.GuideLength;
                 Session.Details = {Session.Subject,Session.Date,Session.ElectrodeID};
                 ElectrodeIDIndx = find(strncmp(Params.ElectrodeID, Electrode(1).AllTypes, 2));
                 set(Session.InputHandle(4), 'value',ElectrodeIDIndx);
-                Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),Electrode(Electrode(1).Selected).StartDepth, Electrode(Electrode(1).Selected).MicrodriveDepth, Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength];
+                Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),Electrode(Electrode(1).Selected).StartDepth, Electrode(Electrode(1).Selected).MicrodriveDepth, Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength];
                 for i = 1:numel(Button.CurrentValues)
                     set(Button.InputHandle(i),'String',num2str(Button.CurrentValues(i)));
                 end
@@ -1139,7 +1138,7 @@ global Electrode Session Contact Button Defaults
             delete(Electrode(Electrode(1).Selected).C);
            	Electrode(Electrode(1).Selected).C = [];
             [Electrode.Selected] = deal(get(hObj,'Value'));
-            Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),Electrode(Electrode(1).Selected).StartDepth, Electrode(Electrode(1).Selected).MicrodriveDepth, Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength];
+            Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),Electrode(Electrode(1).Selected).StartDepth, Electrode(Electrode(1).Selected).MicrodriveDepth, Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength];
             for i = 1:numel(Button.CurrentValues)
                 set(Button.InputHandle(i),'String',num2str(Button.CurrentValues(i)));
             end  
@@ -1199,8 +1198,7 @@ function ElectrodePos(hObj, Event, Indx)
             
             
         case 6
-            Session.GuideLength = str2num(get(hObj,'String'));              % 6 = Guide tube length
-            Grid.GuideLength = Session.GuideLength;
+            Electrode(Electrode(1).Selected).GuideLength = str2num(get(hObj,'String'));              % 6 = Guide tube length
             delete(Electrode(Electrode(1).Selected).GT);                 	% Delete current guide tube object
             Electrode(Electrode(1).Selected).GT = DrawGuidetube(Electrode);	% Draw new guide tube object
     end
@@ -1412,12 +1410,12 @@ function FileSelect(hObj, Event, Indx, Indx2)
             Electrode(Electrode(1).Selected).CurrentDepth = Params.Depth;
             Session.Date = Params.Date;
             Session.ElectrodeID = Params.ElectrodeID;
-            Session.GuideLength = Params.GuideLength;
+            Electrode(Electrode(1).Selected).GuideLength = Params.GuideLength;
             Session.Details = {Session.Subject,Session.Date,Session.ElectrodeID};
             ElectrodeIDIndx = find(strncmp(Params.ElectrodeID,Electrode(1).AllTypes, 2));
             set(Session.InputHandle(2), 'value',Params.DateIndex);
             set(Session.InputHandle(3), 'value',ElectrodeIDIndx);
-            Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),0, 0, Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength];
+            Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),0, 0, Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength];
             for i = 1:numel(Button.CurrentValues)
                 set(Button.InputHandle(i),'String',num2str(Button.CurrentValues(i)));
             end
@@ -1439,7 +1437,7 @@ function FileSelect(hObj, Event, Indx, Indx2)
                 if exist('readtable','file')~=0
                     T = readtable(Defaults.HistoryFile);
                     T.Date = datetime(T.Date,'ConvertFrom','excel');
-                    Cells = {Session.Date, Electrode(Electrode(1).Selected).Target(1), Electrode(Electrode(1).Selected).Target(2), Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength, 0, Session.ElectrodeID};
+                    Cells = {Session.Date, Electrode(Electrode(1).Selected).Target(1), Electrode(Electrode(1).Selected).Target(2), Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength, 0, Session.ElectrodeID};
                     T = [T; Cells];                                                                             % Append new data
                     writetable(T,Defaults.HistoryFile);
                 else
@@ -1461,7 +1459,7 @@ function FileSelect(hObj, Event, Indx, Indx2)
             %========= WRITE DATA TO .CSV FILE
             if strcmpi(Defaults.HistoryFile(end-2:end), 'csv')                    
                 formatSpec = '%{dd-MMM-yyyy}D%f%f%f%f%f%C';
-                Cells = {Session.Date, Electrode(Electrode(1).Selected).Target(1), Electrode(Electrode(1).Selected).Target(2), Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength, 0, Session.ElectrodeID};
+                Cells = {Session.Date, Electrode(Electrode(1).Selected).Target(1), Electrode(Electrode(1).Selected).Target(2), Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength, 0, Session.ElectrodeID};
                 if exist('readtable','file')~=0
                     T = readtable(Defaults.HistoryFile,'Delimiter',',','Format',formatSpec);
                     T = [T; Cells];                                                                         % Append new data

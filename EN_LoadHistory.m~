@@ -32,8 +32,7 @@ if strcmpi(HistoryFormat, '.xls')                               % If file format
         for c = 1:numel(ColumnNames)
             Column{c} = find(~cellfun(@isempty, strfind(Headers,ColumnNames{c})));
             for e = 1:numel(Column{c})
-                Hist(e).([ColumnNames{c}]) = num(:, Column{c}(e));
-            end
+            Hist.([ColumnNames{c}]) = num(:, Column{c});
         end
     end
     

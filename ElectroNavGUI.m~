@@ -118,12 +118,9 @@ for e = ElectrodeNumbers                                                    % Fo
     Electrode(e).QualityColorMap	= [0 0 0; 1 0 0; 1 0.5 0; 1 1 0; 0 1 0];
     Electrode(e).ID                 = Session.ElectrodeID;                	% Electrode ID
     Electrode                       = ENT_GetElectrodeParams(Electrode);   	% Get electrode parameters based on electrode ID
-    Electrode(e).AllTypes           = sortrows(ENT_GetElectrodeParams');   	% Get list of all electrode types 
- 	Electrode(e).StartDepth         = 0;                                    % Manual start depth (relative to grid base)
-    Electrode(e).MicrodriveDepth    = 0;                                    % Maicrodrive readout depth (relative to start depth)
-    Electrode(e).CurrentDepth       = 0;                                    % Total depth (mm)
+    Electrode(e).AllTypes           = sortrows(ENT_GetElectrodeParams');   	% Get list of all electrode types             
+    Electrode(e).CurrentDepth       = 0;                                    % Set default start depth (mm)
     Electrode(e).IDColor            = ElectrodeColors{e};
-
     
     %=============== LOAD RECORDING HISTORY FROM SPREADSHEET
     if exist(Defaults.HistoryFile, 'file') ==2                             	% If recording history file was found...
@@ -395,12 +392,12 @@ set(Fig.PlotHandle, 'fontsize', Fig.FontSize);
 
 %% ======================= INITIALIZE UI CONTROLS =========================
 Logo= imread(fullfile('Documentation','ElectroNavLogo1.png'),'BackgroundColor',Fig.Background);
-LogoAx = axes('box','off','units','pixels','position', [20, Fig.Rect(4)-100, Fig.UIControlDim(1), 42],'color',Fig.Background);
+LogoAx = axes('box','off','units','pixels','position', [20, Fig.Rect(4)-120, Fig.UIControlDim(1), 42],'color',Fig.Background);
 image(Logo);
 axis equal off
 
-Session.BoxPos  = [20 Fig.Rect(4)-300 Fig.UIControlDim(1), 150];
-Button.BoxPos   = [20 Session.BoxPos(2)-200 Fig.UIControlDim(1), 160];
+Session.BoxPos  = [20 Fig.Rect(4)-330 Fig.UIControlDim(1), 150];
+Button.BoxPos   = [20 Session.BoxPos(2)-170 Fig.UIControlDim(1), 160];
 Contact.BoxPos  = [20 Button.BoxPos(2)-170 Fig.UIControlDim(1),160];
 Layer.BoxPos    = [20 Contact.BoxPos(2)-180 Fig.UIControlDim(1),170];
 Surface.BoxPos  = [20 Layer.BoxPos(2)-10 Fig.UIControlDim, 110];
@@ -434,7 +431,7 @@ set(Session.InputHandle(3),'value', Electrode(1).Selected);
 %=============== ELECTRODE POSITION
 Button.InputDim         = [100 20];
 Button.Labels           = {'M-L','A-P','Manual depth','Microdrive depth','Total depth','Guide length'};
-Button.CurrentValues    = {Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),Electrode(Electrode(1).Selected).StartDepth, Electrode(Electrode(1).Selected).MicrodriveDepth, Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength};
+Button.CurrentValues    = {Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),0, 0, Electrode.CurrentDepth, Session.GuideLength};
 Button.Units            = {'holes','holes','mm','mm','mm','mm'};
 Button.UIhandle     	= uipanel('Title','Electrode position','FontSize', Fig.UIFontsize,'BackgroundColor',Fig.Background,'Units','pixels','Position',Button.BoxPos);
 for i = 1:numel(Button.Labels)
@@ -1126,7 +1123,7 @@ global Electrode Session Contact Button Defaults
                 Session.Details = {Session.Subject,Session.Date,Session.ElectrodeID};
                 ElectrodeIDIndx = find(strncmp(Params.ElectrodeID, Electrode(1).AllTypes, 2));
                 set(Session.InputHandle(4), 'value',ElectrodeIDIndx);
-                Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),Electrode(Electrode(1).Selected).StartDepth, Electrode(Electrode(1).Selected).MicrodriveDepth, Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength];
+                Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),0, 0, Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength];
                 for i = 1:numel(Button.CurrentValues)
                     set(Button.InputHandle(i),'String',num2str(Button.CurrentValues(i)));
                 end
@@ -1139,13 +1136,13 @@ global Electrode Session Contact Button Defaults
             delete(Electrode(Electrode(1).Selected).C);
            	Electrode(Electrode(1).Selected).C = [];
             [Electrode.Selected] = deal(get(hObj,'Value'));
-            Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),Electrode(Electrode(1).Selected).StartDepth, Electrode(Electrode(1).Selected).MicrodriveDepth, Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength];
+            Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),0, 0, Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength];
             for i = 1:numel(Button.CurrentValues)
                 set(Button.InputHandle(i),'String',num2str(Button.CurrentValues(i)));
             end  
             ElectrodeType = find(~cellfun(@isempty, strfind(Electrode(Electrode(1).Selected).AllTypes, Electrode(Electrode(1).Selected).Brand)));
             set(Session.InputHandle(4), 'value', ElectrodeType);
-            set(Session.InputHandle(5), 'string', num2str(Electrode(Electrode(1).Selected).ContactNumber));
+            set(Session.InputHandle(5), 'value', Electrode(Electrode(1).Selected).ContactNumber);
           	SessionParams(Session.InputHandle(5),[],5);             	% Update number of channels
 
             
@@ -1158,7 +1155,7 @@ global Electrode Session Contact Button Defaults
             
         case 5      %==================== Electrode contacts
              Electrode(Electrode(1).Selected).ContactNumber = str2num(get(hObj,'String'));
-             if ~isempty(Electrode(Electrode(1).Selected).C) && isgraphics(Electrode(Electrode(1).Selected).C(1))
+             if ~isempty(Electrode(Electrode(1).Selected).C(1)) && isgraphics(Electrode(Electrode(1).Selected).C(1))
                  delete(Electrode(Electrode(1).Selected).C);
                  Electrode(Electrode(1).Selected).C = [];
              end

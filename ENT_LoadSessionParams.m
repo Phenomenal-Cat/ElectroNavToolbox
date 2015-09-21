@@ -1,6 +1,6 @@
-function [SessionParams] = EN_LoadSessionParams(HistoryFile, SessionDate)
+function [SessionParams] = ENT_LoadSessionParams(HistoryFile, SessionDate)
 
-%========================== EN_LoadSessionParams.m ========================
+%========================== ENT_LoadSessionParams.m ========================
 % This function retreives the session parameters stored in the provided
 % spreadsheet file, for the date specified.
 %
@@ -78,11 +78,11 @@ end
 
 %========================== Return data
 for d = 1:numel(Selection)
-    SessionParams(d).DateString = DateStrings(Selection(d),:);
-    SessionParams(d).DateIndex = Selection(d);
-    SessionParams(d).Target = [C{Selection(d),2},C{Selection(d),3}];
-    SessionParams(d).Depth = C{Selection(d),4};
-    SessionParams(d).Date = datestr(C{Selection(d),1});
-    SessionParams(d).ElectrodeID = C{Selection(d),7};
-    SessionParams(d).GuideLength = C{Selection(d), 5};
+    SessionParams(d).DateString     = DateStrings(Selection(d),:);
+    SessionParams(d).DateIndex      = Selection(d);
+    SessionParams(d).Target         = [C{Selection(d),2},C{Selection(d),3}];
+    SessionParams(d).Depth          = C{Selection(d),4};
+    SessionParams(d).Date           = datestr(C{Selection(d),1});
+    SessionParams(d).ElectrodeID    = C{Selection(d),7};
+    SessionParams(d).GuideLength    = C{Selection(d), 5};
 end

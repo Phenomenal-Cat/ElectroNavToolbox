@@ -1117,7 +1117,7 @@ global Electrode Session Contact Button Defaults
         case 2      %==================== Session date
             SelectedDate = Electrode(Electrode(1).Selected).DateStrings(get(hObj,'Value'),:);  % Get selected date string
             if ~strcmp(SelectedDate, date)
-                Params = LoadSessionParams(Defaults.HistoryFile, SelectedDate);
+                Params = ENT_LoadSessionParams(Defaults.HistoryFile, SelectedDate);
                 Electrode(Electrode(1).Selected).Target = Params.Target;
                 Electrode(Electrode(1).Selected).CurrentDepth = Params.Depth;
                 Session.Date = Params.Date;
@@ -1407,7 +1407,7 @@ function FileSelect(hObj, Event, Indx, Indx2)
 %                 [num,txt,raw] =  xlsread(Defaults.HistoryFile,SheetNames{s},'','basic');  	% Read Excel file
 %                 Data = [Data; num];
 %             end
-            Params = LoadSessionParams(Defaults.HistoryFile);
+            Params = ENT_LoadSessionParams(Defaults.HistoryFile);
             Electrode(Electrode(1).Selected).Target = Params.Target;
             Electrode(Electrode(1).Selected).CurrentDepth = Params.Depth;
             Session.Date = Params.Date;

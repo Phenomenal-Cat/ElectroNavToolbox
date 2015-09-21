@@ -1,4 +1,4 @@
-%============================= EN_LoadHistory.m ===========================
+%============================= ENT_LoadHistory.m ===========================
 % This subfunction loads parameters for all previous recording sessions from 
 % the spreadsheet file (.xls or .csv format) provided as an input.
 %
@@ -6,7 +6,7 @@
 % Developed by Aidan Murphy © Copyleft 2015, GNU General Public License
 %==========================================================================
 
-function Hist = EN_LoadHistory(HistoryFile)
+function Hist = ENT_LoadHistory(HistoryFile)
 
 if nargin ==0 || exist(HistoryFile, 'file') ~=2                 % If recording history file was not found...
     [file, path] = uigetfile({'*.xls;*.csv'}, 'Select recording history');

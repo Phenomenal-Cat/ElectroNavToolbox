@@ -26,7 +26,7 @@ end
 
 %========================== Load recording history data
 [a,b,HistoryFormat] = fileparts(HistoryFile);
-if exist('datetime.m','file')                   	%============ MATLAB R2014a and later
+if exist('datetime.m','file')==2                   	%============ MATLAB R2014a and later
     if strcmpi(HistoryFormat, '.xls')
         T = readtable(HistoryFile);
         T.Date = datetime(T.Date,'ConvertFrom','excel');
@@ -50,10 +50,10 @@ if exist('datetime.m','file')                   	%============ MATLAB R2014a and
 else                                                %============ MATLAB R2013b and earlier    
     [num,txt,raw] =  xlsread(HistoryFile,1,'');                 % Read data from Excel file
     Headers = txt{1,:};                                       	% Skip row containing column titles
-    num(1,:) = [];                                            	% Remove nans
+    num(1,:) = [];                                            	% Remove header NaNs
     Dates = num(:,1)+datenum('30-Dec-1899');                 	% Convert Excel dates to Matlab dates
-    DateStrings = datestr(Dates);                        
-    C = raw(2:end,:); 
+    DateStrings = datestr(Dates);                               
+    C = raw(2:end,:);                                           
 end
 
 %========================== Get a date input
@@ -77,12 +77,15 @@ else
 end
 
 %========================== Return data
-for d = 1:numel(Selection)
-    SessionParams(d).DateString     = DateStrings(Selection(d),:);
-    SessionParams(d).DateIndex      = Selection(d);
-    SessionParams(d).Target         = [C{Selection(d),2},C{Selection(d),3}];
-    SessionParams(d).Depth          = C{Selection(d),4};
-    SessionParams(d).Date           = datestr(C{Selection(d),1});
-    SessionParams(d).ElectrodeID    = C{Selection(d),7};
-    SessionParams(d).GuideLength    = C{Selection(d), 5};
+for d = 1:numel(Selection)                                                                                  % For each session selected...
+    SessionParams(d).Date               = datestr(C{Selection(d),1});                                       % Record session date string
+    SessionParams(d).DateString         = DateStrings(Selection(d),:);
+    SessionParams(d).DateIndex       	= Selection(d);
+    SessionParams(d).NoElectrodes       = numel(find(~cellfun(@isnan, C(Selection(d),3:5:end))));         	% How many electrodes were used?
+    for e = 1:SessionParams(d).NoElectrodes                                                                 % For each electrode...
+        SessionParams(d).Target{e}          = [C{Selection(d),3+((e-1)*5)},C{Selection(d),4+((e-1)*5)}];    % Get medial-lateral and anetrior-posterior grid hole coordinates
+        SessionParams(d).Depth{e}           = C{Selection(d),5+((e-1)*5)};                                  % Get final tip depth
+        SessionParams(d).ElectrodeID{e}     = C{Selection(d),2+((e-1)*5)};                                  % Get the elctrode identifier
+        SessionParams(d).GuideLength{e}     = C{Selection(d),6+((e-1)*5)};                                  % Get the length of guide tube used
+    end
 end

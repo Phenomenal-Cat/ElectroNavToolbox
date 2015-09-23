@@ -15,12 +15,12 @@ end
 
 [a,b,HistoryFormat] = fileparts(HistoryFile);                   % Check file format   
 if strcmpi(HistoryFormat, '.xls')                               % If file format was Excel...
-    if exist('readtable.m','file')                              % For MATLAB R2014a and later...
-        T = readtable(HistoryFile);
-        T.Date = datetime(T.Date,'ConvertFrom','excel');
-        Hist.DateStrings = char(datetime(T.Date,'format','dd-MMM-yyyy'));   
-        
-    else                                                        % MATLAB R2013b and earlier...    
+%     if exist('readtable.m','file')                              % For MATLAB R2014a and later...
+%         T = readtable(HistoryFile);
+%         T.Date = datetime(T.Date,'ConvertFrom','excel');
+%         Hist.DateStrings = char(datetime(T.Date,'format','dd-MMM-yyyy'));   
+%         
+%     else                                                        % MATLAB R2013b and earlier...    
         [num,txt,raw] =  xlsread(HistoryFile,1,'');             % Read data from Excel file
         Headers = txt(1,:);                                  	% Skip row containing column titles
         num(1,:) = [];                                       	% Remove nans
@@ -28,14 +28,12 @@ if strcmpi(HistoryFormat, '.xls')                               % If file format
         Dates = num(:,DateColumn)+datenum('30-Dec-1899');     	% Convert Excel dates to Matlab dates
       	Hist.DateStrings = datestr(Dates);                     
         
-        ColumnNames = {'ML','AP','TargetDepth','Electrode'};
-        for c = 1:numel(ColumnNames)
-            Column{c} = find(~cellfun(@isempty, strfind(Headers,ColumnNames{c})));
-            for e = 1:numel(Column{c})
-                Hist(e).([ColumnNames{c}]) = num(:, Column{c}(e));
-            end
-        end
-    end
+%         ColumnNames = {'ML','AP','TargetDepth','Electrode'};
+%         for c = 1:numel(ColumnNames)
+%             Column{c} = find(~cellfun(@isempty, strfind(Headers,ColumnNames{c})));
+%             Hist.([ColumnNames{c}]) = num(:, Column{c});
+%         end
+%     end
     
 elseif strcmpi(HistoryFormat, '.csv')                           % If file format was csv...
     fid = fopen(HistoryFile,'rt');

@@ -7,11 +7,11 @@
 % or to change the defaults for an existing manufacturer, edit the parameters 
 % listed.
 %
-% ElectrodeID:  Manufacturer:                   
-%               'AO'    = Alpha Omega           
-%               'NN'    = NeuroNexus             
-%               'PLX'   = Plexon          
-%               'TR'    = Thomas Recording 
+% ElectrodeID:  Manufacturer:                   Contact number:
+%               'AO' = Alpha Omega                  12
+%               'NN' = NeuroNexus                   24
+%               'PLX' = Plexon                      32
+%               'TR' = Thomas Recording             64
 %   
 % ELECTRONAV TOOLBOX
 % Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
@@ -19,7 +19,7 @@
 
 function Electrode = ENT_GetElectrodeParams(Electrode)
 
-Brands = {'AO','NN','PLX','TR'};
+Brands = {'PLX','AO','NN','TR'};
 LineNumber = 22;                                                            % Line number to edit from
 if nargin == 0                                                              % If no input variable...
     Electrode = Brands;                                                   	% Return list of accepted inputs
@@ -32,21 +32,20 @@ if ~isstruct(Electrode)
 end
 NoElectrodes =  length(Electrode);                                          % If Electrode structure contains data for multiple electrodes...
 for e = 1:NoElectrodes                                                      % For each electrode...
-    Electrode(e).AllTypes = Brands;
-    if ~isfield(Electrode,'ID') || isempty(Electrode(e).ID)
+    if ~isfield(Electrode,'ID') || isempty()
         if isfield(Electrode,'Brand') && ~isempty(Electrode(e).Brand)
             Electrode(e).ID = Electrode(e).Brand;
-        elseif ~isfield(Electrode,'Brand') || isempty(Electrode(e).Brand)
-            error('Input structure ''Electrode'' must contain ''ID'' field!');
         end
-    end 
+    elseif ~isfield(Electrode,'ID') && ~isfield(Electrode,'Brand')
+        error('Input structure ''Electrode'' must contain ''ID'' field!');
+    end
     
     if ~isfield(Electrode, 'ContactNumber') || isempty(Electrode(e).ContactNumber)
         Electrode(e).ContactNumber = str2num(Electrode(e).ID(regexp(Electrode(e).ID,'\d')));                    % Extract number of contacts from ID
     end
     Electrode(e).Brand = Electrode(e).ID(1:findstr(Electrode(e).ID, num2str(Electrode(e).ContactNumber))-1);    % Extract manufacturer abbreviation from ID
 
-    switch Electrode(e).ID(1:2)
+    switch Electrode(e).Brand(1:2)
 
         case 'PL'                      %============ Plexon V-probe/U-probe linear multi-electrode array
             Electrode(e).Length = 90;                  % Full electrode shaft length (mm)
@@ -98,5 +97,4 @@ for e = 1:NoElectrodes                                                      % Fo
     Electrode(e).GuideColor         = [0,0,1];                                  % Set default guide tube color
     Electrode(e).GuideAlpha         = 0.5;                                      % Set default guide tube opacity
     Electrode(e).MRIColor           = [0 1 1];                                  % MRI view electrode shaft color
-    Electrode(e).QualityColorMap	= [0 0 0; 1 0 0; 1 0.5 0; 1 1 0; 0 1 0];
 end

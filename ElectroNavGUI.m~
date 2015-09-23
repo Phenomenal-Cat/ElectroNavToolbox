@@ -85,7 +85,6 @@ Defaults.MRIRootDir     = [];
 Defaults.DateFormats    = {'yyyymmdd','ddmmyy'};   
 Session.Date            = date;
 Session.Subject         = Defaults.SubjectID;
-Session.ElectrodeID     = 'PLX24';                  % Default electrode ID
 Session.GuideLength     = 27;                       % Default guidetube length (mm)
 
 
@@ -108,23 +107,25 @@ end
 
 %=================== SET GRID AND ELECTRODE SPECIFICATIONS ================
 Grid = ENT_GetGridParams(Defaults.GridID);                                  % Get grid parameters based on grid ID
-Grid.GuideLength        = Session.GuideLength;                              % Set guide tube length
-ElectrodeNumbers      	= [1,2];                                            % Set default number of electrodes used
+ElectrodeNumbers      	= 1;                                                % Set default number of electrodes used
 ElectrodeColors         = {'r','b','m','g','c'};
 for e = ElectrodeNumbers                                                    % For each electrode...
   	[Electrode.Selected]            = deal(e);                          	% Selected electrode defaults to 1 
+    Electrode(e).ID                 = 'PLX24';
     Electrode(e).Target           	= [0,0];                                % Default target is centre grid hole
     Electrode(e).Numbers            = ElectrodeNumbers;                         
     Electrode(e).QualityColorMap	= [0 0 0; 1 0 0; 1 0.5 0; 1 1 0; 0 1 0];
-    Electrode(e).ID                 = Session.ElectrodeID;                	% Electrode ID
     Electrode                       = ENT_GetElectrodeParams(Electrode);   	% Get electrode parameters based on electrode ID
-    Electrode(e).AllTypes           = sortrows(ENT_GetElectrodeParams');   	% Get list of all electrode types             
-    Electrode(e).CurrentDepth       = 0;                                    % Set default start depth (mm)
-    Electrode(e).IDColor            = ElectrodeColors{e};
+    Electrode(e).AllTypes           = sortrows(ENT_GetElectrodeParams');   	% Get list of all electrode types 
+ 	Electrode(e).StartDepth         = 0;                                    % Manual start depth (relative to grid base)
+    Electrode(e).MicrodriveDepth    = 0;                                    % Maicrodrive readout depth (relative to start depth)
+    Electrode(e).CurrentDepth       = 0;                                    % Total depth (mm)
+    Electrode(e).IDColor            = ElectrodeColors{e};                   % Electrode ID color
+    Electrode(e).GuideLength        = 25;                                   % Default guidetube length (mm)
     
     %=============== LOAD RECORDING HISTORY FROM SPREADSHEET
     if exist(Defaults.HistoryFile, 'file') ==2                             	% If recording history file was found...
-        Hist = EN_LoadHistory(Defaults.HistoryFile);        
+        Hist = ENT_LoadHistory(Defaults.HistoryFile);        
         Electrode(e).DateStrings = Hist.DateStrings;
     else
         Electrode(e).DateStrings = [];
@@ -359,7 +360,7 @@ end
 
 
 %% ========================== DRAW 3D VIEWS ===============================
-set(0, 'currentfigure', Fig.Handle);
+% set(0, 'currentfigure', Fig.Handle);
 set(Fig.Handle,'units','normalized');
 Fig.PlotHandle(1) = axes('units','normalized');                             % Axes 1 displays 2D grid view from above
 set(Fig.PlotHandle(1),'position',Fig.Position(1,:));
@@ -392,11 +393,11 @@ set(Fig.PlotHandle, 'fontsize', Fig.FontSize);
 
 %% ======================= INITIALIZE UI CONTROLS =========================
 Logo= imread(fullfile('Documentation','ElectroNavLogo1.png'),'BackgroundColor',Fig.Background);
-LogoAx = axes('box','off','units','pixels','position', [20, Fig.Rect(4)-120, Fig.UIControlDim(1), 42],'color',Fig.Background);
+LogoAx = axes('box','off','units','pixels','position', [20, Fig.Rect(4)-180, Fig.UIControlDim(1), 42],'color',Fig.Background);
 image(Logo);
 axis equal off
 
-Session.BoxPos  = [20 Fig.Rect(4)-330 Fig.UIControlDim(1), 150];
+Session.BoxPos  = [20 Fig.Rect(4)-350 Fig.UIControlDim(1), 140];
 Button.BoxPos   = [20 Session.BoxPos(2)-170 Fig.UIControlDim(1), 160];
 Contact.BoxPos  = [20 Button.BoxPos(2)-170 Fig.UIControlDim(1),160];
 Layer.BoxPos    = [20 Contact.BoxPos(2)-180 Fig.UIControlDim(1),170];
@@ -406,7 +407,7 @@ Surface.BoxPos  = [20 Layer.BoxPos(2)-10 Fig.UIControlDim, 110];
 Session.InputDim    = [100 20];
 Session.Labels      = {'Subject ID','Date','Electrode number','Electrode type','No. channels'};
 Session.Style       = {'Text','popup','popup','popup','edit'};
-Session.List        = {Session.Subject, Electrode(Electrode(1).Selected).DateStrings, Electrode(Electrode(1).Selected).Numbers, Electrode(Electrode(1).Selected).AllTypes, 24};
+Session.List        = {Session.Subject, Sess.DateStrings, Electrode(Electrode(1).Selected).Numbers, Electrode(Electrode(1).Selected).AllTypes, 24};
 Session.UIhandle    = uipanel('Title','Session details','FontSize', Fig.UIFontsize,'BackgroundColor',Fig.Background,'Units','pixels','Position',Session.BoxPos);
 for i = 1:numel(Session.Labels)
     Pos = numel(Session.Labels)-i;
@@ -431,7 +432,7 @@ set(Session.InputHandle(3),'value', Electrode(1).Selected);
 %=============== ELECTRODE POSITION
 Button.InputDim         = [100 20];
 Button.Labels           = {'M-L','A-P','Manual depth','Microdrive depth','Total depth','Guide length'};
-Button.CurrentValues    = {Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),0, 0, Electrode.CurrentDepth, Session.GuideLength};
+Button.CurrentValues    = {Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),Electrode(Electrode(1).Selected).StartDepth, Electrode(Electrode(1).Selected).MicrodriveDepth, Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength};
 Button.Units            = {'holes','holes','mm','mm','mm','mm'};
 Button.UIhandle     	= uipanel('Title','Electrode position','FontSize', Fig.UIFontsize,'BackgroundColor',Fig.Background,'Units','pixels','Position',Button.BoxPos);
 for i = 1:numel(Button.Labels)
@@ -647,7 +648,7 @@ function GT = DrawGuidetube(Electrode)
         [X,Y,Z] = cylinder(Grid.HoleDiameter/2,100);
         X = X+Electrode(Electrode(1).Selected).Target(1);
         Y = Y+Electrode(Electrode(1).Selected).Target(2);
-        Z = (Z*-Grid.GuideLength)+Grid.Width;
+        Z = (Z*-Electrode(Electrode(1).Selected).GuideLength)+Grid.Width;
         fvc = surf2patch(X,Y,Z);
         fvc.vertices = ApplyTform(fvc.vertices);
         GT(end+1) = patch('Faces',fvc.faces,'Vertices',fvc.vertices,'FaceColor',Electrode(Electrode(1).Selected).GuideColor,'EdgeColor','none');
@@ -1112,37 +1113,23 @@ function SessionParams(hObj, Event, Indx)
 global Electrode Session Contact Button Defaults
     switch Indx                                                         % If updated variable was...
         case 2      %==================== Session date
-            SelectedDate = Electrode(Electrode(1).Selected).DateStrings(get(hObj,'Value'),:);  % Get selected date string
-            if ~strcmp(SelectedDate, date)
-                Params = LoadSessionParams(Defaults.HistoryFile, SelectedDate);
-                Electrode(Electrode(1).Selected).Target = Params.Target;
-                Electrode(Electrode(1).Selected).CurrentDepth = Params.Depth;
-                Session.Date = Params.Date;
-                Session.ElectrodeID = Params.ElectrodeID;
-                Session.GuideLength = Params.GuideLength;
-                Session.Details = {Session.Subject,Session.Date,Session.ElectrodeID};
-                ElectrodeIDIndx = find(strncmp(Params.ElectrodeID, Electrode(1).AllTypes, 2));
-                set(Session.InputHandle(4), 'value',ElectrodeIDIndx);
-                Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),0, 0, Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength];
-                for i = 1:numel(Button.CurrentValues)
-                    set(Button.InputHandle(i),'String',num2str(Button.CurrentValues(i)));
-                end
-                Layer.M = DrawMRI(Electrode);
-                Electrode(Electrode(1).Selected).GT = DrawGuidetube(Electrode); 
-                Electrode = DrawElectrode(Electrode); 
+            SelectedDate = Session.DateStrings(get(hObj,'Value'),:);   % Get selected date string
+            if ~strcmp(SelectedDate, date)                                                      % If selected date is not todays date...
+                Params = ENT_LoadSessionParams(Defaults.HistoryFile, SelectedDate);             % Load session parameters for selected date  
+                LoadNewSession(Params);
             end
             
         case 3      %==================== Electrode number
             delete(Electrode(Electrode(1).Selected).C);
            	Electrode(Electrode(1).Selected).C = [];
             [Electrode.Selected] = deal(get(hObj,'Value'));
-            Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),0, 0, Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength];
+            Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),Electrode(Electrode(1).Selected).StartDepth, Electrode(Electrode(1).Selected).MicrodriveDepth, Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength];
             for i = 1:numel(Button.CurrentValues)
                 set(Button.InputHandle(i),'String',num2str(Button.CurrentValues(i)));
             end  
-            ElectrodeType = find(~cellfun(@isempty, strfind(Electrode(Electrode(1).Selected).AllTypes, Electrode(Electrode(1).Selected).Brand)));
+            ElectrodeType = find(~cellfun(@isempty, strfind(Electrode(1).AllTypes, Electrode(Electrode(1).Selected).Brand)));
             set(Session.InputHandle(4), 'value', ElectrodeType);
-            set(Session.InputHandle(5), 'value', Electrode(Electrode(1).Selected).ContactNumber);
+            set(Session.InputHandle(5), 'string', num2str(Electrode(Electrode(1).Selected).ContactNumber));
           	SessionParams(Session.InputHandle(5),[],5);             	% Update number of channels
 
             
@@ -1155,7 +1142,7 @@ global Electrode Session Contact Button Defaults
             
         case 5      %==================== Electrode contacts
              Electrode(Electrode(1).Selected).ContactNumber = str2num(get(hObj,'String'));
-             if ~isempty(Electrode(Electrode(1).Selected).C(1)) && isgraphics(Electrode(Electrode(1).Selected).C(1))
+             if ~isempty(Electrode(Electrode(1).Selected).C) && isgraphics(Electrode(Electrode(1).Selected).C(1))
                  delete(Electrode(Electrode(1).Selected).C);
                  Electrode(Electrode(1).Selected).C = [];
              end
@@ -1196,13 +1183,12 @@ function ElectrodePos(hObj, Event, Indx)
             
             
         case 6
-            Session.GuideLength = str2num(get(hObj,'String'));              % 6 = Guide tube length
-            Grid.GuideLength = Session.GuideLength;
+            Electrode(Electrode(1).Selected).GuideLength = str2num(get(hObj,'String'));              % 6 = Guide tube length
             delete(Electrode(Electrode(1).Selected).GT);                 	% Delete current guide tube object
             Electrode(Electrode(1).Selected).GT = DrawGuidetube(Electrode);	% Draw new guide tube object
     end
     if Indx < 3
-        Target(Indx) = str2num(get(hObj,'String'));
+        Electrode(Electrode(1).Selected).Target(Indx) = str2num(get(hObj,'String'));
         delete(Electrode(Electrode(1).Selected).GT);                      	% Delete current guide tube object
       	Electrode(Electrode(1).Selected).GT = DrawGuidetube(Electrode);   	% Draw new guide tube object
     end
@@ -1352,7 +1338,7 @@ function ContactSelect(hObj, Event, Indx)
             	set(Fig.PlotHandle(4),'zlim', Layer.MRI(1).BoundsAxMM);
             end
 
-        case 4  %============== Reset MRI view to slice containing current contact
+        case 5  %============== Reset MRI view to slice containing current contact
         	
         	
             
@@ -1378,49 +1364,53 @@ end
 %% ======================== MENU BAR CALLBACKS ============================
 
 
+%======================== LOAD DATA FROM PREVIOUS SESSION
+function LoadNewSession(Params)
+global Electrode Session Button Layer 
+    Session.Date                    = Params(1).DateString;
+    Session.DateIndx             	= Params(1).DateIndex;
+    [Electrode.Numbers]             = deal(1:Params(1).NoElectrodes);
+    [Electrode.Selected]            = deal(1);
+    [Electrode.StartDepth]          = deal(0);
+    [Electrode.MicrodriveDepth]     = deal(0);
+  	[Electrode.QualityColorMap]     = deal([0 0 0; 1 0 0; 1 0.5 0; 1 1 0; 0 1 0]);
+    for e = 1:Params(1).NoElectrodes
+        Electrode(e).Target         = Params(1).Target{e};
+        Electrode(e).CurrentDepth   = Params(1).Depth{e};
+        Electrode(e).GuideLength    = Params(1).GuideLength{e};
+        Electrode(e).ID             = Params(1).ElectrodeID{e};
+        Electrode(e).Brand          = Electrode(1).AllTypes{find(strncmp(Electrode(e).ID, Electrode(1).AllTypes, 2))};
+    end
+    Electrode                       = ENT_GetElectrodeParams(Electrode);                                % Get electrode parameters based on electrode ID
+    set(Session.InputHandle(2), 'value', Session.DateIndx);
+    set(Session.InputHandle(3), 'string', Electrode(1).Numbers, 'value', Electrode(1).Selected);
+    set(Session.InputHandle(4), 'value', find(strncmp(Electrode(Electrode(1).Selected).ID, Electrode(1).AllTypes, 2)));
+    set(Session.InputHandle(5), 'string', num2str(Electrode(Electrode(1).Selected).ContactNumber));
+
+    Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),Electrode(Electrode(1).Selected).StartDepth, Electrode(Electrode(1).Selected).MicrodriveDepth, Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength];
+    for i = 1:numel(Button.CurrentValues)
+        set(Button.InputHandle(i),'String',num2str(Button.CurrentValues(i)));
+    end
+    Layer.M = DrawMRI(Electrode);
+    for e = Electrode(1).Numbers
+        [Electrode.Seletced] = deal(e);
+        Electrode(e).GT = DrawGuidetube(Electrode); 
+      	Electrode = DrawElectrode(Electrode); 
+    end
+
+                
+end
+
+
 %========================== FILE MENU CALLBACK ============================
 function FileSelect(hObj, Event, Indx, Indx2)
     global Electrode Fig Session Button Defaults Layer
     switch Indx
         
         case 1          %============================= LOAD previous session
-%             if exist(Defaults.HistoryFile,'file')==0                                     	% If default Excel file doesntt exist...
-%               	[Filename, Pathname, Indx] = uiputfile('*.xls', 'Save current session to...'); 	% Ask user to specify Excel file to save to
-%                 if isequal(Filename,0) || isequal(Pathname,0)                                               
-%                     return
-%                 end
-%                 Defaults.HistoryFile = fullfile(Pathname, Filename);                     	% Set full path of Excel file
-%             end
-%             [status,SheetNames] = xlsfinfo(Defaults.HistoryFile);                           % Get Excel sheet names
-%             if ~isfield(Defaults,'DateSheet')
-%                 [Selection,ok] = listdlg('ListString',SheetNames,...                        	% Ask user to select a sheet
-%                                          'ListSize',[160 60],...
-%                                          'SelectionMode', 'multiple',...
-%                                          'PromptString','Select Excel sheet(s):');
-%                 Defaults.ExcelSheet = Selection;
-%             end
-%             Data = [];
-%             for s = 1:numel(Defaults.ExcelSheet)
-%                 [num,txt,raw] =  xlsread(Defaults.HistoryFile,SheetNames{s},'','basic');  	% Read Excel file
-%                 Data = [Data; num];
-%             end
-            Params = LoadSessionParams(Defaults.HistoryFile);
-            Electrode(Electrode(1).Selected).Target = Params.Target;
-            Electrode(Electrode(1).Selected).CurrentDepth = Params.Depth;
-            Session.Date = Params.Date;
-            Session.ElectrodeID = Params.ElectrodeID;
-            Session.GuideLength = Params.GuideLength;
-            Session.Details = {Session.Subject,Session.Date,Session.ElectrodeID};
-            ElectrodeIDIndx = find(strncmp(Params.ElectrodeID,Electrode(1).AllTypes, 2));
-            set(Session.InputHandle(2), 'value',Params.DateIndex);
-            set(Session.InputHandle(3), 'value',ElectrodeIDIndx);
-            Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),0, 0, Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength];
-            for i = 1:numel(Button.CurrentValues)
-                set(Button.InputHandle(i),'String',num2str(Button.CurrentValues(i)));
-            end
-            Layer.M = DrawMRI(Electrode);
-            Electrode(Electrode(1).Selected).GT = DrawGuidetube(Electrode); 
-            Electrode = DrawElectrode(Electrode); 
+            Params = ENT_LoadSessionParams(Defaults.HistoryFile);
+            LoadNewSession(Params);
+ 
             
         case 2  	%============================= SAVE current session
             if exist(Defaults.HistoryFile,'file')==0                                                        % If default Excel file doesntt exist...
@@ -1436,7 +1426,7 @@ function FileSelect(hObj, Event, Indx, Indx2)
                 if exist('readtable','file')~=0
                     T = readtable(Defaults.HistoryFile);
                     T.Date = datetime(T.Date,'ConvertFrom','excel');
-                    Cells = {Session.Date, Electrode(Electrode(1).Selected).Target(1), Electrode(Electrode(1).Selected).Target(2), Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength, 0, Session.ElectrodeID};
+                    Cells = {Session.Date, Electrode(Electrode(1).Selected).Target(1), Electrode(Electrode(1).Selected).Target(2), Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength, 0, Electrode(Electrode(1).Selected).ID};
                     T = [T; Cells];                                                                             % Append new data
                     writetable(T,Defaults.HistoryFile);
                 else
@@ -1458,7 +1448,7 @@ function FileSelect(hObj, Event, Indx, Indx2)
             %========= WRITE DATA TO .CSV FILE
             if strcmpi(Defaults.HistoryFile(end-2:end), 'csv')                    
                 formatSpec = '%{dd-MMM-yyyy}D%f%f%f%f%f%C';
-                Cells = {Session.Date, Electrode(Electrode(1).Selected).Target(1), Electrode(Electrode(1).Selected).Target(2), Electrode(Electrode(1).Selected).CurrentDepth, Session.GuideLength, 0, Session.ElectrodeID};
+                Cells = {Session.Date, Electrode(Electrode(1).Selected).Target(1), Electrode(Electrode(1).Selected).Target(2), Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength, 0, Electrode(Electrode(1).Selected).ID};
                 if exist('readtable','file')~=0
                     T = readtable(Defaults.HistoryFile,'Delimiter',',','Format',formatSpec);
                     T = [T; Cells];                                                                         % Append new data

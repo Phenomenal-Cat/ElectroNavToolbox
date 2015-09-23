@@ -1359,19 +1359,13 @@ global Layer
 end
 
 
-
-
-%% ======================== MENU BAR CALLBACKS ============================
-
-
-%======================== LOAD DATA FROM PREVIOUS SESSION
+%===================== LOAD DATA FROM PREVIOUS SESSION ====================
 function LoadNewSession(Params)
 global Electrode Session Button Layer 
 
     %=========== Update variables
     Session.Date                    = Params(1).DateString;
     Session.DateIndx             	= Params(1).DateIndex;                  
-    Electrode((Params(1).NoElectrodes+1):end) = [];                             % Remove electrodes
     [Electrode.Numbers]             = deal(1:Params(1).NoElectrodes);
     [Electrode.Selected]            = deal(1);
     [Electrode.StartDepth]          = deal(0);
@@ -1384,7 +1378,23 @@ global Electrode Session Button Layer
         Electrode(e).ID             = Params(1).ElectrodeID{e};
         Electrode(e).Brand          = Electrode(1).AllTypes{find(strncmp(Electrode(e).ID, Electrode(1).AllTypes, 2))};
     end
-    Electrode                       = ENT_GetElectrodeParams(Electrode);                                % Get electrode parameters based on electrode ID
+    
+    %=========== Delete excess electrode graphic objects
+    for e = numel(Electrode):-1:(Params(1).NoElectrodes+1)                                                                	% Delete any additional electrodes from previous session
+        if isfield(Electrode,'XhairHandle') && ~isempty(Electrode(e).XhairHandle) && ishandle(Electrode(e).XhairHandle(1)) 	% Check whether a handle to crosshairs exists
+            delete(Electrode(e).XhairHandle);
+        end
+     	if isfield(Electrode,'GT') && ~isempty(Electrode(e).GT) && ishandle(Electrode(e).GT(1)) 	% Check whether a handle to crosshairs exists
+            delete(Electrode(e).GT);
+        end
+        if isfield(Electrode,'E') && ~isempty(Electrode(e).E) && ishandle(Electrode(e).E(1)) 	% Check whether a handle to crosshairs exists
+            for i = 1:numel(Electrode(e).E)
+                delete(Electrode(e).E{i});
+            end
+        end
+        Electrode(e) = [];
+    end
+    Electrode	= ENT_GetElectrodeParams(Electrode);     	% Get remaining default electrode parameters based on electrode ID
     
     %=========== Update variables in GUI
     set(Session.InputHandle(2), 'value', Session.DateIndx);
@@ -1399,15 +1409,22 @@ global Electrode Session Button Layer
     %=========== Update plots
     Layer.M = DrawMRI(Electrode);
     for e = Electrode(1).Numbers
-        [Electrode.Seletced] = deal(e);
+        [Electrode.Selected] = deal(e);
         Electrode(e).GT = DrawGuidetube(Electrode); 
       	Electrode = DrawElectrode(Electrode); 
     end
     Electrode = DrawContacts(Electrode);
+    Electrode = DrawCurrentContact(Electrode);
     [Electrode.Selected] = deal(1);
+    drawnow;
+    SessionParams(Session.InputHandle(5),[],5);             	% Update number of channels
                 
 end
 
+
+
+
+%% ======================== MENU BAR CALLBACKS ============================
 
 %========================== FILE MENU CALLBACK ============================
 function FileSelect(hObj, Event, Indx, Indx2)

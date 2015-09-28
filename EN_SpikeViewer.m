@@ -175,7 +175,7 @@ global Fig Data Waveform SpikeData Burst
     else
         set(Fig.AxH(1), 'visible','on');
         set(Fig.Data.Handle, 'visible','on');
-        if ishandle(Fig.HistAx)
+        if isfield(Fig,'HistAx') && ishandle(Fig.HistAx)
             set(Fig.HistAx, 'visible','off');
             delete(Fig.HistH);
         end
@@ -212,7 +212,9 @@ global Fig Data Waveform Burst
     ph(1) = plot([0 Waveform(Fig.Current.CellIndx).TroughTime], [Waveform(Fig.Current.CellIndx).TroughAmp,Waveform(Fig.Current.CellIndx).TroughAmp], '--r');
     ph(2) = plot([0 Waveform(Fig.Current.CellIndx).PeakTime], [Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).PeakAmp], '--r');
     ph(3) = plot([Waveform(Fig.Current.CellIndx).PeakTime,Waveform(Fig.Current.CellIndx).TroughTime],[Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).PeakAmp],'-r','linewidth',5);
-    ph(4) = plot([Waveform(Fig.Current.CellIndx).TroughTime,Waveform(Fig.Current.CellIndx).TroughTime],[Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).TroughAmp],'--r');
+    ph(4) = plot(repmat(Waveform(Fig.Current.CellIndx).TroughTime,[1,2]),[Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).TroughAmp],'--r');
+    set(ph(3), 'ButtonDownFcn', {@ChangeWaveTime,1});
+    set(ph(4), 'ButtonDownFcn', {@ChangeWaveTime,2});
     axis tight
     
     axes(Fig.Pannel.AxH(2)); 	%================ plot inter-spike interval distribution
@@ -243,11 +245,54 @@ global Fig Data Waveform Burst
 	set(Fig.Pannel.AxH, 'box','off');
 end
 
-%===================== MENU CONTROLS
+
+function ChangeWaveTime(hObj, Event, Indx)
+global Fig Data Waveform 
+    axes(Fig.Pannel.AxH(1));
+    [NewX,NewY] = ginput(1);
+    Complete = 0;
+    set(gcf,'Pointer','crosshair');
+    switch Indx
+        case 1
+%             while Complete <= 100
+%                 NewX = get(gca, 'CurrentPoint');
+%                 NewX = NewX(1,1);
+                NewIndx = find(Waveform(Fig.Current.CellIndx).Times >= NewX(1,1));
+                NewY = Waveform(Fig.Current.CellIndx).Mean(NewIndx(1));
+                set(Fig.Current.Handles(7), 'xdata', [0, NewX], 'ydata', repmat(NewY,[1,2]));
+                set(Fig.Current.Handles(8), 'xdata', [NewX, Waveform(Fig.Current.CellIndx).TroughTime], 'ydata', [NewY NewY]);
+                set(Fig.Current.Handles(9), 'ydata', [NewY, Waveform(Fig.Current.CellIndx).TroughAmp]);
+%                 Complete =Complete+1;
+%             end
+         	Waveform(Fig.Current.CellIndx).PeakTime = NewX;
+            Waveform(Fig.Current.CellIndx).PeakAmp = NewY;
+
+        case 2
+%             while Complete <= 100
+%                 NewX = get(gca, 'CurrentPoint');
+%                 NewX = NewX(1,1);
+                NewIndx = find(Waveform(Fig.Current.CellIndx).Times >= NewX);
+                NewY = Waveform(Fig.Current.CellIndx).Mean(NewIndx(1));
+                set(Fig.Current.Handles(6), 'xdata', [0, NewX], 'ydata', repmat(NewY,[1,2]));
+                set(Fig.Current.Handles(7), 'xdata', [0, NewX]);
+                set(Fig.Current.Handles(8), 'xdata', [Waveform(Fig.Current.CellIndx).PeakTime, NewX]);
+                set(Fig.Current.Handles(9), 'xdata', [NewX, NewX]);
+%                 Complete =Complete+1;
+%             end
+            Waveform(Fig.Current.CellIndx).TroughTime = NewX;
+            Waveform(Fig.Current.CellIndx).TroughAmp = NewY;
+    end
+    Waveform(Fig.Current.CellIndx).PeakToTroughDuration = Waveform(Fig.Current.CellIndx).TroughTime-Waveform(Fig.Current.CellIndx).PeakTime;
+    Waveform(Fig.Current.CellIndx).PeakToTroughAmp = Waveform(Fig.Current.CellIndx).PeakAmp-Waveform(Fig.Current.CellIndx).TroughAmp;           % < IS SIGN CORRECT?
+    PlotPopData;
+    set(gcf,'Pointer','arrow');
+end
+
+%============================= MENU CONTROLS ==============================
 function MenuInput(hObj, Event, Indx)
 global Fig Data SpikeData
     switch Indx
-        case 1
+        case 1  %===================================== SELECT NEW DATA FILE
             [file, path] = uigetfile('*.mat', 'Select spike data file');
             if file ~= 0
                 %=========== LOAD NEW DATA
@@ -278,7 +323,8 @@ global Fig Data SpikeData
                 PlotPopData;
                 
             end
-        case 2
+            
+        case 2  %===================================== SELECT NEW DATE
          	Fig.Current.DateNo = get(hObj,'value');
             Fig.Current.ChannelNo = 1;
             Fig.Current.CellNo = 1;
@@ -288,20 +334,21 @@ global Fig Data SpikeData
             set(Fig.Pannel.InputsH(3), 'string', Data.Channels,'value',Fig.Current.ChannelNo);
           	set(Fig.Pannel.InputsH(4), 'string', Data.Cells,'value',Fig.Current.CellNo);
             
-            Fig.Current.DateIndx = find(ismember({SpikeData.Date},Fig.UniqueDates{Fig.Current.DateNo}));
-            Fig.Current.SpikeIndx = find(ismember(Fig.SpikeIdMat(Fig.Current.DateIndx,:),Fig.SpikeIdMat(:,[2,3]),'rows'));
+%             Fig.Current.DateIndx = find(ismember({SpikeData.Date}, Data.Dates{Fig.Current.DateNo}));
+%             Fig.Current.SpikeIndx = find(ismember(Fig.SpikeIdMat(Fig.Current.DateIndx,:),Fig.SpikeIdMat(:,[2,3]),'rows'));
             
-            set(Fig.Pannel.InputsH([3,4]),'value',1);
+          	set(Fig.Pannel.InputsH(3), 'string', Data.Channels,'value',Fig.Current.ChannelNo);
+          	set(Fig.Pannel.InputsH(4), 'string', Data.Cells,'value',Fig.Current.CellNo);
            	PlotCellData;
             
-        case 3
+        case 3  %===================================== SELECT NEW CHANNEL
             Fig.Current.ChannelNo = get(hObj,'value');
             Fig.Current.CellNo = 1;
             Data.Cells = strread(num2str(unique(Fig.SpikeIdMat(find(ismember(Fig.SpikeIdMat(:,[1,2]), [Fig.Current.DateNo, Fig.Current.ChannelNo],'rows')),3))'),'%s');
             set(Fig.Pannel.InputsH(4),'string', Data.Cells,'value',Fig.Current.CellNo);
            	PlotCellData;
             
-        case 4
+        case 4  %===================================== SELECT NEW CELL
             Fig.Current.CellNo = get(hObj,'value');
             PlotCellData;
             

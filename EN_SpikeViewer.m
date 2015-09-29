@@ -132,6 +132,7 @@ global Fig Waveform Data SpikeData
  	set(Fig.Pannel.InputsH(2), 'value', Fig.Current.DateNo);
     set(Fig.Pannel.InputsH(3), 'string', Data.Channels,'value',Fig.Current.ChannelNo);
     set(Fig.Pannel.InputsH(4), 'string', Data.Cells,'value',Fig.Current.CellNo);
+    set(Fig.Panel.VoidH, 'value', Waveform(Fig.Current.CellIndx).Valid);
 
     PlotCellData;                   
 end

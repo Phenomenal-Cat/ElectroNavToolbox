@@ -17,7 +17,6 @@ if nargin<2
     NiiFile1 = fullfile(Path, File1);
     [File2, Path] = uigetfile({'*.nii;*.img'},'Select second MR volume', Path);
     NiiFile2 = fullfile(Path, File2);
-    NiiFiles = {NiiFile1, NiiFile2};
     verbose = 1;
 else
     verbose = 0;
@@ -32,11 +31,7 @@ end
 %===== Check volumes have same resolution
 if Nii1.hdr.dime.pixdim(2:4)~= Nii2.hdr.dime.pixdim(2:4)
     NewRes = min([Nii1.hdr.dime.pixdim(2:4), Nii2.hdr.dime.pixdim(2:4)]);
-    Indx = find([Nii1.hdr.dime.pixdim(2:4), Nii2.hdr.dime.pixdim(2:4)]==NewRes);
-    NewNiiFile = NiiFiles{Indx};
-    reslice_nii(NiiFiles{Indx}, NewNiiFile, NewRes);
-    NiiFiles{Indx} = load_nii(NewNiiFile);
-    
+    reslice_nii(NiiFile1, NEwNiiFile1NewRes);
 end
 
 %===== Plot data to figure

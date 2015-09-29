@@ -1665,7 +1665,7 @@ function EditSelect(hObj, Event, Indx)
             
         case 4      %============================ DELETE ELECTRODE
             if numel(Electrode)==1
-                error('USer attempted to delete only electrode! There must be a minimum of one electrode (/optrode/ cannula) per session.');
+                error('Minimum of one electrode/ 
             end
             
             %======== Delete graphics objects

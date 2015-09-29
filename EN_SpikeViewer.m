@@ -23,6 +23,9 @@ end
 %================= LOAD SPIKE WAVEFORM DATA
 FH = EN_About(1);
 load(Data.File);
+if ~isfield(Waveform, 'Valid')
+    [Waveform.Valid] = deal(1);
+end
 Data.Dates = unique({SpikeData.Date});
 Data.Channels = strread(num2str(1:24),'%s');
 Data.Cells = strread(num2str(1:3),'%s');
@@ -30,9 +33,6 @@ for i = 1:numel(Data.Dates)
     Fig.SpikeIdMat(find(ismember({SpikeData.Date},Data.Dates{i})),1) = i;
 end
 Fig.SpikeIdMat(:,[2,3]) = [cell2mat({SpikeData.Channel})', cell2mat({SpikeData.Cell})'];
-Fig.Current.DateNo = 1;
-Fig.Current.ChannelNo = 1;
-Fig.Current.CellNo = 1;
 close(FH);
 
 %===================== OPEN FIGURE WINDOW
@@ -47,14 +47,18 @@ Fig.Handles.Figure = figure('Name',sprintf('ElectroNav%c - Spike Viewer',char(16
 %                 'menu','none','toolbar','none',...                          % Remove toolbar etc
 
 %===================== INITIALIZE GUI CONTROLS
-Fig.Current.DateNo = 1;
-Fig.Current.ChannelNo = 1;
-Fig.Current.CellNo = 1;
-Fig.Pannel.Handle = uipanel('BackgroundColor',Fig.Background,'Units','normalized','Position',[0.7,0.1,0.25,0.75],'Title','Current cell','FontSize',14);
-Fig.Pannel.Labels = {'Data file','Session date','Channel #','Cell #','X-axis','Y-axis'};
-Fig.Pannel.InputType = {'pushbutton','popup','popup','popup','popup','popup'};
-Fig.AxisLabels = {'Frequency','Spike width (ms)','Spike amplitude (uV)','Median inter-spike interval (ms)','Median inter-burst interval (ms)'};
-Fig.Pannel.Inputs = {Data.File, Data.Dates, Data.Channels, Data.Cells, Fig.AxisLabels, Fig.AxisLabels};
+Fig.Current.DateNo      = 1;
+Fig.Current.ChannelNo   = 1;
+Fig.Current.CellNo      = 1;
+Fig.Current.DateNo      = 1;
+Fig.Current.ChannelNo   = 1;
+Fig.Current.CellNo      = 1;
+Fig.WavColor            = [0.7,0.7,0.7, 0.5 0.5 0.5; 0.5 0.5 1, 0 0 1];
+Fig.Pannel.Handle       = uipanel('BackgroundColor',Fig.Background,'Units','normalized','Position',[0.7,0.1,0.25,0.75],'Title','Current cell','FontSize',14);
+Fig.Pannel.Labels       = {'Data file','Session date','Channel #','Cell #','X-axis','Y-axis'};
+Fig.Pannel.InputType    = {'pushbutton','popup','popup','popup','popup','popup'};
+Fig.AxisLabels          = {'Frequency','Spike width (ms)','Spike amplitude (uV)','Median inter-spike interval (ms)','Median inter-burst interval (ms)'};
+Fig.Pannel.Inputs       = {Data.File, Data.Dates, Data.Channels, Data.Cells, Fig.AxisLabels, Fig.AxisLabels};
 set(Fig.Pannel.Handle,'units','pixels')
 PannelSize = get(Fig.Pannel.Handle,'position');
 Ypos = PannelSize(4)-(0:25:150)-50;
@@ -72,6 +76,11 @@ set(Fig.Pannel.LabelsH, 'backgroundcolor', Fig.Background);
 set(Fig.Pannel.InputsH(5), 'value', Fig.Xaxis);
 set(Fig.Pannel.InputsH(6), 'value', Fig.Yaxis);
 
+SaveButtonPos = [280, Ypos(1), 100, 25];
+Fig.Pannel.SaveH(1) = uicontrol('Style','pushbutton','string','Save','parent',Fig.Pannel.Handle,'position',SaveButtonPos,'callback',{@MenuInput,n+th+1});
+Fig.Pannel.VoidH =  uicontrol('Style','togglebutton','string','Void','parent',Fig.Pannel.Handle,'position',SaveButtonPos-[0 25 0 0],'callback',{@MenuInput,n+th+2});
+
+
 %===================== DRAW INDIVIDUAL CELL AXES
 Fig.Pannel.AxPos(1,:) = [0.15, 0.6, 0.7, 0.18];
 Fig.Pannel.AxPos(2,:) = [0.15, 0.35, 0.7, 0.18];
@@ -86,8 +95,8 @@ Fig.AxH = axes('units','normalized','position',Fig.AxPos(1,:));
 for i = 1:numel(SpikeData)
     Fig.Data.Handle(i) = plot(Waveform(i).PeakToTroughDuration, abs(Waveform(i).PeakToTroughAmp) ,'.b','ButtonDownFcn',{@DataSelect, i});
     hold on;
+	set(Fig.Data.Handle(i), 'MarkerFaceColor',Fig.WavColor(Waveform(i).Valid+1,4:6),'MarkerEdgeColor',Fig.WavColor(Waveform(i).Valid+1,4:6),'MarkerSize',10);
 end
-set(Fig.Data.Handle, 'MarkerFaceColor',[0 0 1],'MarkerEdgeColor',[0 0 1],'MarkerSize',10);
 box off;
 grid on;
 xlabel(Fig.AxisLabels{Fig.Xaxis},'fontsize',18);
@@ -106,9 +115,13 @@ end
 %========================================================================= 
 function DataSelect(objectHandle, eventData, Indx)
 global Fig Waveform Data SpikeData
-    Fig.Current.CellIndx = Indx;                                                                                        % Get cell index number
-    set(Fig.Data.Handle, 'MarkerFaceColor',[0 0 1],'MarkerEdgeColor',[0 0 1],'MarkerSize',10);                          % Reset all cells
-    set(Fig.Data.Handle(Fig.Current.CellIndx),'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'MarkerSize',30);  	% Highlight selected
+    Fig.Current.CellIndx = Indx;                                                                                            % Get cell index number
+ 	set(Fig.Data.Handle, 'MarkerFaceColor',Fig.WavColor(2,4:6),'MarkerEdgeColor',Fig.WavColor(2,4:6),'MarkerSize',10);   	% Reset all cells
+  	InvalidIndx = find([Waveform.Valid]==0);
+    for i = 1:numel(InvalidIndx)
+        set(Fig.Data.Handle(InvalidIndx(i)), 'MarkerFaceColor',Fig.WavColor(1,4:6),'MarkerEdgeColor',Fig.WavColor(1,4:6),'MarkerSize',10);
+    end
+    set(Fig.Data.Handle(Fig.Current.CellIndx),'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'MarkerSize',30);         % Highlight selected
     
     %=========== UPDATE UI CONTROLS
     Fig.Current.DateNo = Fig.SpikeIdMat(Fig.Current.CellIndx, 1);               
@@ -199,7 +212,11 @@ global Fig Data Waveform Burst
         delete(Fig.Current.Handles);
     end
     Fig.Current.CellIndx = find(ismember(Fig.SpikeIdMat, [Fig.Current.DateNo, Fig.Current.ChannelNo, Fig.Current.CellNo],'rows'));
-   	set(Fig.Data.Handle, 'MarkerFaceColor',[0 0 1],'MarkerEdgeColor',[0 0 1],'MarkerSize',10);                          % Reset all cells
+ 	set(Fig.Data.Handle, 'MarkerFaceColor',Fig.WavColor(2,4:6),'MarkerEdgeColor',Fig.WavColor(2,4:6),'MarkerSize',10);   	% Reset all cells
+  	InvalidIndx = find([Waveform.Valid]==0);
+    for i = 1:numel(InvalidIndx)
+        set(Fig.Data.Handle(InvalidIndx(i)), 'MarkerFaceColor',Fig.WavColor(1,4:6),'MarkerEdgeColor',Fig.WavColor(1,4:6),'MarkerSize',10);
+    end
     set(Fig.Data.Handle(Fig.Current.CellIndx),'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'MarkerSize',30);  	% Highlight selected
     uistack(Fig.Data.Handle(Fig.Current.CellIndx), 'top');                                                              % Bring selected to front
     
@@ -207,12 +224,14 @@ global Fig Data Waveform Burst
     [Ha Hb Hc] = shadedplot(Waveform(Fig.Current.CellIndx).Times, Waveform(Fig.Current.CellIndx).Mean-Waveform(Fig.Current.CellIndx).Std, Waveform(Fig.Current.CellIndx).Mean+Waveform(Fig.Current.CellIndx).Std);
     hold on;
     Hd = plot(Waveform(Fig.Current.CellIndx).Times, Waveform(Fig.Current.CellIndx).Mean, '-b', 'linewidth', 2);
-    set(Ha(2), 'facecolor', [0.5 0.5 1]);
+    set(Hd, 'color', Fig.WavColor(Waveform(Fig.Current.CellIndx).Valid+1, 4:6));
+    set(Ha(2), 'facecolor', Fig.WavColor(Waveform(Fig.Current.CellIndx).Valid+1, 1:3));
     set([Hb, Hc], 'visible', 'off');
+
     ph(1) = plot([0 Waveform(Fig.Current.CellIndx).TroughTime], [Waveform(Fig.Current.CellIndx).TroughAmp,Waveform(Fig.Current.CellIndx).TroughAmp], '--r');
     ph(2) = plot([0 Waveform(Fig.Current.CellIndx).PeakTime], [Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).PeakAmp], '--r');
     ph(3) = plot([Waveform(Fig.Current.CellIndx).PeakTime,Waveform(Fig.Current.CellIndx).TroughTime],[Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).PeakAmp],'-r','linewidth',5);
-    ph(4) = plot(repmat(Waveform(Fig.Current.CellIndx).TroughTime,[1,2]),[Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).TroughAmp],'--r');
+    ph(4) = plot(repmat(Waveform(Fig.Current.CellIndx).TroughTime,[1,2]),[Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).TroughAmp],'-g','linewidth',2);
     set(ph(3), 'ButtonDownFcn', {@ChangeWaveTime,1});
     set(ph(4), 'ButtonDownFcn', {@ChangeWaveTime,2});
     axis tight
@@ -254,31 +273,21 @@ global Fig Data Waveform
     set(gcf,'Pointer','crosshair');
     switch Indx
         case 1
-%             while Complete <= 100
-%                 NewX = get(gca, 'CurrentPoint');
-%                 NewX = NewX(1,1);
-                NewIndx = find(Waveform(Fig.Current.CellIndx).Times >= NewX(1,1));
-                NewY = Waveform(Fig.Current.CellIndx).Mean(NewIndx(1));
-                set(Fig.Current.Handles(7), 'xdata', [0, NewX], 'ydata', repmat(NewY,[1,2]));
-                set(Fig.Current.Handles(8), 'xdata', [NewX, Waveform(Fig.Current.CellIndx).TroughTime], 'ydata', [NewY NewY]);
-                set(Fig.Current.Handles(9), 'ydata', [NewY, Waveform(Fig.Current.CellIndx).TroughAmp]);
-%                 Complete =Complete+1;
-%             end
+            NewIndx = find(Waveform(Fig.Current.CellIndx).Times >= NewX(1,1));
+            NewY = Waveform(Fig.Current.CellIndx).Mean(NewIndx(1));
+            set(Fig.Current.Handles(7), 'xdata', [0, NewX], 'ydata', repmat(NewY,[1,2]));
+            set(Fig.Current.Handles(8), 'xdata', [NewX, Waveform(Fig.Current.CellIndx).TroughTime], 'ydata', [NewY NewY]);
+            set(Fig.Current.Handles(9), 'ydata', [NewY, Waveform(Fig.Current.CellIndx).TroughAmp]);
          	Waveform(Fig.Current.CellIndx).PeakTime = NewX;
             Waveform(Fig.Current.CellIndx).PeakAmp = NewY;
 
         case 2
-%             while Complete <= 100
-%                 NewX = get(gca, 'CurrentPoint');
-%                 NewX = NewX(1,1);
-                NewIndx = find(Waveform(Fig.Current.CellIndx).Times >= NewX);
-                NewY = Waveform(Fig.Current.CellIndx).Mean(NewIndx(1));
-                set(Fig.Current.Handles(6), 'xdata', [0, NewX], 'ydata', repmat(NewY,[1,2]));
-                set(Fig.Current.Handles(7), 'xdata', [0, NewX]);
-                set(Fig.Current.Handles(8), 'xdata', [Waveform(Fig.Current.CellIndx).PeakTime, NewX]);
-                set(Fig.Current.Handles(9), 'xdata', [NewX, NewX]);
-%                 Complete =Complete+1;
-%             end
+            NewIndx = find(Waveform(Fig.Current.CellIndx).Times >= NewX);
+            NewY = Waveform(Fig.Current.CellIndx).Mean(NewIndx(1));
+            set(Fig.Current.Handles(6), 'xdata', [0, NewX], 'ydata', repmat(NewY,[1,2]));
+            set(Fig.Current.Handles(7), 'xdata', [0, NewX]);
+            set(Fig.Current.Handles(8), 'xdata', [Waveform(Fig.Current.CellIndx).PeakTime, NewX]);
+            set(Fig.Current.Handles(9), 'xdata', [NewX, NewX],'ydata', [Waveform(Fig.Current.CellIndx).PeakAmp, NewY]);
             Waveform(Fig.Current.CellIndx).TroughTime = NewX;
             Waveform(Fig.Current.CellIndx).TroughAmp = NewY;
     end
@@ -290,7 +299,7 @@ end
 
 %============================= MENU CONTROLS ==============================
 function MenuInput(hObj, Event, Indx)
-global Fig Data SpikeData
+global Fig Data SpikeData Waveform Burst
     switch Indx
         case 1  %===================================== SELECT NEW DATA FILE
             [file, path] = uigetfile('*.mat', 'Select spike data file');
@@ -367,5 +376,21 @@ global Fig Data SpikeData
         case {9,10}
             Fig.Ylims = str2double(get(Fig.Pannel.ThreshInput([3,4]),'string'))';
             set(Fig.AxH, 'ylim', Fig.Ylims);
+            
+        case 11 %===================================== SAVE CURRENT DATA
+            [path,file] = uiputfile('*.mat', 'Save spike data as...', cd);
+            Filename = fullfile(path, file);
+            save(Filename, 'Data','SpikeData','Waveform','Burst');
+            
+        case 12 %===================================== VOID CURRENT CELL 
+            if get(hObj, 'value') == 1
+                Waveform(Fig.Current.CellIndx).Valid = 0;
+            elseif get(hObj, 'value') == 0
+            	Waveform(Fig.Current.CellIndx).Valid = 1;
+            end
+        	set(Fig.Current.Handles(5), 'color', Fig.WavColor(Waveform(Fig.Current.CellIndx).Valid+1, 4:6));
+         	set(Fig.Current.Handles(2), 'facecolor', Fig.WavColor(Waveform(Fig.Current.CellIndx).Valid+1, 1:3));
+            set(Fig.Data.Handle(Fig.Current.CellIndx), 'markerfacecolor', Fig.WavColor(Waveform(Fig.Current.CellIndx).Valid+1, 4:6),'markeredgecolor', Fig.WavColor(Waveform(Fig.Current.CellIndx).Valid+1, 4:6));
+            
     end
 end

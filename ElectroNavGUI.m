@@ -1453,31 +1453,45 @@ function FileSelect(hObj, Event, Indx, Indx2)
   
             %========= WRITE DATA TO .XLS FILE
             if strcmpi(Defaults.HistoryFile(end-2:end), 'xls')
+             	Cells{1} = datenum(Session.Date)-datenum('30-Dec-1899');
+                for e = 1:numel(Electrode)
+                    Start = numel(Cells)+1;
+                    Cells(Start:Start+4) = {Electrode(e).ID, Electrode(e).Target(1), Electrode(e).Target(2), Electrode(e).CurrentDepth, Electrode(e).GuideLength};
+                end
                 if exist('readtable','file')~=0
-                    T = readtable(Defaults.HistoryFile);
-                    T.Date = datetime(T.Date,'ConvertFrom','excel');
-                    Cells{1} = {Session.Date};
-                    for e = 1:numel(Electrode)-1 % <<<<< TEMP FIX
-                        Start = numel(Cells)+1;
-                        Cells(Start:Start+4) = {Electrode(e).ID, Electrode(e).Target(1), Electrode(e).Target(2), Electrode(e).CurrentDepth, Electrode(e).GuideLength};
+                    try
+                        T = readtable(Defaults.HistoryFile);
+                        T.Date = datetime(T.Date,'ConvertFrom','excel');
+                        if size(T,2) > size(Cells,2)
+                            Cells{size(T,2)} = NaN;
+                            Cells(cellfun(@isempty, Cells)) = {NaN};
+                        elseif size(T,2) < size(Cells,2)
+                            T(:, end+1:size(Cells,2)) = NaN;
+                        end
+                        T = [T; Cells];                                                                             % Append new data
+                        writetable(T,Defaults.HistoryFile);
+                    catch
+                        UseXLS = 1;
                     end
-                    if size(T,2) > size(Cells,2)
-                        Cells(end+1: size(T,2)) = NaN;
-                    elseif size(T,2) < size(Cells,2)
-                        T(:, end+1:size(T,2)) = NaN;
-                    end
-                    Cells
-                  	T = [T; Cells];                                                                             % Append new data
-                    writetable(T,Defaults.HistoryFile);
-                else
+                end
+                if exist('readtable','file')==0 || UseXLS == 1
                     try
                         [num,txt,raw] =  xlsread(Defaults.HistoryFile,1,'');     	% Read data from Excel file
                         Headers = txt{1,:};                                       	% Skip row containing column titles
-                        for i = 2:size(raw,1)
+                        for i = 2:size(raw,1) 
                             raw{i,1} = raw{i,1}+datenum('30-Dec-1899');             % Convert Excel dates to Matlab dates
                         end
+                        if size(raw,2) > size(Cells,2)
+                        	Cells{size(raw,2)} = NaN;
+                            Cells(cellfun(@isempty, Cells)) = {NaN};
+                        elseif size(raw,2) < size(Cells,2)
+                            raw(:, end+1:size(Cells,2)) = NaN;
+                        end
                         raw(end+1,:) = Cells;
-                        [Success, Msg] = xlswrite(Defaults.HistoryFile, raw);         
+                        [Success, Msg] = xlswrite(Defaults.HistoryFile, raw);
+                      	if Success ~= 1
+                            disp(Msg);
+                        end
                     catch
                         fprintf('Writing to %s failed! Try writing to .csv format instead.\n', Defaults.HistoryFile);
                         [Filename, Pathname, Indx] = uiputfile('.csv', 'Save current session to .csv file');  	% Ask user to specify file to save to

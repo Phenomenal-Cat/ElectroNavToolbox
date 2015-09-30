@@ -1453,28 +1453,39 @@ function FileSelect(hObj, Event, Indx, Indx2)
   
             %========= WRITE DATA TO .XLS FILE
             if strcmpi(Defaults.HistoryFile(end-2:end), 'xls')
-                if exist('readtable','file')~=0
-                    T = readtable(Defaults.HistoryFile);
-                    T.Date = datetime(T.Date,'ConvertFrom','excel');
-                    Cells{1} = {Session.Date};
-                    for e = 1:numel(Electrode)-1 % <<<<< TEMP FIX
+                                    Cells{1} = {Session.Date};
+                    for e = 1:numel(Electrode)
                         Start = numel(Cells)+1;
                         Cells(Start:Start+4) = {Electrode(e).ID, Electrode(e).Target(1), Electrode(e).Target(2), Electrode(e).CurrentDepth, Electrode(e).GuideLength};
                     end
-                    if size(T,2) > size(Cells,2)
-                        Cells(end+1: size(T,2)) = NaN;
-                    elseif size(T,2) < size(Cells,2)
-                        T(:, end+1:size(T,2)) = NaN;
+                if exist('readtable','file')~=0
+                    try
+                        T = readtable(Defaults.HistoryFile);
+                        T.Date = datetime(T.Date,'ConvertFrom','excel');
+                        if size(T,2) > size(Cells,2)
+                            Cells{size(T,2)} = NaN;
+                            Cells(cellfun(@isempty, Cells)) = {NaN};
+                        elseif size(T,2) < size(Cells,2)
+                            T(:, end+1:size(Cells,2)) = NaN;
+                        end
+                        T = [T; Cells];                                                                             % Append new data
+                        writetable(T,Defaults.HistoryFile);
+                    catch
+                        UseXLS = 1;
                     end
-                    Cells
-                  	T = [T; Cells];                                                                             % Append new data
-                    writetable(T,Defaults.HistoryFile);
-                else
+                end
+                if exist('readtable','file')==0 || UseXLS == 1
                     try
                         [num,txt,raw] =  xlsread(Defaults.HistoryFile,1,'');     	% Read data from Excel file
                         Headers = txt{1,:};                                       	% Skip row containing column titles
-                        for i = 2:size(raw,1)
+                        for i = 2:size(raw,1) 
                             raw{i,1} = raw{i,1}+datenum('30-Dec-1899');             % Convert Excel dates to Matlab dates
+                        end
+                        if size(raw,2) > size(Cells,2)
+                        	Cells{size(raw,2)} = NaN;
+                            Cells(cellfun(@isempty, Cells)) = {NaN};
+                        elseif size(raw,2) < size(Cells,2)
+                            raw(:, end+1:size(Cells,2)) = NaN;
                         end
                         raw(end+1,:) = Cells;
                         [Success, Msg] = xlswrite(Defaults.HistoryFile, raw);         
@@ -1665,7 +1676,7 @@ function EditSelect(hObj, Event, Indx)
             
         case 4      %============================ DELETE ELECTRODE
             if numel(Electrode)==1
-                error('Minimum of one electrode/ 
+                error('USer attempted to delete only electrode! There must be a minimum of one electrode (/optrode/ cannula) per session.');
             end
             
             %======== Delete graphics objects

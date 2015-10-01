@@ -301,7 +301,7 @@ hs = guihandles(Fig.Handle);                                % get UI handles
 guidata(Fig.Handle, hs);                                    % store handles
 set(Fig.Handle, 'HandleVisibility', 'callback');            % protect from command line
 drawnow;
-% uiwait(Fig.Handle);
+uiwait(Fig.Handle);
 ParamsOut = Params;
 
 

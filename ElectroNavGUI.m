@@ -670,7 +670,7 @@ function Electrode = DrawElectrode(Electrode)
     global Fig Grid Brain Layer
     
     %========================= 2D grid view    
-    if isfield(Electrode,'E') && ~isempty(Electrode(Electrode(1).Selected).E) && isgraphics(Electrode(Electrode(1).Selected).E{1}(1))
+    if isfield(Electrode,'E') && ~isempty(Electrode(Electrode(1).Selected).E) && ishandle(Electrode(Electrode(1).Selected).E{1}(1))
         CurrXData = get(Electrode(Electrode(1).Selected).E{1}(1), 'Xdata');
         CurrYData = get(Electrode(Electrode(1).Selected).E{1}(1), 'Ydata');
         NewXData = CurrXData + diff([mean(CurrXData), Electrode(Electrode(1).Selected).Target(1)]);
@@ -678,7 +678,7 @@ function Electrode = DrawElectrode(Electrode)
         set(Electrode(Electrode(1).Selected).E{1}(1), 'Xdata', NewXData, 'Ydata', NewYData);
         set(Electrode(Electrode(1).Selected).E{1}(2), 'Xdata', repmat(Electrode(Electrode(1).Selected).Target(1),[1,2]));
         set(Electrode(Electrode(1).Selected).E{1}(3), 'Ydata', repmat(Electrode(Electrode(1).Selected).Target(2),[1,2]));
-    elseif ~isfield(Electrode,'E') || isempty(Electrode(Electrode(1).Selected).E) || ~isgraphics(Electrode(Electrode(1).Selected).E{1}(1))
+    elseif ~isfield(Electrode,'E') || isempty(Electrode(Electrode(1).Selected).E) || ~ishandle(Electrode(Electrode(1).Selected).E{1}(1))
         set(Fig.Handle, 'currentaxes', Fig.PlotHandle(1));
         Electrode(Electrode(1).Selected).E{1}(1) = FillCircle(Electrode(Electrode(1).Selected).Target([1,2]),Grid.HoleDiameter/2,100, Electrode(1).IDColors{Electrode(1).Selected});
         Electrode(Electrode(1).Selected).E{1}(2) = plot(repmat(Electrode(Electrode(1).Selected).Target(1),[1,2]),[-Grid.OuterRadius,Grid.OuterRadius],['-',Electrode(1).IDColors{Electrode(1).Selected}]);
@@ -1068,6 +1068,12 @@ end
 
 
 %% =========================== CALLBACKS ==================================
+
+function out = isgraphics(in)
+    if ~exist('isgraphics.m','file')
+        out = ishandle(in);
+    end
+end
 
 %========================== GRID HOLE SELECTION
 function GridClickCallback(objectHandle, eventData)

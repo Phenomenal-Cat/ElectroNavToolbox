@@ -57,10 +57,10 @@ if ok==0
     FigHandle = [];
     return;
 end
-Target          = [Hist(Selection).ML, Hist(Selection).AP];
-TargetDepth     = Hist(Selection).Depth;                              
-Session.Date    = Hist(Selection).DateStrings;  
-DaysElapsed     = datenum(date)-Hist(Selection).Dates;                    	% Days since each recording
+Target          = [Hist(Selection).ML, Hist.AP];
+TargetDepth     = Hist.Depth;                              
+Session.Date    = Hist.DateStrings;  
+DaysElapsed     = datenum(date)-Dates(Selection);                           % Days since each recording
 
 %========================== Set visualization parameters
 if Mode == 1

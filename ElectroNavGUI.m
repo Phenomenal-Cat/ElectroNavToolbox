@@ -515,7 +515,7 @@ Layer.SliderLabel(1) = uicontrol('Style','Text','String',sprintf('%d %%', Layer.
 Layer.SliderLabel(2) = uicontrol('Style','Text','String',sprintf('%.0f mm', Layer.sigma),'BackgroundColor',Fig.Background,'HorizontalAlignment','Left','Position',[Layer.ButtonPos(5,:)+[Layer.ButtonDim(1)*2,0],50,20],'parent',Layer.UIhandle);
 set([Layer.UIhandle, Layer.SliderLabel, Layer.LabelHandle], 'BackgroundColor',Fig.Background);
 set(Layer.InputHandle(3), 'BackgroundColor', Layer.Colors(Layer.CurrentStructure, :));
-
+set(Layer.InputHandle(6), 'BackgroundColor',Fig.Background);
 
 %============= ATLAS OVERLAYS
 
@@ -720,12 +720,8 @@ function Electrode = DrawElectrode(Electrode)
         
         %=========== DRAW CONTACTS IN MAIN SLICE VIEW
         if fh == 4
-            if exist('isgraphics.m','file')
-                CurrentHandles = find(isgraphics(Electrode(Electrode(1).Selected).E{4}));                   % Find valid graphics handles
-                NoCurrentContacts = numel(CurrentHandles)-2;                                            	% How many contacts currently exist?
-            else
-                NoCurrentContacts = numel(ishandle(Electrode(Electrode(1).Selected).E{4}))-2;                
-            end
+            CurrentHandles = find(isgraphics2(Electrode(Electrode(1).Selected).E{4}));                      % Find valid graphics handles
+            NoCurrentContacts = numel(CurrentHandles)-2;                                                    % How many contacts currently exist?
             for c = 1:max([Electrode(Electrode(1).Selected).ContactNumber, NoCurrentContacts])              % Loop through max number
                 Z3 = (Z*Electrode(Electrode(1).Selected).ContactDiameter)-Electrode(Electrode(1).Selected).CurrentDepth+Electrode(Electrode(1).Selected).TipLength+(c-1)*Electrode(Electrode(1).Selected).ContactSpacing;
                 [xa ya za] = ApplyTform(X3(1,:),Y3(1,:),Z3(1,:));
@@ -773,11 +769,7 @@ function Electrode = DrawElectrode(Electrode)
     
     %============ Set axis limits for main slice view
     if Layer.ZoomOn==1
-        if exist('isgraphics.m','file')
-            Contacts = find(isgraphics(Electrode(Electrode(1).Selected).E{4}));
-        else
-            Contacts = find(ishandle(Electrode(Electrode(1).Selected).E{4}));
-        end
+     	Contacts = find(isgraphics2(Electrode(Electrode(1).Selected).E{4}));
         ZoomedXlims = sort([mean(mean(get(Electrode(Electrode(1).Selected).E{4}(3), 'xdata'),2)), mean(mean(get(Electrode(Electrode(1).Selected).E{4}(Contacts(end)), 'xdata'),2))]);
         ZoomedYlims = sort([mean(mean(get(Electrode(Electrode(1).Selected).E{4}(3), 'ydata'),2)), mean(mean(get(Electrode(Electrode(1).Selected).E{4}(Contacts(end)), 'ydata'),2))]);
         ZoomedZlims = sort([mean(mean(get(Electrode(Electrode(1).Selected).E{4}(3), 'zdata'),2)), mean(mean(get(Electrode(Electrode(1).Selected).E{4}(Contacts(end)), 'zdata'),2))]);
@@ -909,11 +901,7 @@ function M = DrawMRI(Electrode)
     
 
   	if Layer.ZoomOn==1                          %================== ZOOM ON
-        if exist('isgraphics.m','file')
-            Contacts = find(isgraphics(Electrode(Electrode(1).Selected).E{4}));
-        else
-            Contacts = find(ishandle(Electrode(Electrode(1).Selected).E{4}));
-        end
+        Contacts = find(isgraphics2(Electrode(Electrode(1).Selected).E{4}));
         ZoomedXlims = sort([mean(mean(get(Electrode(Electrode(1).Selected).E{4}(3), 'xdata'),2)), mean(mean(get(Electrode(Electrode(1).Selected).E{4}(Contacts(end)), 'xdata'),2))]);
         ZoomedYlims = sort([mean(mean(get(Electrode(Electrode(1).Selected).E{4}(3), 'ydata'),2)), mean(mean(get(Electrode(Electrode(1).Selected).E{4}(Contacts(end)), 'ydata'),2))]);
         ZoomedZlims = sort([mean(mean(get(Electrode(Electrode(1).Selected).E{4}(3), 'zdata'),2)), mean(mean(get(Electrode(Electrode(1).Selected).E{4}(Contacts(end)), 'zdata'),2))]);
@@ -1069,9 +1057,11 @@ end
 
 %% =========================== CALLBACKS ==================================
 
-function out = isgraphics(in)
+function out = isgraphics2(in)
     if ~exist('isgraphics.m','file')
         out = ishandle(in);
+    else
+        out = isgraphics(in);
     end
 end
 
@@ -1377,7 +1367,25 @@ end
 function LoadNewSession(Params)
 global Electrode Session Button Layer 
 
-    %=========== Update variables
+    %=========== Delete excess electrode graphic objects
+    if numel(Electrode) > Params(1).NoElectrodes
+        for e = numel(Electrode):-1:(Params(1).NoElectrodes+1)                                                                	% Delete any additional electrodes from previous session
+            if isfield(Electrode,'XhairHandle') && ~isempty(Electrode(e).XhairHandle) && ishandle(Electrode(e).XhairHandle(1)) 	% Check whether a handle to crosshairs exists
+                delete(Electrode(e).XhairHandle);
+            end
+            if isfield(Electrode,'GT') && ~isempty(Electrode(e).GT) && ishandle(Electrode(e).GT(1)) 	% Check whether a handle to guidetube exists
+                delete(Electrode(e).GT);
+            end
+            if isfield(Electrode,'E') && ~isempty(Electrode(e).E) && ishandle(Electrode(e).E(1)) 	% Check whether a handle to electrode exists
+                for i = 1:numel(Electrode(e).E)
+                    delete(Electrode(e).E{i});
+                end
+            end
+            Electrode(e) = [];
+        end
+    end
+
+    %=========== Update variables    
     Session.Date                    = Params(1).DateString;
     Session.DateIndx             	= Params(1).DateIndex;                  
     [Electrode.Numbers]             = deal(1:Params(1).NoElectrodes);
@@ -1391,25 +1399,10 @@ global Electrode Session Button Layer
         Electrode(e).GuideLength    = Params(1).GuideLength{e};
         Electrode(e).ID             = Params(1).ElectrodeID{e};
         Electrode(e).Brand          = Electrode(1).AllTypes{find(strncmp(Electrode(e).ID, Electrode(1).AllTypes, 2))};
+      	Electrode(e).ContactData  	= Params(1).ContactData{e};
     end
-    
-    %=========== Delete excess electrode graphic objects
-    for e = numel(Electrode):-1:(Params(1).NoElectrodes+1)                                                                	% Delete any additional electrodes from previous session
-        if isfield(Electrode,'XhairHandle') && ~isempty(Electrode(e).XhairHandle) && ishandle(Electrode(e).XhairHandle(1)) 	% Check whether a handle to crosshairs exists
-            delete(Electrode(e).XhairHandle);
-        end
-     	if isfield(Electrode,'GT') && ~isempty(Electrode(e).GT) && ishandle(Electrode(e).GT(1)) 	% Check whether a handle to crosshairs exists
-            delete(Electrode(e).GT);
-        end
-        if isfield(Electrode,'E') && ~isempty(Electrode(e).E) && ishandle(Electrode(e).E(1)) 	% Check whether a handle to crosshairs exists
-            for i = 1:numel(Electrode(e).E)
-                delete(Electrode(e).E{i});
-            end
-        end
-        Electrode(e) = [];
-    end
-    Electrode	= ENT_GetElectrodeParams(Electrode);     	% Get remaining default electrode parameters based on electrode ID
-    
+ 	Electrode                       = ENT_GetElectrodeParams(Electrode);     	% Get remaining default electrode parameters based on electrode ID
+
     %=========== Update variables in GUI
     set(Session.InputHandle(2), 'value', Session.DateIndx);
     set(Session.InputHandle(3), 'string', Electrode(1).Numbers, 'value', Electrode(1).Selected);

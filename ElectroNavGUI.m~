@@ -670,7 +670,7 @@ function Electrode = DrawElectrode(Electrode)
     global Fig Grid Brain Layer
     
     %========================= 2D grid view    
-    if isfield(Electrode,'E') && ~isempty(Electrode(Electrode(1).Selected).E) && isgraphics(Electrode(Electrode(1).Selected).E{1}(1))
+    if isfield(Electrode,'E') && ~isempty(Electrode(Electrode(1).Selected).E) && ishandle(Electrode(Electrode(1).Selected).E{1}(1))
         CurrXData = get(Electrode(Electrode(1).Selected).E{1}(1), 'Xdata');
         CurrYData = get(Electrode(Electrode(1).Selected).E{1}(1), 'Ydata');
         NewXData = CurrXData + diff([mean(CurrXData), Electrode(Electrode(1).Selected).Target(1)]);
@@ -678,7 +678,7 @@ function Electrode = DrawElectrode(Electrode)
         set(Electrode(Electrode(1).Selected).E{1}(1), 'Xdata', NewXData, 'Ydata', NewYData);
         set(Electrode(Electrode(1).Selected).E{1}(2), 'Xdata', repmat(Electrode(Electrode(1).Selected).Target(1),[1,2]));
         set(Electrode(Electrode(1).Selected).E{1}(3), 'Ydata', repmat(Electrode(Electrode(1).Selected).Target(2),[1,2]));
-    elseif ~isfield(Electrode,'E') || isempty(Electrode(Electrode(1).Selected).E) || ~isgraphics(Electrode(Electrode(1).Selected).E{1}(1))
+    elseif ~isfield(Electrode,'E') || isempty(Electrode(Electrode(1).Selected).E) || ~ishandle(Electrode(Electrode(1).Selected).E{1}(1))
         set(Fig.Handle, 'currentaxes', Fig.PlotHandle(1));
         Electrode(Electrode(1).Selected).E{1}(1) = FillCircle(Electrode(Electrode(1).Selected).Target([1,2]),Grid.HoleDiameter/2,100, Electrode(1).IDColors{Electrode(1).Selected});
         Electrode(Electrode(1).Selected).E{1}(2) = plot(repmat(Electrode(Electrode(1).Selected).Target(1),[1,2]),[-Grid.OuterRadius,Grid.OuterRadius],['-',Electrode(1).IDColors{Electrode(1).Selected}]);
@@ -720,12 +720,8 @@ function Electrode = DrawElectrode(Electrode)
         
         %=========== DRAW CONTACTS IN MAIN SLICE VIEW
         if fh == 4
-            if exist('isgraphics.m','file')
-                CurrentHandles = find(isgraphics(Electrode(Electrode(1).Selected).E{4}));                   % Find valid graphics handles
-                NoCurrentContacts = numel(CurrentHandles)-2;                                            	% How many contacts currently exist?
-            else
-                NoCurrentContacts = numel(ishandle(Electrode(Electrode(1).Selected).E{4}))-2;                
-            end
+            CurrentHandles = find(isgraphics2(Electrode(Electrode(1).Selected).E{4}));                      % Find valid graphics handles
+            NoCurrentContacts = numel(CurrentHandles)-2;                                                    % How many contacts currently exist?
             for c = 1:max([Electrode(Electrode(1).Selected).ContactNumber, NoCurrentContacts])              % Loop through max number
                 Z3 = (Z*Electrode(Electrode(1).Selected).ContactDiameter)-Electrode(Electrode(1).Selected).CurrentDepth+Electrode(Electrode(1).Selected).TipLength+(c-1)*Electrode(Electrode(1).Selected).ContactSpacing;
                 [xa ya za] = ApplyTform(X3(1,:),Y3(1,:),Z3(1,:));
@@ -773,11 +769,7 @@ function Electrode = DrawElectrode(Electrode)
     
     %============ Set axis limits for main slice view
     if Layer.ZoomOn==1
-        if exist('isgraphics.m','file')
-            Contacts = find(isgraphics(Electrode(Electrode(1).Selected).E{4}));
-        else
-            Contacts = find(ishandle(Electrode(Electrode(1).Selected).E{4}));
-        end
+     	Contacts = find(isgraphics2(Electrode(Electrode(1).Selected).E{4}));
         ZoomedXlims = sort([mean(mean(get(Electrode(Electrode(1).Selected).E{4}(3), 'xdata'),2)), mean(mean(get(Electrode(Electrode(1).Selected).E{4}(Contacts(end)), 'xdata'),2))]);
         ZoomedYlims = sort([mean(mean(get(Electrode(Electrode(1).Selected).E{4}(3), 'ydata'),2)), mean(mean(get(Electrode(Electrode(1).Selected).E{4}(Contacts(end)), 'ydata'),2))]);
         ZoomedZlims = sort([mean(mean(get(Electrode(Electrode(1).Selected).E{4}(3), 'zdata'),2)), mean(mean(get(Electrode(Electrode(1).Selected).E{4}(Contacts(end)), 'zdata'),2))]);
@@ -909,11 +901,7 @@ function M = DrawMRI(Electrode)
     
 
   	if Layer.ZoomOn==1                          %================== ZOOM ON
-        if exist('isgraphics.m','file')
-            Contacts = find(isgraphics(Electrode(Electrode(1).Selected).E{4}));
-        else
-            Contacts = find(ishandle(Electrode(Electrode(1).Selected).E{4}));
-        end
+        Contacts = find(isgraphics2(Electrode(Electrode(1).Selected).E{4}));
         ZoomedXlims = sort([mean(mean(get(Electrode(Electrode(1).Selected).E{4}(3), 'xdata'),2)), mean(mean(get(Electrode(Electrode(1).Selected).E{4}(Contacts(end)), 'xdata'),2))]);
         ZoomedYlims = sort([mean(mean(get(Electrode(Electrode(1).Selected).E{4}(3), 'ydata'),2)), mean(mean(get(Electrode(Electrode(1).Selected).E{4}(Contacts(end)), 'ydata'),2))]);
         ZoomedZlims = sort([mean(mean(get(Electrode(Electrode(1).Selected).E{4}(3), 'zdata'),2)), mean(mean(get(Electrode(Electrode(1).Selected).E{4}(Contacts(end)), 'zdata'),2))]);
@@ -1068,6 +1056,14 @@ end
 
 
 %% =========================== CALLBACKS ==================================
+
+function out = isgraphics2(in)
+    if ~exist('isgraphics.m','file')
+        out = ishandle(in);
+    else
+        out = isgraphics(in);
+    end
+end
 
 %========================== GRID HOLE SELECTION
 function GridClickCallback(objectHandle, eventData)
@@ -1371,7 +1367,7 @@ end
 function LoadNewSession(Params)
 global Electrode Session Button Layer 
 
-    %=========== Update variables
+    %=========== Update variables    
     Session.Date                    = Params(1).DateString;
     Session.DateIndx             	= Params(1).DateIndex;                  
     [Electrode.Numbers]             = deal(1:Params(1).NoElectrodes);
@@ -1389,6 +1385,7 @@ global Electrode Session Button Layer
     
     %=========== Delete excess electrode graphic objects
     for e = numel(Electrode):-1:(Params(1).NoElectrodes+1)                                                                	% Delete any additional electrodes from previous session
+        e
         if isfield(Electrode,'XhairHandle') && ~isempty(Electrode(e).XhairHandle) && ishandle(Electrode(e).XhairHandle(1)) 	% Check whether a handle to crosshairs exists
             delete(Electrode(e).XhairHandle);
         end
@@ -1453,11 +1450,11 @@ function FileSelect(hObj, Event, Indx, Indx2)
   
             %========= WRITE DATA TO .XLS FILE
             if strcmpi(Defaults.HistoryFile(end-2:end), 'xls')
-                                    Cells{1} = {Session.Date};
-                    for e = 1:numel(Electrode)
-                        Start = numel(Cells)+1;
-                        Cells(Start:Start+4) = {Electrode(e).ID, Electrode(e).Target(1), Electrode(e).Target(2), Electrode(e).CurrentDepth, Electrode(e).GuideLength};
-                    end
+             	Cells{1} = datenum(Session.Date)-datenum('30-Dec-1899');
+                for e = 1:numel(Electrode)
+                    Start = numel(Cells)+1;
+                    Cells(Start:Start+4) = {Electrode(e).ID, Electrode(e).Target(1), Electrode(e).Target(2), Electrode(e).CurrentDepth, Electrode(e).GuideLength};
+                end
                 if exist('readtable','file')~=0
                     try
                         T = readtable(Defaults.HistoryFile);
@@ -1488,7 +1485,10 @@ function FileSelect(hObj, Event, Indx, Indx2)
                             raw(:, end+1:size(Cells,2)) = NaN;
                         end
                         raw(end+1,:) = Cells;
-                        [Success, Msg] = xlswrite(Defaults.HistoryFile, raw);         
+                        [Success, Msg] = xlswrite(Defaults.HistoryFile, raw);
+                      	if Success ~= 1
+                            disp(Msg);
+                        end
                     catch
                         fprintf('Writing to %s failed! Try writing to .csv format instead.\n', Defaults.HistoryFile);
                         [Filename, Pathname, Indx] = uiputfile('.csv', 'Save current session to .csv file');  	% Ask user to specify file to save to

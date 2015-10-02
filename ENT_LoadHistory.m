@@ -25,14 +25,14 @@ if strcmpi(HistoryFormat, '.xls')                               % If file format
         Headers = txt(1,:);                                  	% Skip row containing column titles
         num(1,:) = [];                                       	% Remove nans
         DateColumn = find(~cellfun(@isempty, strfind(Headers,'Date')));
-        Dates = num(:,DateColumn)+datenum('30-Dec-1899');     	% Convert Excel dates to Matlab dates
-      	Hist.DateStrings = datestr(Dates);                     
+        [Hist.Dates] = num(:,DateColumn)+datenum('30-Dec-1899');     	% Convert Excel dates to Matlab dates
+      	Hist.DateStrings = datestr(Hist.Dates);                     
         
-%         ColumnNames = {'ML','AP','TargetDepth','Electrode'};
-%         for c = 1:numel(ColumnNames)
-%             Column{c} = find(~cellfun(@isempty, strfind(Headers,ColumnNames{c})));
-%             Hist.([ColumnNames{c}]) = num(:, Column{c});
-%         end
+        ColumnNames = {'ML','AP','Depth','Electrode'};
+        for c = 1:numel(ColumnNames)
+            Column{c} = find(~cellfun(@isempty, strfind(Headers,ColumnNames{c})));
+            Hist.([ColumnNames{c}]) = num(:, Column{c}(Column{c}<size(num,2)));
+        end
 %     end
     
 elseif strcmpi(HistoryFormat, '.csv')                           % If file format was csv...

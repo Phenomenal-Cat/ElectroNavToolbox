@@ -1,12 +1,12 @@
-function [SessionParams] = ENT_LoadSessionParams(HistoryFile, SessionDate)
+function [Status] = ENT_WriteSessionParams(HistoryFile, Params)
 
-%========================== ENT_LoadSessionParams.m ========================
-% This function retreives the session parameters stored in the provided
+%========================== ENT_WriteSessionParams.m ======================
+% This function writes the provided session parameters to the specified 
 % spreadsheet file, for the date specified.
 %
 % INPUTS:
 %       HistoryFile:    full path of spreadsheet (.xls/ .csv) containing recording history
-%       SessionDate:    optional string specifying which date to query
+%       Params:         optional string specifying which date to query
 %                       parameters for, in DD-MMM-YYYY format. If not provided,
 %                       user must select from a list.
 %
@@ -57,41 +57,27 @@ else                                                %============ MATLAB R2013b 
 end
 
 %========================== Get a date input
-if ~exist('SessionDate','var')
-    [Selection,ok] = listdlg('ListString',DateStrings,'SelectionMode','multiple','PromptString','Select session:');
-    if ok==0
-        SessionParams = [];
-        return;
-    end
-else
-    if ischar(SessionDate)
-        SessionDate = {SessionDate};
-    end
-    Selection = nan(1,numel(SessionDate));
-    for d = 1:numel(SessionDate)
-        Selection(d) = strmatch(SessionDate{d}, DateStrings);
-        if isempty(Selection(d))
-            error('Specified session date ''%s'' was not found in %s!', SessionDate{d}, HistoryFile);
-        end
-    end
-end
+
 
 %========================== Load spike quality data
 if strcmpi(HistoryFormat, '.xls')
     [status, sheets] = xlsfinfo(HistoryFile);
     if numel(sheets) >= 2
-        [num,txt,raw] =  xlsread(HistoryFile,sheets{2},'');                         % Read data from Excel file sheet 2
-        for d = 1:numel(SessionDate)
-            DateIndx = strfind(num(1,:), datenum(SessionDate{d})-datenum('30-Dec-1899'));
+        [num,txt,raw] =  xlsread(HistoryFile,sheets{2},'');                                     % Read data from Excel file sheet 2
+        for d = 1:numel(SessionDate)                                                            
+            DateIndx = strfind(num(1,:), datenum(SessionDate{d})-datenum('30-Dec-1899'));       
             for e = 1:numel(DateIndx)
-                SessionParams(d).ContactData{e} = num(3:end,DateIndx(e));
-                SessionParams(d).ContactData{e}(isnan(SessionParams(d).ContactData{e})) = 0;
+                SessionParams(d).ContactData{e} = num(3:end,DateIndx(e));                       
+                SessionParams(d).ContactData{e}(isnan(SessionParams(d).ContactData{e})) = 0;    
             end
         end
     end
 end
 
-%========================== Return data
+Electrode(e).ContactData  	= Params(1).ContactData{e};
+
+
+%========================== Write data
 for d = 1:numel(Selection)                                                                                  % For each session selected...
     SessionParams(d).Date               = datestr(C{Selection(d),1});                                       % Record session date string
     SessionParams(d).DateString         = DateStrings(Selection(d),:);

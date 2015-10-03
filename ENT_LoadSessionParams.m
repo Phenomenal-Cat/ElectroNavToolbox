@@ -8,7 +8,8 @@ function [SessionParams] = ENT_LoadSessionParams(HistoryFile, SessionDate)
 %       HistoryFile:    full path of spreadsheet (.xls/ .csv) containing recording history
 %       SessionDate:    optional string specifying which date to query
 %                       parameters for, in DD-MMM-YYYY format. If not provided,
-%                       user must select from a list.
+%                       user must select from a list. 
+%                       - 'All' returns all dates available in file
 %
 % ELECTRONAV TOOLBOX
 % Developed by Aidan Murphy
@@ -32,12 +33,13 @@ if exist('datetime.m','file')==2                   	%============ MATLAB R2014a 
         T.Date = datetime(T.Date,'ConvertFrom','excel');
       	DateStrings = datestr(T.Date);
         C = table2cell(T);
+        Header = T.Properties.VariableNames;
         
     elseif strcmpi(HistoryFormat, '.csv') 
 %         formatSpec = '%{dd-MMM-yyyy}D%f%f%f%f%f%C';
 %         T = readtable(HistoryFile,'Delimiter',',','Format',formatSpec);
      	fid = fopen(HistoryFile,'rt');
-        Headers = textscan(fid, '%s%s%s%s%s%s%s\n', 1, 'delimiter', ',');
+        Header = textscan(fid, '%s%s%s%s%s%s%s\n', 1, 'delimiter', ',');
         data = textscan(fid, '%f %f %f %f %f %f %s','headerlines',1,'delimiter',',');
         fclose(fid);
         Dates = data{1};   
@@ -49,7 +51,7 @@ if exist('datetime.m','file')==2                   	%============ MATLAB R2014a 
     end
 else                                                %============ MATLAB R2013b and earlier    
     [num,txt,raw] =  xlsread(HistoryFile,1,'');                 % Read data from Excel file
-    Headers = txt{1,:};                                       	% Skip row containing column titles
+    Header = txt{1,:};                                       	% Skip row containing column titles
     num(1,:) = [];                                            	% Remove header NaNs
     Dates = num(:,1)+datenum('30-Dec-1899');                 	% Convert Excel dates to Matlab dates
     DateStrings = datestr(Dates);                               
@@ -64,16 +66,21 @@ if ~exist('SessionDate','var')
         return;
     end
 else
-    if ischar(SessionDate)
-        SessionDate = {SessionDate};
-    end
-    Selection = nan(1,numel(SessionDate));
-    for d = 1:numel(SessionDate)
-        Selection(d) = strmatch(SessionDate{d}, DateStrings);
-        if isempty(Selection(d))
-            error('Specified session date ''%s'' was not found in %s!', SessionDate{d}, HistoryFile);
+    if ischar(SessionDate) && strcmpi(SessionDate, 'all')
+        SessionDate = cellstr(DateStrings);
+     	Selection = 1:numel(SessionDate);
+    else
+        if ischar(SessionDate)
+            SessionDate = {SessionDate};
         end
-    end
+        Selection = nan(1,numel(SessionDate));
+        for d = 1:numel(SessionDate)
+            Selection(d) = strmatch(SessionDate{d}, DateStrings);
+            if isempty(Selection(d))
+                error('Specified session date ''%s'' was not found in %s!', SessionDate{d}, HistoryFile);
+            end
+        end
+  	end
 end
 
 %========================== Load spike quality data
@@ -92,15 +99,19 @@ if strcmpi(HistoryFormat, '.xls')
 end
 
 %========================== Return data
-for d = 1:numel(Selection)                                                                                  % For each session selected...
-    SessionParams(d).Date               = datestr(C{Selection(d),1});                                       % Record session date string
+HeaderStrings = {'Electrode','ML','AP','Depth','GuideLength'};
+for h = 1:numel(HeaderStrings)
+    ColumnIndx{h} = find(~cellfun(@isempty, strfind(Header, HeaderStrings{h})));
+end
+for d = 1:numel(Selection)                                                                                      % For each session selected...
+    SessionParams(d).Date               = datestr(C{Selection(d),1});                                           % Record session date string
     SessionParams(d).DateString         = DateStrings(Selection(d),:);
     SessionParams(d).DateIndex       	= Selection(d);
-    SessionParams(d).NoElectrodes       = numel(find(~cellfun(@isnan, C(Selection(d),3:5:end))));         	% How many electrodes were used?
-    for e = 1:SessionParams(d).NoElectrodes                                                                 % For each electrode...
-        SessionParams(d).Target{e}          = [C{Selection(d),3+((e-1)*5)},C{Selection(d),4+((e-1)*5)}];    % Get medial-lateral and anetrior-posterior grid hole coordinates
-        SessionParams(d).Depth{e}           = C{Selection(d),5+((e-1)*5)};                                  % Get final tip depth
-        SessionParams(d).ElectrodeID{e}     = C{Selection(d),2+((e-1)*5)};                                  % Get the elctrode identifier
-        SessionParams(d).GuideLength{e}     = C{Selection(d),6+((e-1)*5)};                                  % Get the length of guide tube used
+    SessionParams(d).NoElectrodes       = numel(find(~cellfun(@isnan, C(Selection(d),3:5:end))));               % How many electrodes were used?
+    for e = 1:SessionParams(d).NoElectrodes                                                                     % For each electrode...
+        SessionParams(d).ElectrodeID{e}     = C{Selection(d),ColumnIndx{1}(e)};                             	% Get the elctrode identifier
+        SessionParams(d).Target{e}          = [C{Selection(d),ColumnIndx{2}(e)},C{Selection(d),ColumnIndx{3}(e)}];    % Get medial-lateral and anetrior-posterior grid hole coordinates
+        SessionParams(d).Depth{e}           = C{Selection(d),ColumnIndx{4}(e)};                               	% Get final tip depth
+        SessionParams(d).GuideLength{e}     = C{Selection(d),ColumnIndx{5}(e)};                              	% Get the length of guide tube used
     end
 end

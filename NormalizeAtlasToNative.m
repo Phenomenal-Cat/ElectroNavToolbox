@@ -1,11 +1,13 @@
-function WarpFile = NormalizeAtlasToNative(NativeFile, Template, LesionMask)
+function WarpFile = ENT_NormalizeAtlasToNative(NativeFile, Template, LesionMask)
 
-%===================== NormalizeAtlasToNative.m ===========================
-% 
+%===================== ENT_NormalizeAtlasToNative.m =======================
+% This function is used to spatially normalize (non-linear
 %
 %
 %
-%
+% ELECTRONAV TOOLBOX
+% Developed by Aidan Murphy
+% ? Copyleft 2014, GNU General Public License
 %==========================================================================
 
 %============ Default settings

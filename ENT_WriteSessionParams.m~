@@ -1,0 +1,192 @@
+function [Status] = ENT_WriteSessionParams(HistoryFile, CurrentParams)
+
+%========================== ENT_WriteSessionParams.m ======================
+% This function writes the provided session parameters to the specified 
+% spreadsheet file, for the date specified.
+%
+% INPUTS:
+%       HistoryFile:    full path of spreadsheet (.xls/ .csv) containing recording history
+%       CurrentParams: 	parameters of the current session in a 1 x (1+N*5) 
+%                       cell array (where N is the number of electrodes
+%                       used in the session) containing the following cells:
+%                           1) Session date 
+%                           2) Electrode 1 ID (string)
+%                           3) Electrode 1 M-L position (grid holes)
+%                           4) Electrode 1 A-P position (grid holes)
+%                           5) Electrode 1 depth (mm)
+%                           6) Electrode 1 guide tube length (mm)
+%                           [optional] 7) Electrode 2 ID (string)
+%                           [optional] 8) Electrode 2 M-L position (grid
+%                           holes)... etc.
+%
+%
+% ELECTRONAV TOOLBOX
+% Developed by Aidan Murphy
+% ? Copyleft 2014, GNU General Public License
+%==========================================================================
+
+%========================== Check inputs
+if nargin == 0
+    [file, path] = uigetfile({'*.xls;*.csv'},'Select recording history');
+    HistoryFile = fullfile(path, file);
+end
+if ~exist(HistoryFile,'file')
+    error('Session history file %s does not exist!', HistoryFile);
+end
+if ~iscell(CurrentParams)
+    error('Input CurrentParams must be a cell array!');
+end
+
+%========================== Load recording history data
+SessionParams = ENT_LoadSessionParams(HistoryFile, 'all');     % Load all data currently saved
+
+if ischar(CurrentParams{1})
+	CurrentParams{1} = datenum(CurrentParams{1})-datenum('30-Dec-1899');
+    CurrentDatestrin
+end
+SessionIndx = find([SessionParams.Date]==CurrentParams{1})
+if ~isempty(SessionIndx)
+    msg = sprintf('History file %s already contains data for %s. Do you want to overwrite it?', HistoryFile, SessionParams(SessionIndx).DateString);
+    Overwrite = questdlg(msg, 'Overwrite data?', 'Yes','No','No');
+    if strcmpi(Overwrite, 'No')
+        return;
+    end
+end
+
+%========================== SAVE DATA
+if exist('readtable','file')~=0
+    try
+        T = readtable(Defaults.HistoryFile);
+        T.Date = datetime(T.Date,'ConvertFrom','excel');
+        if size(T,2) > size(CurrentParams,2)
+            CurrentParams{size(T,2)} = NaN;
+            CurrentParams(cellfun(@isempty, CurrentParams)) = {NaN};
+        elseif size(T,2) < size(CurrentParams,2)
+            T(:, end+1:size(CurrentParams,2)) = NaN;
+        end
+        T = [T; CurrentParams];                                                                             % Append new data
+        writetable(T,Defaults.HistoryFile);
+    catch
+        UseXLS = 1;
+    end
+end
+if exist('readtable','file')==0 || UseXLS == 1
+    try
+        [num,txt,raw] =  xlsread(Defaults.HistoryFile,1,'');     	% Read data from Excel file
+        Headers = txt{1,:};                                       	% Skip row containing column titles
+        for i = 2:size(raw,1) 
+            raw{i,1} = raw{i,1}+datenum('30-Dec-1899');             % Convert Excel dates to Matlab dates
+        end
+        if size(raw,2) > size(CurrentParams,2)
+            CurrentParams{size(raw,2)} = NaN;
+            CurrentParams(cellfun(@isempty, CurrentParams)) = {NaN};
+        elseif size(raw,2) < size(CurrentParams,2)
+            raw(:, end+1:size(CurrentParams,2)) = NaN;
+        end
+        raw(end+1,:) = CurrentParams;
+        [Success, Msg] = xlswrite(Defaults.HistoryFile, raw);
+        if Success ~= 1
+            disp(Msg);
+        end
+    catch
+        fprintf('Writing to %s failed! Try writing to .csv format instead.\n', Defaults.HistoryFile);
+        [Filename, Pathname, Indx] = uiputfile('.csv', 'Save current session to .csv file');  	% Ask user to specify file to save to
+        Defaults.HistoryFile = fullfile(Pathname, Filename);
+    end
+end
+
+%========= WRITE DATA TO .CSV FILE
+if strcmpi(Defaults.HistoryFile(end-2:end), 'csv')                    
+    formatSpec = '%{dd-MMM-yyyy}D%f%f%f%f%f%C';
+    if exist('readtable','file')~=0
+        T = readtable(Defaults.HistoryFile,'Delimiter',',','Format',formatSpec);
+        T = [T; CurrentParams];                                                                         % Append new data
+    %                 T = cell2table(T,'VariableNames',fieldnames(T));                                      % convert to table
+        T.Date.Format = 'dd-MMM-yyyy';                                              
+        writetable(T,Defaults.HistoryFile);                                                     % write table to .csv file
+    else
+        T = csvread(Defaults.HistoryFile);
+        T = [T; CurrentParams];
+        fid = fopen(Defaults.HistoryFile, 'wt');                                             	 % write table to .csv file
+        fprintf(fid, '%s, %s, %s, %s, %s, %s, %s\n', T{1,:});
+        for i = 2:size(T,1)
+            fprintf(fid, '%d, %d, %d, %f, %f, %d, %s\n', T{i,:});
+        end
+        fclose(fid);
+    end
+end
+
+h = msgbox('Session data has been saved.','Save successful!','modal');      % inform user that data was saved
+uiwait(h);                                
+
+
+
+%========================== Write data to table
+for d = 1:numel(Selection)                                                                                  % For each session selected...
+    SessionParams(d).Date               = datestr(C{Selection(d),1});                                       % Record session date string
+    SessionParams(d).DateString         = DateStrings(Selection(d),:);
+    SessionParams(d).DateIndex       	= Selection(d);
+    SessionParams(d).NoElectrodes       = numel(find(~cellfun(@isnan, C(Selection(d),3:5:end))));         	% How many electrodes were used?
+    for e = 1:SessionParams(d).NoElectrodes                                                                 % For each electrode...
+        SessionParams(d).Target{e}          = [C{Selection(d),3+((e-1)*5)},C{Selection(d),4+((e-1)*5)}];    % Get medial-lateral and anetrior-posterior grid hole coordinates
+        SessionParams(d).Depth{e}           = C{Selection(d),5+((e-1)*5)};                                  % Get final tip depth
+        SessionParams(d).ElectrodeID{e}     = C{Selection(d),2+((e-1)*5)};                                  % Get the elctrode identifier
+        SessionParams(d).GuideLength{e}     = C{Selection(d),6+((e-1)*5)};                                  % Get the length of guide tube used
+    end
+end
+
+
+%========================== 
+[a,b,HistoryFormat] = fileparts(HistoryFile);
+if exist('datetime.m','file')==2                   	%============ MATLAB R2014a and later
+    if strcmpi(HistoryFormat, '.xls')
+        T = readtable(HistoryFile);
+        T.Date = datetime(T.Date,'ConvertFrom','excel');
+      	DateStrings = datestr(T.Date);
+        C = table2cell(T);
+        
+    elseif strcmpi(HistoryFormat, '.csv') 
+%         formatSpec = '%{dd-MMM-yyyy}D%f%f%f%f%f%C';
+%         T = readtable(HistoryFile,'Delimiter',',','Format',formatSpec);
+     	fid = fopen(HistoryFile,'rt');
+        Headers = textscan(fid, '%s%s%s%s%s%s%s\n', 1, 'delimiter', ',');
+        data = textscan(fid, '%f %f %f %f %f %f %s','headerlines',1,'delimiter',',');
+        fclose(fid);
+        Dates = data{1};   
+        DateStrings = datestr(Dates);
+        C = num2cell(cell2mat(data(1:6)));
+        C(:,7) = data{7};
+    else
+        error('File ''%s'' is not a valid spreadsheet format!', HistoryFile);
+    end
+else                                                %============ MATLAB R2013b and earlier    
+    [num,txt,raw] =  xlsread(HistoryFile,1,'');                 % Read data from Excel file
+    Headers = txt{1,:};                                       	% Skip row containing column titles
+    num(1,:) = [];                                            	% Remove header NaNs
+    Dates = num(:,1)+datenum('30-Dec-1899');                 	% Convert Excel dates to Matlab dates
+    DateStrings = datestr(Dates);                               
+    C = raw(2:end,:);                                           
+end
+
+%========================== Get a date input
+
+
+%========================== Load spike quality data
+if strcmpi(HistoryFormat, '.xls')
+    [status, sheets] = xlsfinfo(HistoryFile);
+    if numel(sheets) >= 2
+        [num,txt,raw] =  xlsread(HistoryFile,sheets{2},'');                                     % Read data from Excel file sheet 2
+        for d = 1:numel(SessionDate)                                                            
+            DateIndx = strfind(num(1,:), datenum(SessionDate{d})-datenum('30-Dec-1899'));       
+            for e = 1:numel(DateIndx)
+                SessionParams(d).ContactData{e} = num(3:end,DateIndx(e));                       
+                SessionParams(d).ContactData{e}(isnan(SessionParams(d).ContactData{e})) = 0;    
+            end
+        end
+    end
+end
+
+Electrode(e).ContactData  	= Params(1).ContactData{e};
+
+
+

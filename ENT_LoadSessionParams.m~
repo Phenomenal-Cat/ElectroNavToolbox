@@ -37,7 +37,7 @@ if exist('datetime.m','file')==2                   	%============ MATLAB R2014a 
 %         formatSpec = '%{dd-MMM-yyyy}D%f%f%f%f%f%C';
 %         T = readtable(HistoryFile,'Delimiter',',','Format',formatSpec);
      	fid = fopen(HistoryFile,'rt');
-        Headers = textscan(fid, '%s%s%s%s%s%s%s\n', 1, 'delimiter', ',');
+        Header = textscan(fid, '%s%s%s%s%s%s%s\n', 1, 'delimiter', ',');
         data = textscan(fid, '%f %f %f %f %f %f %s','headerlines',1,'delimiter',',');
         fclose(fid);
         Dates = data{1};   
@@ -49,25 +49,12 @@ if exist('datetime.m','file')==2                   	%============ MATLAB R2014a 
     end
 else                                                %============ MATLAB R2013b and earlier    
     [num,txt,raw] =  xlsread(HistoryFile,1,'');                 % Read data from Excel file
-    Headers = txt{1,:};                                       	% Skip row containing column titles
+    Header = txt{1,:};                                       	% Skip row containing column titles
     num(1,:) = [];                                            	% Remove header NaNs
     Dates = num(:,1)+datenum('30-Dec-1899');                 	% Convert Excel dates to Matlab dates
     DateStrings = datestr(Dates);                               
     C = raw(2:end,:);                                           
 end
-
-%========================== Load spike quality data
-if strcmpi(HistoryFormat, '.xls')
-    [ststus, sheets] = xlsfinfo(HistoryFile);
-    if numel(sheets) >= 2
-        [num,txt,raw] =  xlsread(HistoryFile,sheets{2},'');          	% Read data from Excel file sheet 2
-        DateIndx = strfind(num(1,:), datenum(SessionDate)-datenum('30-Dec-1899'));
-        for e = 1:numel(DateIndx)
-            SessionParams(d).ContactData = num(3:end,DateIndx(e));
-        end
-    end
-end
-
 
 %========================== Get a date input
 if ~exist('SessionDate','var')
@@ -89,15 +76,36 @@ else
     end
 end
 
+%========================== Load spike quality data
+if strcmpi(HistoryFormat, '.xls')
+    [status, sheets] = xlsfinfo(HistoryFile);
+    if numel(sheets) >= 2
+        [num,txt,raw] =  xlsread(HistoryFile,sheets{2},'');                         % Read data from Excel file sheet 2
+        for d = 1:numel(SessionDate)
+            DateIndx = strfind(num(1,:), datenum(SessionDate{d})-datenum('30-Dec-1899'));
+            for e = 1:numel(DateIndx)
+                SessionParams(d).ContactData{e} = num(3:end,DateIndx(e));
+                SessionParams(d).ContactData{e}(isnan(SessionParams(d).ContactData{e})) = 0;
+            end
+        end
+    end
+end
+
 %========================== Return data
+HeaderStrings = {'Electrode','ML','AP','Depth','GuideLength'};
+for h = 1:numel(HeaderStrings}
+    ColumnIndx{h} = find(~cellfun(@isempty, strfind(Header, HeaderStrings{h})));
+    
+end
+
 for d = 1:numel(Selection)                                                                                  % For each session selected...
     SessionParams(d).Date               = datestr(C{Selection(d),1});                                       % Record session date string
     SessionParams(d).DateString         = DateStrings(Selection(d),:);
     SessionParams(d).DateIndex       	= Selection(d);
     SessionParams(d).NoElectrodes       = numel(find(~cellfun(@isnan, C(Selection(d),3:5:end))));         	% How many electrodes were used?
     for e = 1:SessionParams(d).NoElectrodes                                                                 % For each electrode...
-        SessionParams(d).Target{e}          = [C{Selection(d),3+((e-1)*5)},C{Selection(d),4+((e-1)*5)}];    % Get medial-lateral and anetrior-posterior grid hole coordinates
-        SessionParams(d).Depth{e}           = C{Selection(d),5+((e-1)*5)};                                  % Get final tip depth
+        SessionParams(d).Target{e}          = [C{Selection(d),ColumnIndx{2}(e)},C{Selection(d),ColumnIndx{3}(e)}];    % Get medial-lateral and anetrior-posterior grid hole coordinates
+        SessionParams(d).Depth{e}           = C{Selection(d),ColumnIndx{4}(e)};                                  % Get final tip depth
         SessionParams(d).ElectrodeID{e}     = C{Selection(d),2+((e-1)*5)};                                  % Get the elctrode identifier
         SessionParams(d).GuideLength{e}     = C{Selection(d),6+((e-1)*5)};                                  % Get the length of guide tube used
     end

@@ -44,7 +44,7 @@ addpath(genpath(ENTroot));
 % % NativeFile = fullfile(ENTroot,'Subjects/Layla/Layla_GridScan_ACPC_BET_Masked.nii');
 % % AtlasFiles = fullfile(ENTroot, 'Atlases/inia19/inia19-NeuroMaps.nii');
 % MaskFile = fullfile(ENTroot,'Subjects/Layla/Layla_ACPC_LesionMask.nii');
-TemplateFile = '/Volumes/Seagate Backup 1/PhD_nonthesis/1. Monkey pulvinar/EN_data/Atlases/NeuroMaps/inia19-t1-brain.nii';
+% TemplateFile = '/Volumes/Seagate Backup 1/PhD_nonthesis/1. Monkey pulvinar/EN_data/Atlases/NeuroMaps/inia19-t1-brain.nii';
 
 %============== Check inputs
 if ~exist('TemplateFile','var') || ~exist(TemplateFile,'file')

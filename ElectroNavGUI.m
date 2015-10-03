@@ -230,6 +230,7 @@ switch Surface.Atlas
         Surface.Zlim = [-20 40];
     case 'NeuroMaps'
         Surface.VTKfile = fullfile(Defaults.VTKdir,'Cortical_surface.vtk');
+     	Surface.StructVTKs = wildcardsearch(Defaults.VTKdir,'pulvinar.vtk');
         Surface.StructFolder = Defaults.VTKdir;
        	Surface.Xlim = [-32 32];
         Surface.Ylim = [-50 30];
@@ -467,7 +468,7 @@ set([Button.LabelHandle,Button.InputHandle,Button.UnitsHandle], 'BackgroundColor
 
 %=============== CONTACT SELECTION
 Contact.InputDim    = [100 20];
-Contact.Labels      = {'Contact #',sprintf('Spike quality (1-%d)', size(Electrode(Electrode(1).Selected).QualityColorMap,1)),'Zoom level (mm)','Zoom to contacts','Go to slice'};
+Contact.Labels      = {'Contact #',sprintf('Spike quality (0-%d)', size(Electrode(Electrode(1).Selected).QualityColorMap,1)-1),'Zoom level (mm)','Zoom to contacts','Go to slice'};
 Contact.Input       = {num2str(Electrode(Electrode(1).Selected).CurrentSelected), num2str(Electrode(Electrode(1).Selected).ContactData(Electrode(Electrode(1).Selected).CurrentSelected)),num2str(Layer.ZoomLevel)};
 Contact.Style       = {'Text', 'Text', 'Text','ToggleButton','PushButton'};
 Contact.UIhandle    = uipanel('Title','Contact selection','FontSize', Fig.UIFontsize,'BackgroundColor',Fig.Background,'Units','pixels','Position',Contact.BoxPos);
@@ -517,12 +518,11 @@ set([Layer.UIhandle, Layer.SliderLabel, Layer.LabelHandle], 'BackgroundColor',Fi
 set(Layer.InputHandle(3), 'BackgroundColor', Layer.Colors(Layer.CurrentStructure, :));
 set(Layer.InputHandle(6), 'BackgroundColor',Fig.Background);
 
-%============= ATLAS OVERLAYS
 
-
+%============= 
 Fig.AllUIHandles = [Session.UIhandle, Contact.UIhandle, Button.UIhandle, Layer.UIhandle];
 set(Fig.Handle, 'Visible', 'On');       % Make main figure visible
-close(LoadingHandle);                   % Close loading window
+
 
 end
 
@@ -937,68 +937,67 @@ function Brain = DrawBrain3D(Brain, Electrode, Grid)
     global Fig Surface
     figure(Fig.Handle);
     
-%     if ~isfield(Brain,'Object')
-        [v,f] = read_vtk(Surface.VTKfile);
-        FV.vertices = v';
-        FV.faces = f';
-        FV.facevertexcdata = Brain.RGB;
-        FV.facecolor = 'flat';
-        FV.facealpha = Brain.Alpha;
-        FV.edgecolor = 'none';    
-        if ~isfield(Brain,'Object')
-            Brain.Object = patch(FV,'EdgeColor','none');
-        elseif isfield(Brain,'Object')
-            DeleteHandles = [];
-            for h = 1:numel(Brain.Object)
-                if ~ishandle(Brain.Object(h))
-                    DeleteHandles(end+1) = h;
-                end
+    %======================== LOAD CORTICAL SURFACE
+    [v,f] = read_vtk(Surface.VTKfile);
+    FV.vertices = v';
+    FV.faces = f';
+    FV.facevertexcdata = Brain.RGB;
+    FV.facecolor = 'flat';
+    FV.facealpha = Brain.Alpha;
+    FV.edgecolor = 'none';    
+    if ~isfield(Brain,'Object')
+        Brain.Object = patch(FV,'EdgeColor','none');
+    elseif isfield(Brain,'Object')
+        DeleteHandles = [];
+        for h = 1:numel(Brain.Object)
+            if ~ishandle(Brain.Object(h))
+                DeleteHandles(end+1) = h;
             end
-            Brain.Object(DeleteHandles) = [];
-            Brain.Object(end+1) = patch(FV,'EdgeColor','none');
         end
-        hold on;
-        camlight right;
-        lighting phong;
-        colormap bone;
-        axis(gca,'vis3d');                                      % Maintain axes ratio (do not scale)     
-        Brain.Labels(1) = xlabel('Medial-Lateral','Fontsize',Fig.FontSize);                                        
-        Brain.Labels(2) = ylabel('Posterior-Anterior','Fontsize',Fig.FontSize);
-        Brain.Labels(3) = zlabel('Inferior-Superior','Fontsize',Fig.FontSize);
-        grid on;
-        axis equal;
-     	set(Brain.Object,'SpecularStrength',Brain.Specular,'AmbientStrength',Brain.Ambient,'DiffuseStrength',Brain.Diffuse);
-%     end
+        Brain.Object(DeleteHandles) = [];
+        Brain.Object(end+1) = patch(FV,'EdgeColor','none');
+    end
+    hold on;
+    camlight('infinite');
+    lighting phong;
+    colormap bone;
+    axis(gca,'vis3d');                                      % Maintain axes ratio (do not scale)     
+    Brain.Labels(1) = xlabel('Medial-Lateral','Fontsize',Fig.FontSize);                                        
+    Brain.Labels(2) = ylabel('Posterior-Anterior','Fontsize',Fig.FontSize);
+    Brain.Labels(3) = zlabel('Inferior-Superior','Fontsize',Fig.FontSize);
+    grid on;
+    axis equal;
+    set(Brain.Object,'SpecularStrength',Brain.Specular,'AmbientStrength',Brain.Ambient,'DiffuseStrength',Brain.Diffuse);
 
-    %======================== LOAD STUCTURES ==============================
-%     if ~isfield(Surface,'Object')
-%         cd(Surface.StructFolder);
-%         Surface.StructVTKs = dir('*.vtk');
-%         Surface.ObjectVis = zeros(1,numel(Surface.StructVTKs));
-%         for s = 1:numel(Surface.StructVTKs)
-%             [v,f] = read_vtk(Surface.StructVTKs(s).name);
-%             FV.vertices = v';
-%             FV.faces = f';
-%             FV.facevertexcdata = Brain.SurfaceColors(s,:);
-%             FV.facecolor = 'flat';
-%             FV.facealpha = 1;
-%             FV.edgecolor = 'none';    
-%             Surface.Object(s) = patch(FV,'EdgeColor','none');
-%             set(Surface.Object(s),'Facecolor',Brain.SurfaceColors(s,:));
-%             if Surface.ObjectVis(s) == 1
-%                 set(Surface.Object(s),'Visible','on');
-%             elseif Surface.ObjectVis(s) == 0
-%                 set(Surface.Object(s),'Visible','off');
-%             end
-%         end
-%     end
+
+    %======================== LOAD OTHER STUCTURES 
+    if ~isempty(Surface.StructVTKs)
+        Surface.ObjectVis = ones(1,numel(Surface.StructVTKs));
+        for s = 1:numel(Surface.StructVTKs)
+            [v,f] = read_vtk(Surface.StructVTKs{s});
+            FV.vertices = v';
+            FV.faces = f';
+            FV.facevertexcdata = Brain.SurfaceColors(s,:);
+            FV.facecolor = 'flat';
+            FV.facealpha = 1;
+            FV.edgecolor = 'none';    
+            Surface.Object(s) = patch(FV,'EdgeColor','none');
+            set(Surface.Object(s),'Facecolor',Brain.SurfaceColors(s,:));
+            if Surface.ObjectVis(s) == 1
+                set(Surface.Object(s),'Visible','on');
+            elseif Surface.ObjectVis(s) == 0
+                set(Surface.Object(s),'Visible','off');
+            end
+        end
+    end
+
 
     %=============== Draw chamber & grid holes
     hold on;
     GridFV.vertices = ApplyTform(Grid.vertices);
     GridFV.faces = Grid.faces;
     Brain.Chamber = patch(GridFV, 'FaceColor', Grid.RGB, 'EdgeColor', 'none');
-%     set(Brain.Chamber,'FaceLighting','phong');%'FaceColor','interp',
+%     set(Brain.Chamber,'FaceLighting','phong');
     set(Brain.Object,'FaceVertexAlphaData',Brain.Alpha);
   	set(Brain.Object,'FaceAlpha',Brain.Alpha);
   	set(Brain.Object,'Facecolor',Brain.RGB);
@@ -1009,12 +1008,8 @@ function Brain = DrawBrain3D(Brain, Electrode, Grid)
     box on;
     grid on;
     set(gca,'color',Fig.AxesBkgColor(1,:));
-    
-    % Settings
-    set(Brain.Object,'Visible','on');
-    set(Brain.Object,'HitTest','on');
-    drawnow
 
+    set(Brain.Object,'HitTest','on');
 end
 
 
@@ -1399,10 +1394,12 @@ global Electrode Session Button Layer
         Electrode(e).GuideLength    = Params(1).GuideLength{e};
         Electrode(e).ID             = Params(1).ElectrodeID{e};
         Electrode(e).Brand          = Electrode(1).AllTypes{find(strncmp(Electrode(e).ID, Electrode(1).AllTypes, 2))};
-      	Electrode(e).ContactData  	= Params(1).ContactData{e};
     end
  	Electrode                       = ENT_GetElectrodeParams(Electrode);     	% Get remaining default electrode parameters based on electrode ID
-
+    for e = Electrode(1).Numbers
+    	Electrode(e).ContactData  	= Params(1).ContactData{e}(1:Electrode(e).ContactNumber);
+    end
+    
     %=========== Update variables in GUI
     set(Session.InputHandle(2), 'value', Session.DateIndx);
     set(Session.InputHandle(3), 'string', Electrode(1).Numbers, 'value', Electrode(1).Selected);
@@ -1450,77 +1447,19 @@ function FileSelect(hObj, Event, Indx, Indx2)
                 Defaults.HistoryFile = fullfile(Pathname, Filename);                                        % Set full path of Excel file
             end
   
-            %========= WRITE DATA TO .XLS FILE
-            if strcmpi(Defaults.HistoryFile(end-2:end), 'xls')
-             	Cells{1} = datenum(Session.Date)-datenum('30-Dec-1899');
-                for e = 1:numel(Electrode)
-                    Start = numel(Cells)+1;
-                    Cells(Start:Start+4) = {Electrode(e).ID, Electrode(e).Target(1), Electrode(e).Target(2), Electrode(e).CurrentDepth, Electrode(e).GuideLength};
-                end
-                if exist('readtable','file')~=0
-                    try
-                        T = readtable(Defaults.HistoryFile);
-                        T.Date = datetime(T.Date,'ConvertFrom','excel');
-                        if size(T,2) > size(Cells,2)
-                            Cells{size(T,2)} = NaN;
-                            Cells(cellfun(@isempty, Cells)) = {NaN};
-                        elseif size(T,2) < size(Cells,2)
-                            T(:, end+1:size(Cells,2)) = NaN;
-                        end
-                        T = [T; Cells];                                                                             % Append new data
-                        writetable(T,Defaults.HistoryFile);
-                    catch
-                        UseXLS = 1;
-                    end
-                end
-                if exist('readtable','file')==0 || UseXLS == 1
-                    try
-                        [num,txt,raw] =  xlsread(Defaults.HistoryFile,1,'');     	% Read data from Excel file
-                        Headers = txt{1,:};                                       	% Skip row containing column titles
-                        for i = 2:size(raw,1) 
-                            raw{i,1} = raw{i,1}+datenum('30-Dec-1899');             % Convert Excel dates to Matlab dates
-                        end
-                        if size(raw,2) > size(Cells,2)
-                        	Cells{size(raw,2)} = NaN;
-                            Cells(cellfun(@isempty, Cells)) = {NaN};
-                        elseif size(raw,2) < size(Cells,2)
-                            raw(:, end+1:size(Cells,2)) = NaN;
-                        end
-                        raw(end+1,:) = Cells;
-                        [Success, Msg] = xlswrite(Defaults.HistoryFile, raw);
-                      	if Success ~= 1
-                            disp(Msg);
-                        end
-                    catch
-                        fprintf('Writing to %s failed! Try writing to .csv format instead.\n', Defaults.HistoryFile);
-                        [Filename, Pathname, Indx] = uiputfile('.csv', 'Save current session to .csv file');  	% Ask user to specify file to save to
-                        Defaults.HistoryFile = fullfile(Pathname, Filename);
-                    end
-                end
+            CurrentParams{1} = datenum(Session.Date)-datenum('30-Dec-1899');
+            for e = 1:numel(Electrode)
+                Start = numel(CurrentParams)+1;
+                CurrentParams(Start:Start+4) = {Electrode(e).ID, Electrode(e).Target(1), Electrode(e).Target(2), Electrode(e).CurrentDepth, Electrode(e).GuideLength};
             end
-            %========= WRITE DATA TO .CSV FILE
-            if strcmpi(Defaults.HistoryFile(end-2:end), 'csv')                    
-                formatSpec = '%{dd-MMM-yyyy}D%f%f%f%f%f%C';
-                Cells = {Session.Date, Electrode(Electrode(1).Selected).Target(1), Electrode(Electrode(1).Selected).Target(2), Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength, 0, Electrode(Electrode(1).Selected).ID};
-                if exist('readtable','file')~=0
-                    T = readtable(Defaults.HistoryFile,'Delimiter',',','Format',formatSpec);
-                    T = [T; Cells];                                                                         % Append new data
-    %                 T = cell2table(T,'VariableNames',fieldnames(T));                                      % convert to table
-                    T.Date.Format = 'dd-MMM-yyyy';                                              
-                    writetable(T,Defaults.HistoryFile);                                                     % write table to .csv file
-                else
-                    T = csvread(Defaults.HistoryFile);
-                    T = [T; Cells];
-                    fid = fopen(Defaults.HistoryFile, 'wt');                                             	 % write table to .csv file
-                    fprintf(fid, '%s, %s, %s, %s, %s, %s, %s\n', T{1,:});
-                    for i = 2:size(T,1)
-                        fprintf(fid, '%d, %d, %d, %f, %f, %d, %s\n', T{i,:});
-                    end
-                    fclose(fid);
-                end
+            Status = ENT_WriteSessionParams(Defaults.HistoryFile, CurrentParams);
+            if Status == 1
+                h = msgbox('Session data has been saved.','Save successful!','modal');      % inform user that data was saved
+                uiwait(h);  
+            else
+                
             end
-          	h = msgbox('Session data has been saved.','Save successful!','modal');      % inform user that data was saved
-            uiwait(h);                                                                  
+                                               
 
         case 3      %============================= EDIT DEFAULTS
             Defaults = EN_Initialize;

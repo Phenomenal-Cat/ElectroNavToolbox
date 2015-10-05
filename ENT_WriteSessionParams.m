@@ -26,6 +26,7 @@ function [Status] = ENT_WriteSessionParams(HistoryFile, CurrentParams)
 %==========================================================================
 
 %========================== Check inputs
+Status = 0;
 if nargin == 0
     [file, path] = uigetfile({'*.xls;*.csv'},'Select recording history');
     HistoryFile = fullfile(path, file);
@@ -39,7 +40,6 @@ end
 
 %========================== Load recording history data
 SessionParams = ENT_LoadSessionParams(HistoryFile, 'all');     % Load all data currently saved
-
 if ischar(CurrentParams{1})
     CurrentDatestring = CurrentParams{1};
 	CurrentParams{1} = datenum(CurrentParams{1})-datenum('30-Dec-1899');

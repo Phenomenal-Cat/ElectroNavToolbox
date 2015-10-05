@@ -1112,10 +1112,16 @@ function SessionParams(hObj, Event, Indx)
 global Electrode Session Contact Button Defaults
     switch Indx                                                         % If updated variable was...
         case 2      %==================== Session date
-            SelectedDate = Session.DateStrings(get(hObj,'Value'),:);   % Get selected date string
+            SelectedDate = Session.DateStrings(get(hObj,'Value'),:);                            % Get selected date string
             if ~strcmp(SelectedDate, date)                                                      % If selected date is not todays date...
                 Params = ENT_LoadSessionParams(Defaults.HistoryFile, SelectedDate);             % Load session parameters for selected date  
                 LoadNewSession(Params);
+            else                                                                                % If todays date was selected...
+                Session.Date     	= SelectedDate;
+                Params.Date       	= SelectedDate;                                             % Record session date string
+                Params.DateString  	= SelectedDate;
+                Params.DateIndex  	= get(hObj,'Value');
+                Session.DateIndx    = Params.DateIndex;
             end
             
         case 3      %==================== Electrode number

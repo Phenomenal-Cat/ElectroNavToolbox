@@ -140,12 +140,12 @@ if exist('DataQuality', 'var')
                 for n = 1:size(DataQuality, 2)                                          % For each electrode in current session...
                     raw{1, DateIndx+n} = CurrentParams{1};                              
                     raw{2, DateIndx+n} = ElectrodeNames{n};                              
-                    raw(2+(1:size(DataQuality,1)), DateIndx+n) = DataQuality(:,n);                        
+                    raw(2+(1:size(DataQuality,1)), DateIndx+n) = num2cell(DataQuality(:,n));                        
                 end
             elseif ~isempty(DateIndx)                                                   % If date already exists in spreadsheet...
                 if numel(DateIndx) == numel(ElectrodeNames)                             % If number of electrodes hasn't changed...
                     for n = 1:numel(DateIndx)
-                        raw(3:size(DataQuality,1), DateIndx+n) = DataQuality(:,n); 
+                        raw(3:size(DataQuality,1), DateIndx+n) = num2cell(DataQuality(:,n)); 
                     end
                 end
             end

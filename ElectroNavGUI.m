@@ -789,7 +789,11 @@ function Electrode = DrawCurrentContact(Electrode)
     set(Fig.Handle, 'currentaxes', Fig.PlotHandle(4));       	% Select axes #4 to display sagittal MRI slice
     X = Electrode(Electrode(1).Selected).Target(1);
     Y = Electrode(Electrode(1).Selected).Target(2);
-    Z = -Electrode(Electrode(1).Selected).CurrentDepth+Electrode(Electrode(1).Selected).TipLength+(Electrode(Electrode(1).Selected).CurrentSelected-1)*Electrode(Electrode(1).Selected).ContactSpacing;
+    if Electrode(Electrode(1).Selected).CurrentSelected > 0
+        Z = -Electrode(Electrode(1).Selected).CurrentDepth+Electrode(Electrode(1).Selected).TipLength+(Electrode(Electrode(1).Selected).CurrentSelected-1)*Electrode(Electrode(1).Selected).ContactSpacing;
+    else 
+        Z = -Electrode(Electrode(1).Selected).CurrentDepth;
+    end
     [X, Y, Z] = ApplyTform(X,Y,Z);
     [CurrXpos,CurrYpos,CurrZpos] = deal(X,Y,Z);
     Electrode(Electrode(1).Selected).Contact.CurrPos = [CurrXpos,CurrYpos,CurrZpos];
@@ -885,7 +889,6 @@ function M = DrawMRI(Electrode)
         
     end
     M = Layer.MRI(1).ImageHandle;    
-    
         
     %===================== AXIS SETTINGS
   	axis equal tight xy;
@@ -1025,8 +1028,11 @@ function Electrode = DrawContacts(Electrode)
     FullLength      = (Electrode(Electrode(1).Selected).ContactNumber*ContactSpacing)+TipLength;                        
     Electrode(Electrode(1).Selected).ContactPos = linspace(TipLength,FullLength-(Electrode(Electrode(1).Selected).ContactRadius*2), Electrode(Electrode(1).Selected).ContactNumber);
     X = [0 -ShaftRadius -ShaftRadius ShaftRadius ShaftRadius];
-    Y = [0 TipLength FullLength FullLength TipLength];                                      
+    Y = [0 TipLength FullLength FullLength TipLength];       
+    X2 = [0 -2 2];
+    Y2 = [2 10 10];
     Electrode(Electrode(1).Selected).C(1) = patch(X,Y,Electrode(Electrode(1).Selected).Color);                   	% Draw electrode shaft
+    Electrode(Electrode(1).Selected).Tip = patch(X2 ,Y2 ,[0 0 0], 'edgecolor','none', 'linewidth',2,'ButtonDownFcn',@ElectrodeClickCallback); 	% Draw electrode tip
     hold on;
     for cont = 1:Electrode(Electrode(1).Selected).ContactNumber                                                 	% For each contact
         Electrode(Electrode(1).Selected).C(1+cont) = FillCircle([0, Electrode(Electrode(1).Selected).ContactPos(cont)],Electrode(Electrode(1).Selected).ContactRadius,100, Electrode(Electrode(1).Selected).QualityColorMap(Electrode(Electrode(1).Selected).ContactData(cont)+1,:));
@@ -1079,13 +1085,21 @@ function ElectrodeClickCallback(objectHandle, eventData)
 global Electrode Contact
     axesHandle  = get(objectHandle,'Parent');
     coordinates = get(axesHandle,'CurrentPoint');
-    Ypos = coordinates(1,2);                                                    
-    Electrode(Electrode(1).Selected).CurrentSelected = find(Electrode(Electrode(1).Selected).C==objectHandle)-1;          	% Find selected contact #
-    delete(Electrode(Electrode(1).Selected).CurrentSelectedHandle);                                                         % Delete the previously selected contact highlight
-    Electrode(Electrode(1).Selected).CurrentSelectedHandle = PlotCircle(0,Electrode(Electrode(1).Selected).ContactPos(Electrode(Electrode(1).Selected).CurrentSelected),Electrode(Electrode(1).Selected).ContactRadius,Electrode(Electrode(1).Selected).SelectionColor);
-    set(Electrode(Electrode(1).Selected).CurrentSelectedHandle,'LineWidth', 2);                        
-    set(Contact.InputHandle(1),'String',num2str(Electrode(Electrode(1).Selected).CurrentSelected));                         % Update text to show current contact #
-    set(Contact.InputHandle(2),'String',num2str(Electrode(Electrode(1).Selected).ContactData(Electrode(Electrode(1).Selected).CurrentSelected)));    % Update text to show current contact value
+    Ypos = coordinates(1,2);                           
+    delete(Electrode(Electrode(1).Selected).CurrentSelectedHandle);                                                             % Delete the previously selected contact highlight
+    if Electrode(Electrode(1).Selected).Tip==objectHandle
+        set(Electrode(Electrode(1).Selected).Tip, 'edgecolor',[1 1 1]);
+     	set(Contact.InputHandle(1),'String','tip');                                                                             % Update text to show current contact #
+        set(Contact.InputHandle(2),'String',' ');
+        Electrode(Electrode(1).Selected).CurrentSelected = 0;
+    else
+      	set(Electrode(Electrode(1).Selected).Tip, 'edgecolor','none');
+        Electrode(Electrode(1).Selected).CurrentSelected = find(Electrode(Electrode(1).Selected).C==objectHandle)-1;          	% Find selected contact #
+        Electrode(Electrode(1).Selected).CurrentSelectedHandle = PlotCircle(0,Electrode(Electrode(1).Selected).ContactPos(Electrode(Electrode(1).Selected).CurrentSelected),Electrode(Electrode(1).Selected).ContactRadius,Electrode(Electrode(1).Selected).SelectionColor);
+        set(Electrode(Electrode(1).Selected).CurrentSelectedHandle,'LineWidth', 2);                        
+        set(Contact.InputHandle(1),'String',num2str(Electrode(Electrode(1).Selected).CurrentSelected));                         % Update text to show current contact #
+        set(Contact.InputHandle(2),'String',num2str(Electrode(Electrode(1).Selected).ContactData(Electrode(Electrode(1).Selected).CurrentSelected)));    % Update text to show current contact value
+    end
     Electrode = DrawCurrentContact(Electrode);                                                                                          % Update plot to show current contact
     DrawMRI(Electrode);
 end

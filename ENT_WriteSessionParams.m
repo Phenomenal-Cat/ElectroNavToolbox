@@ -1,4 +1,4 @@
-function [Status] = ENT_WriteSessionParams(HistoryFile, CurrentParams)
+function [Status] = ENT_WriteSessionParams(HistoryFile, CurrentParams, DataQuality)
 
 %========================== ENT_WriteSessionParams.m ======================
 % This function writes the provided session parameters to the specified 
@@ -18,6 +18,10 @@ function [Status] = ENT_WriteSessionParams(HistoryFile, CurrentParams)
 %                           [optional] 7) Electrode 2 ID (string)
 %                           [optional] 8) Electrode 2 M-L position (grid
 %                           holes)... etc.
+%       DataQuality:    Optional input of a Ch x N matrix containing numerical 
+%                       data quality ratings (where Ch is teh numebr of channels
+%                       and N is the number of electrodes for the session being
+%                       updated). 
 %
 %
 % ELECTRONAV TOOLBOX
@@ -37,6 +41,7 @@ end
 if ~iscell(CurrentParams)
     error('Input CurrentParams must be a cell array!');
 end
+[a,b,HistoryFormat] = fileparts(HistoryFile);
 
 %========================== Load recording history data
 SessionParams = ENT_LoadSessionParams(HistoryFile, 'all');     % Load all data currently saved
@@ -75,7 +80,7 @@ if exist('readtable','file')~=0
 end
 if exist('readtable','file')==0 || UseXLS == 1  %==================== WRITE DATA TO .XLS FILE   
     try
-        [num,txt,raw] =  xlsread(HistoryFile,1,'');     	% Read data from Excel file
+        [num,txt,raw] =  xlsread(HistoryFile,1,'');                 % Read data from Excel file
         Headers = txt{1,:};                                       	% Skip row containing column titles
         for i = 2:size(raw,1) 
             raw{i,1} = raw{i,1}+datenum('30-Dec-1899');             % Convert Excel dates to Matlab dates
@@ -87,7 +92,7 @@ if exist('readtable','file')==0 || UseXLS == 1  %==================== WRITE DATA
             raw(:, end+1:size(CurrentParams,2)) = NaN;
         end
         raw(end+1,:) = CurrentParams;
-        [Success, Msg] = xlswrite(HistoryFile, raw);
+        [Success, Msg] = xlswrite(HistoryFile, raw, 1);
         if Success ~= 1
             disp(Msg);
         end
@@ -117,4 +122,40 @@ if strcmpi(HistoryFile(end-2:end), 'csv')       %==================== WRITE DATA
         fclose(fid);
     end
 end
-                             
+
+%==================== SAVE DATA QUALITY RATINGS
+if exist('DataQuality', 'var')
+    if strcmpi(HistoryFormat, '.xls')
+        [status, sheets] = xlsfinfo(HistoryFile);
+        if numel(sheets) >= 2
+            [num,txt,raw] =  xlsread(HistoryFile,sheets{2},'');                         % Read data from Excel file sheet 2
+            DateIndx = strfind(num(1,:), CurrentParams{1})+1;                          	% Find column index of current session date
+            ElectrodeNames = CurrentParams(2:5:end);
+            ElectrodeNames = ElectrodeNames(cellfun(@ischar, ElectrodeNames));    
+          	if size(DataQuality, 2) ~= numel(ElectrodeNames)
+                error('Columns in DataQuality must match number of electorde IDs in CurrentParams!');
+            end
+            if isempty(DateIndx)                                                        
+                DateIndx = size(num,2);                                                 
+                for n = 1:size(DataQuality, 2)                                          % For each electrode in current session...
+                    raw{1, DateIndx+n} = CurrentParams{1};                              
+                    raw{2, DateIndx+n} = ElectrodeNames{n};                              
+                    raw(2+(1:size(DataQuality,1)), DateIndx+n) = DataQuality(:,n);                        
+                end
+            elseif ~isempty(DateIndx)                                                   % If date already exists in spreadsheet...
+                if numel(DateIndx) == numel(ElectrodeNames)                             % If number of electrodes hasn't changed...
+                    for n = 1:numel(DateIndx)
+                        raw(3:size(DataQuality,1), DateIndx+n) = DataQuality(:,n); 
+                    end
+                end
+            end
+         	[Success2, Msg2] = xlswrite(HistoryFile, raw, 2);
+            if Success2 ~= 1
+                disp(Msg);
+            end
+        end
+    end
+
+end 
+    
+end                         

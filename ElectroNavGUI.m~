@@ -867,9 +867,9 @@ function M = DrawMRI(Electrode)
             Layer.MRI(Ln).ImageHandle = surf(xPos,yPos,zPos,'CData',CurrentMRISlice,'FaceColor','texturemap','EdgeColor','none');  	% Draw MRI slice to axes
             hold on;
             if ~isempty(CurrentAlpha)
-                set(Layer.MRI(Ln).ImageHandle,'FaceAlpha','texturemap', 'alphadata', CurrentAlpha);                                        % Set slice alpha in axes
+                set(Layer.MRI(Ln).ImageHandle,'FaceAlpha','texturemap', 'alphadata', CurrentAlpha);                              	% Set slice alpha in axes
             end
-%             set(Layer.MRI(Ln).ImageHandle,'ButtonDownFcn',@MRIClickCallback);                                                     	% Set callback function for contact selection via mouse                                                   
+%             set(Layer.MRI(Ln).ImageHandle,'ButtonDownFcn',@MRIClickCallback);                                                   	% Set callback function for contact selection via mouse                                                   
             if Layer.On(Ln) == 0
                 set(Layer.MRI(Ln).ImageHandle, 'visible', 'off');
             end
@@ -1112,16 +1112,22 @@ function SessionParams(hObj, Event, Indx)
 global Electrode Session Contact Button Defaults
     switch Indx                                                         % If updated variable was...
         case 2      %==================== Session date
-            SelectedDate = Session.DateStrings(get(hObj,'Value'),:);   % Get selected date string
+            SelectedDate = Session.DateStrings(get(hObj,'Value'),:);                            % Get selected date string
             if ~strcmp(SelectedDate, date)                                                      % If selected date is not todays date...
                 Params = ENT_LoadSessionParams(Defaults.HistoryFile, SelectedDate);             % Load session parameters for selected date  
                 LoadNewSession(Params);
+            else                                                                                % If todays date was selected...
+                Session.Date     	= SelectedDate;
+                Params.Date       	= SelectedDate;                                             % Record session date string
+                Params.DateString  	= SelectedDate;
+                Params.DateIndex  	= get(hObj,'Value');
+                Session.DateIndx    = Params.DateIndex;
             end
             
         case 3      %==================== Electrode number
-            delete(Electrode(Electrode(1).Selected).C);
-           	Electrode(Electrode(1).Selected).C = [];
-            [Electrode.Selected] = deal(get(hObj,'Value'));
+            delete(Electrode(Electrode(1).Selected).C);                                         % Delete contacts schematic
+           	Electrode(Electrode(1).Selected).C = [];                                            % Empty contacts graphcis handles
+            [Electrode.Selected] = deal(get(hObj,'Value'));                                     
             Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),Electrode(Electrode(1).Selected).StartDepth, Electrode(Electrode(1).Selected).MicrodriveDepth, Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength];
             for i = 1:numel(Button.CurrentValues)
                 set(Button.InputHandle(i),'String',num2str(Button.CurrentValues(i)));
@@ -1366,13 +1372,19 @@ global Electrode Session Button Layer
     if numel(Electrode) > Params(1).NoElectrodes
         for e = numel(Electrode):-1:(Params(1).NoElectrodes+1)                                                                	% Delete any additional electrodes from previous session
             if isfield(Electrode,'XhairHandle') && ~isempty(Electrode(e).XhairHandle) && ishandle(Electrode(e).XhairHandle(1)) 	% Check whether a handle to crosshairs exists
+                fprintf('Deleting xhairs for electrode %d...\n', e);
                 delete(Electrode(e).XhairHandle);
             end
             if isfield(Electrode,'GT') && ~isempty(Electrode(e).GT) && ishandle(Electrode(e).GT(1)) 	% Check whether a handle to guidetube exists
+                fprintf('Deleting guide tube for electrode %d...\n', e);
                 delete(Electrode(e).GT);
             end
-            if isfield(Electrode,'E') && ~isempty(Electrode(e).E) && ishandle(Electrode(e).E(1)) 	% Check whether a handle to electrode exists
+            isfield(Electrode,'E')
+            ~isempty(Electrode(e).E)
+            ishandle(Electrode(e).E{1})
+            if isfield(Electrode,'E') && ~isempty(Electrode(e).E) && ishandle(Electrode(e).E(1))        % Check whether a handle to electrode exists
                 for i = 1:numel(Electrode(e).E)
+                    fprintf('Deleting electrode for electrode %d...\n', e);
                     delete(Electrode(e).E{i});
                 end
             end
@@ -1452,84 +1464,14 @@ function FileSelect(hObj, Event, Indx, Indx2)
                 Start = numel(CurrentParams)+1;
                 CurrentParams(Start:Start+4) = {Electrode(e).ID, Electrode(e).Target(1), Electrode(e).Target(2), Electrode(e).CurrentDepth, Electrode(e).GuideLength};
             end
-            Status = ENT_WriteSessionParams(Defaults.HistoryFile, CurrentParams);
-            if St
-            
-            
-            %========= WRITE DATA TO .XLS FILE
-            if strcmpi(Defaults.HistoryFile(end-2:end), 'xls')
-             	Cells{1} = datenum(Session.Date)-datenum('30-Dec-1899');
-                for e = 1:numel(Electrode)
-                    Start = numel(Cells)+1;
-                    Cells(Start:Start+4) = {Electrode(e).ID, Electrode(e).Target(1), Electrode(e).Target(2), Electrode(e).CurrentDepth, Electrode(e).GuideLength};
-                end
+            Status = ENT_WriteSessionParams(Defaults.HistoryFile, CurrentParams, [Electrode.ContactData]);
+            if Status == 1
+                h = msgbox('Session data has been saved.','Save successful!','modal');      % inform user that data was saved
+                uiwait(h);  
+            else
                 
-                
-                
-                if exist('readtable','file')~=0
-                    try
-                        T = readtable(Defaults.HistoryFile);
-                        T.Date = datetime(T.Date,'ConvertFrom','excel');
-                        if size(T,2) > size(Cells,2)
-                            Cells{size(T,2)} = NaN;
-                            Cells(cellfun(@isempty, Cells)) = {NaN};
-                        elseif size(T,2) < size(Cells,2)
-                            T(:, end+1:size(Cells,2)) = NaN;
-                        end
-                        T = [T; Cells];                                                                             % Append new data
-                        writetable(T,Defaults.HistoryFile);
-                    catch
-                        UseXLS = 1;
-                    end
-                end
-                if exist('readtable','file')==0 || UseXLS == 1
-                    try
-                        [num,txt,raw] =  xlsread(Defaults.HistoryFile,1,'');     	% Read data from Excel file
-                        Headers = txt{1,:};                                       	% Skip row containing column titles
-                        for i = 2:size(raw,1) 
-                            raw{i,1} = raw{i,1}+datenum('30-Dec-1899');             % Convert Excel dates to Matlab dates
-                        end
-                        if size(raw,2) > size(Cells,2)
-                        	Cells{size(raw,2)} = NaN;
-                            Cells(cellfun(@isempty, Cells)) = {NaN};
-                        elseif size(raw,2) < size(Cells,2)
-                            raw(:, end+1:size(Cells,2)) = NaN;
-                        end
-                        raw(end+1,:) = Cells;
-                        [Success, Msg] = xlswrite(Defaults.HistoryFile, raw);
-                      	if Success ~= 1
-                            disp(Msg);
-                        end
-                    catch
-                        fprintf('Writing to %s failed! Try writing to .csv format instead.\n', Defaults.HistoryFile);
-                        [Filename, Pathname, Indx] = uiputfile('.csv', 'Save current session to .csv file');  	% Ask user to specify file to save to
-                        Defaults.HistoryFile = fullfile(Pathname, Filename);
-                    end
-                end
             end
-            %========= WRITE DATA TO .CSV FILE
-            if strcmpi(Defaults.HistoryFile(end-2:end), 'csv')                    
-                formatSpec = '%{dd-MMM-yyyy}D%f%f%f%f%f%C';
-                Cells = {Session.Date, Electrode(Electrode(1).Selected).Target(1), Electrode(Electrode(1).Selected).Target(2), Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength, 0, Electrode(Electrode(1).Selected).ID};
-                if exist('readtable','file')~=0
-                    T = readtable(Defaults.HistoryFile,'Delimiter',',','Format',formatSpec);
-                    T = [T; Cells];                                                                         % Append new data
-    %                 T = cell2table(T,'VariableNames',fieldnames(T));                                      % convert to table
-                    T.Date.Format = 'dd-MMM-yyyy';                                              
-                    writetable(T,Defaults.HistoryFile);                                                     % write table to .csv file
-                else
-                    T = csvread(Defaults.HistoryFile);
-                    T = [T; Cells];
-                    fid = fopen(Defaults.HistoryFile, 'wt');                                             	 % write table to .csv file
-                    fprintf(fid, '%s, %s, %s, %s, %s, %s, %s\n', T{1,:});
-                    for i = 2:size(T,1)
-                        fprintf(fid, '%d, %d, %d, %f, %f, %d, %s\n', T{i,:});
-                    end
-                    fclose(fid);
-                end
-            end
-          	h = msgbox('Session data has been saved.','Save successful!','modal');      % inform user that data was saved
-            uiwait(h);                                                                  
+                                               
 
         case 3      %============================= EDIT DEFAULTS
             Defaults = EN_Initialize;
@@ -1684,6 +1626,7 @@ function EditSelect(hObj, Event, Indx)
             set(Session.InputHandle(4), 'value', find(strncmp(Electrode(Electrode(1).Selected).ID, Electrode(1).AllTypes, 2)));
             set(Session.InputHandle(5), 'string', num2str(Electrode(Electrode(1).Selected).ContactNumber));
             SessionParams(Session.InputHandle(3),[],3);             	% Update number of channels
+            
             
         case 4      %============================ DELETE ELECTRODE
             if numel(Electrode)==1

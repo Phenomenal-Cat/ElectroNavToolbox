@@ -89,7 +89,7 @@ for e = 1:NoElectrodes                                                      % Fo
         Electrode(e).CurrentSelected = 1;                                       % Default contact selection is #1 (nearest to tip)
     end
     if ~isfield(Electrode,'ContactData') || isempty(Electrode(e).ContactData)
-        Electrode(e).ContactData = zeros(1,Electrode(e).ContactNumber);         % Default contact availability is none
+        Electrode(e).ContactData = zeros(Electrode(e).ContactNumber,1);         % Default contact availability is none
     end
     Electrode(e).Color              = [0.4 0.4 0.4];                         	% Schematic electrode shaft color
     Electrode(e).ContactColor       = [1 0 0];                                  % Schematic electrode contact color

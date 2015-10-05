@@ -867,9 +867,9 @@ function M = DrawMRI(Electrode)
             Layer.MRI(Ln).ImageHandle = surf(xPos,yPos,zPos,'CData',CurrentMRISlice,'FaceColor','texturemap','EdgeColor','none');  	% Draw MRI slice to axes
             hold on;
             if ~isempty(CurrentAlpha)
-                set(Layer.MRI(Ln).ImageHandle,'FaceAlpha','texturemap', 'alphadata', CurrentAlpha);                                        % Set slice alpha in axes
+                set(Layer.MRI(Ln).ImageHandle,'FaceAlpha','texturemap', 'alphadata', CurrentAlpha);                              	% Set slice alpha in axes
             end
-%             set(Layer.MRI(Ln).ImageHandle,'ButtonDownFcn',@MRIClickCallback);                                                     	% Set callback function for contact selection via mouse                                                   
+%             set(Layer.MRI(Ln).ImageHandle,'ButtonDownFcn',@MRIClickCallback);                                                   	% Set callback function for contact selection via mouse                                                   
             if Layer.On(Ln) == 0
                 set(Layer.MRI(Ln).ImageHandle, 'visible', 'off');
             end
@@ -1125,9 +1125,9 @@ global Electrode Session Contact Button Defaults
             end
             
         case 3      %==================== Electrode number
-            delete(Electrode(Electrode(1).Selected).C);
-           	Electrode(Electrode(1).Selected).C = [];
-            [Electrode.Selected] = deal(get(hObj,'Value'));
+            delete(Electrode(Electrode(1).Selected).C);                                         % Delete contacts schematic
+           	Electrode(Electrode(1).Selected).C = [];                                            % Empty contacts graphcis handles
+            [Electrode.Selected] = deal(get(hObj,'Value'));                                     
             Button.CurrentValues = [Electrode(Electrode(1).Selected).Target(1),Electrode(Electrode(1).Selected).Target(2),Electrode(Electrode(1).Selected).StartDepth, Electrode(Electrode(1).Selected).MicrodriveDepth, Electrode(Electrode(1).Selected).CurrentDepth, Electrode(Electrode(1).Selected).GuideLength];
             for i = 1:numel(Button.CurrentValues)
                 set(Button.InputHandle(i),'String',num2str(Button.CurrentValues(i)));
@@ -1135,7 +1135,7 @@ global Electrode Session Contact Button Defaults
             ElectrodeType = find(~cellfun(@isempty, strfind(Electrode(1).AllTypes, Electrode(Electrode(1).Selected).Brand)));
             set(Session.InputHandle(4), 'value', ElectrodeType);
             set(Session.InputHandle(5), 'string', num2str(Electrode(Electrode(1).Selected).ContactNumber));
-          	SessionParams(Session.InputHandle(5),[],5);             	% Update number of channels
+          	SessionParams(Session.InputHandle(5),[],5);                                         % Update number of channels
 
             
         case 4      %==================== Electrode type
@@ -1377,7 +1377,7 @@ global Electrode Session Button Layer
             if isfield(Electrode,'GT') && ~isempty(Electrode(e).GT) && ishandle(Electrode(e).GT(1)) 	% Check whether a handle to guidetube exists
                 delete(Electrode(e).GT);
             end
-            if isfield(Electrode,'E') && ~isempty(Electrode(e).E) && ishandle(Electrode(e).E(1)) 	% Check whether a handle to electrode exists
+            if isfield(Electrode,'E') && ~isempty(Electrode(e).E)                                       % Check whether a handle to electrode exists
                 for i = 1:numel(Electrode(e).E)
                     delete(Electrode(e).E{i});
                 end
@@ -1458,7 +1458,7 @@ function FileSelect(hObj, Event, Indx, Indx2)
                 Start = numel(CurrentParams)+1;
                 CurrentParams(Start:Start+4) = {Electrode(e).ID, Electrode(e).Target(1), Electrode(e).Target(2), Electrode(e).CurrentDepth, Electrode(e).GuideLength};
             end
-            Status = ENT_WriteSessionParams(Defaults.HistoryFile, CurrentParams);
+            Status = ENT_WriteSessionParams(Defaults.HistoryFile, CurrentParams, [Electrode.ContactData]);
             if Status == 1
                 h = msgbox('Session data has been saved.','Save successful!','modal');      % inform user that data was saved
                 uiwait(h);  
@@ -1620,6 +1620,7 @@ function EditSelect(hObj, Event, Indx)
             set(Session.InputHandle(4), 'value', find(strncmp(Electrode(Electrode(1).Selected).ID, Electrode(1).AllTypes, 2)));
             set(Session.InputHandle(5), 'string', num2str(Electrode(Electrode(1).Selected).ContactNumber));
             SessionParams(Session.InputHandle(3),[],3);             	% Update number of channels
+            
             
         case 4      %============================ DELETE ELECTRODE
             if numel(Electrode)==1

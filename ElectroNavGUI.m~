@@ -199,10 +199,10 @@ for n = 1:numel(Layer.Filenames)
         Layer.MRI(n).AlphaMaskVolume(nii.img > 0) = 1;                              % For all atlas voxels > 0, mask volume voxels = 1
         Layer.MRI(n).img(nii.img>1000) = Layer.MRI(n).img(nii.img>1000)-1000;       % Make both hemispheres of atlas volume equal indices
     end
-  	MRImin = min(min(min(Layer.MRI(n).img)));                                       % Scale voxel intensities to range 0-1  
-    MRImax = max(max(max(Layer.MRI(n).img)));
-    Layer.MRI(n).img = ((Layer.MRI(n).img-MRImin)/(MRImax-MRImin))+n-1;
-    if n == 1
+    Layer.MRI(n).MRImin = min(min(min(Layer.MRI(n).img)));                                       % Scale voxel intensities to range 0-1  
+    Layer.MRI(n).MRImax = max(max(max(Layer.MRI(n).img)));
+ 	if n == 1
+        Layer.MRI(n).img = ((Layer.MRI(n).img-Layer.MRI(n).MRImin)/(Layer.MRI(n).MRImax-Layer.MRI(n).MRImin))+n-1;
         Layer.MRI(n).img = Layer.MRI(n).img-0.0001;
     end
 end
@@ -436,7 +436,7 @@ end
 set([Session.LabelHandle,Session.InputHandle], 'BackgroundColor',Fig.Background);
 set(Session.InputHandle(2),'value', Session.CurrentDate);
 set(Session.InputHandle(3),'value', Electrode(1).Selected);
-
+set(Session.InputHandle(4),'value', find(~cellfun(@isempty, strfind(Electrode(Electrode(1).Selected).AllTypes, Electrode(Electrode(1).Selected).Brand))));
 
 %=============== ELECTRODE POSITION
 Button.InputDim         = [100 20];
@@ -822,7 +822,6 @@ function M = DrawMRI(Electrode)
     
         
     %=============== FOR EACH STRUCTURE/ LAYER...    
-    numel(Layer.MRI)
     for Ln = 1:numel(Layer.MRI)
         
         %=============== GET SLICE INDEX
@@ -859,15 +858,11 @@ function M = DrawMRI(Electrode)
             CurrentMRISlice = flipud(rot90(CurrentMRISlice));
             CurrentAlpha = flipud(rot90(CurrentAlpha));
         end
-      	if Ln == 1
-            figure;
+        %=============== APPLY INTENSITY SCALING
+        if Ln >= 2
+            CurrentMRISlice = ((CurrentMRISlice-Layer.MRI(Ln).MRImin)/(Layer.MRI(Ln).MRImax-Layer.MRI(Ln).MRImin))+Ln-1;
         end
-        xPos
-        yPos
-        zPos
-        subplot(1,2,Ln); imagesc(CurrentMRISlice);
-        i
-   
+        
         %=============== APPLY FILTERING
         if Layer.sigma(Ln) > 0                                                                                                  	% If filter kernel size is non-zero
             Layer.G{Ln} = fspecial('gaussian',Layer.hsize,Layer.sigma(Ln));                                                       	% create default smoothing kernel
@@ -882,12 +877,13 @@ function M = DrawMRI(Electrode)
             hold on;
             if ~isempty(CurrentAlpha)
                 set(Layer.MRI(Ln).ImageHandle,'FaceAlpha','texturemap', 'alphadata', CurrentAlpha);                              	% Set slice alpha in axes
-            end
-%             set(Layer.MRI(Ln).ImageHandle,'ButtonDownFcn',@MRIClickCallback);                                                   	% Set callback function for contact selection via mouse                                                   
+            end                                               
             if Layer.On(Ln) == 0
                 set(Layer.MRI(Ln).ImageHandle, 'visible', 'off');
             end
-       
+            if Ln == 2
+                set(Layer.MRI(Ln).ImageHandle, 'ButtonDownFcn', {@AtlasSelection, Ln});                                         	% Set callback function for contact selection via mouse       
+            end
         elseif isfield(Layer.MRI,'ImageHandle')                                     %=============== If image handle already exists...
             if ~isempty(Layer.MRI(Ln).ImageHandle) && ishandle(Layer.MRI(Ln).ImageHandle)
                 set(Layer.MRI(Ln).ImageHandle, 'CData', CurrentMRISlice, 'xdata', xPos, 'ydata', yPos, 'zdata', zPos);    	% Update the cdata for the currents layer
@@ -899,7 +895,6 @@ function M = DrawMRI(Electrode)
         
     end
     M = Layer.MRI(1).ImageHandle;    
-    hold on;
         
     %===================== AXIS SETTINGS
   	axis equal tight xy;
@@ -1051,9 +1046,9 @@ function Electrode = DrawContacts(Electrode)
     Electrode(Electrode(1).Selected).CurrentSelectedHandle = PlotCircle(0,Electrode(Electrode(1).Selected).ContactPos(Electrode(Electrode(1).Selected).CurrentSelected),Electrode(Electrode(1).Selected).ContactRadius,Electrode(Electrode(1).Selected).SelectionColor);
     set(Electrode(Electrode(1).Selected).CurrentSelectedHandle,'LineWidth', 2);
     axis equal tight;
-    set(gca,'YTick', Electrode(Electrode(1).Selected).ContactPos, 'YTickLabel', 1:Electrode(Electrode(1).Selected).ContactNumber);        
+    set(gca,'YTick', Electrode(Electrode(1).Selected).ContactPos, 'YTickLabel', 1:Electrode(Electrode(1).Selected).ContactNumber, 'YAxisLocation', 'right');        
     set(gca,'color',Fig.AxesBkgColor(1,:));                                                                         % Set axis background to match figure
-    set(gca,'xcolor',Fig.Background,'xtick',[]);                                                                    % Hide x-axis
+    set(gca,'xcolor',Fig.Background,'xtick',[],'xlim',[-6 6]);                                                    	% Hide x-axis
     set(Electrode(Electrode(1).Selected).C(2:end),'ButtonDownFcn',@ElectrodeClickCallback);                         % Set callback function for contact selection via mouse
     
     %========== Set context menu for quality rating
@@ -1062,7 +1057,6 @@ function Electrode = DrawContacts(Electrode)
         item(i) = uimenu(hcmenu,'Label',num2str(i-1),'Callback',{@ContactContextmenu,i});
     end
     set(Electrode(Electrode(1).Selected).C(2:end),'uicontextmenu',hcmenu);
-    
 end
 
 
@@ -1125,11 +1119,67 @@ function ContactContextmenu(src,evt, i)
 end
 
 %========================== MRI SELECTION
-function MRIClickCallback(objectHandle, eventData)
+function AtlasSelection(objectHandle, eventData, indx)
 global Layer
     axesHandle  = get(objectHandle,'Parent');
-    pan on; 
+    if indx == 1            %============= Anatomical MRI was clicked...
+        pan on; 
+    elseif indx >= 2        %============= Atlas structure was clicked...
+    	XYZmm = get(axesHandle,'Currentpoint');
+        XYZmm(:,2) = -XYZmm(:,2);                                                               % Flip y dimension (because slice image is flipped in DrawMRI)
+        XYZvx = Layer.MRI(indx).OriginVox - round(XYZmm(1,:)./Layer.MRI(indx).VoxelDim);        
+        XYZvx(Layer.CurrentSliceView) = Layer.MRI(indx).CurrentSlice(Layer.CurrentSliceView);
+        VoxelValue = Layer.MRI(indx).img(XYZvx(1), XYZvx(2), XYZvx(3));
+        XYZmm(:,2) = -XYZmm(:,2);                                                               % Unflip y dimension (because selection is not flipped)
+        
+        %=========== Update GUI
+        if VoxelValue > 0
+            %========= Draw structure label
+            [SelectedIndx, SelectedStructs] = ENT_GetStructureIndex(VoxelValue);
+            SelectedStructs{1}(strfind(SelectedStructs{1}, '_')) = ' ';
+            SelectedStructs{1}(1:2) = [];
+            if isfield(Layer.MRI(indx), 'text_handle') && ishandle(Layer.MRI(indx).text_handle)
+                delete(Layer.MRI(indx).text_handle);
+            end
+            Layer.MRI(indx).text_handle = text(XYZmm(1,1), XYZmm(1,2), XYZmm(1,3), SelectedStructs{1});
+            set(Layer.MRI(indx).text_handle,'Color',[1 1 1], 'fontsize', 18);
+            
+            %========= Draw structure outline
+            if get(Layer.InputHandle(6),'value')==1
+                if isfield(Layer.MRI(indx),'Outline') && ishandle(Layer.MRI(indx).Outline{1}(1))
+                   	for i = 1:numel(Layer.MRI(indx).Outline)
+                        delete(Layer.MRI(indx).Outline{i});
+                        Layer.MRI(Layer.CurrentStructure).Outline{i} = [];
+                    end
+                end
+                StructureVolume = Layer.MRI(indx).img(:,:,:);                       % Create binary mask for selected structure
+                StructureVolume(StructureVolume~= VoxelValue) = 0;
+                StructureVolume(StructureVolume== VoxelValue) = 1;
+                SliceImage = StructureVolume(:,:,Layer.MRI(indx).CurrentSlice(3));
+                B = bwboundaries(SliceImage);
+                XYZmm = get(axesHandle,'Currentpoint');
+                for b = 1:numel(B)
+                    B{b} = (B{b}-repmat(Layer.MRI(indx).OriginVox([1,2]), [size(B{b},1), 1])).*repmat(Layer.MRI(indx).VoxelDim([1,2]), [size(B{b},1), 1]);
+                    Layer.MRI(indx).Outline{b} = plot3(B{b}(:,1), B{b}(:,2), repmat(XYZmm(1,3), [size(B{b},1),1]),'-w','linewidth',3);
+                    set(Layer.MRI(indx).Outline{b}, 'color', Layer.Colors(indx,:));
+                    hold on;
+                end
+            end
+                
+        else
+            if isfield(Layer.MRI(indx), 'text_handle') && ishandle(Layer.MRI(indx).text_handle)
+                delete(Layer.MRI(indx).text_handle);
+            end
+          	if isfield(Layer.MRI(indx),'Outline') && ishandle(Layer.MRI(indx).Outline{1}(1))
+                for i = 1:numel(Layer.MRI(indx).Outline)
+                    delete(Layer.MRI(indx).Outline{i});
+                    Layer.MRI(Layer.CurrentStructure).Outline{i} = [];
+                end
+            end
+        end
+    end
 
+    
 end
 
 %========================== UPDATE SESSION PARAMETERS
@@ -1167,7 +1217,7 @@ global Electrode Session Contact Button Defaults
             AllBrands = get(hObj,'String');
             Electrode(Electrode(1).Selected).Brand = AllBrands{get(hObj,'Value')};
             Electrode(Electrode(1).Selected).ID = sprintf('%s%d', Electrode(Electrode(1).Selected).Brand, Electrode(Electrode(1).Selected).ContactNumber);
-            Electrode = GetElectrodeParams(Electrode);                  % Get electrode parameters based on electrode ID
+            Electrode = ENT_GetElectrodeParams(Electrode);                  % Get electrode parameters based on electrode ID
             Electrode = DrawContacts(Electrode);                    	
             
         case 5      %==================== Electrode contacts
@@ -1270,6 +1320,11 @@ function LayerView(hObj, Evnt, Indx)
             Layer.Colors(Layer.CurrentStructure,:) = get(hObj,'BackgroundColor');
             Layer.Colors(Layer.CurrentStructure,:) = uisetcolor(Layer.Colors(Layer.CurrentStructure,:));
             set(Layer.InputHandle(3), 'BackgroundColor', Layer.Colors(Layer.CurrentStructure, :));
+            if isfield(Layer.MRI(Layer.CurrentStructure),'Outline') && ishandle(Layer.MRI(Layer.CurrentStructure).Outline{1}(1)) 
+                for b = 1:numel(Layer.MRI(Layer.CurrentStructure).Outline)
+                    set(Layer.MRI(Layer.CurrentStructure).Outline{b}, 'color', Layer.Colors(Layer.CurrentStructure,:));
+                end
+            end
             
         case 4                          %============== Update layer transparency
             Layer.Opacity(Layer.CurrentStructure) = get(hObj,'Value');

@@ -17,6 +17,7 @@
 %   01/10/2013 - Written by APM (murphyap@mail.nih.gov)
 %   21/08/2014 - Updated to allow search terms
 %   11/10/2014 - Updated to allow flexibility in search term format
+%   07/10/2015 - Updated to return structure names when index is input
 %
 % ELECTRONAV TOOLBOX
 % Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
@@ -25,8 +26,10 @@
 function [SelectedStructIndx, SelectedStructs] = ENT_GetStructureIndex(Searchterms, Bilateral)
 
 if nargin == 0                                                  % If no input variable was provided...
-    Bilateral = 1;                                              % Default to bilateral structure selection
     Searchterms = [];                                            
+end
+if nargin < 2
+    Bilateral = 1;                                              % Default to bilateral structure selection
 end
 
 %============= Load list of structure names
@@ -47,25 +50,30 @@ if Bilateral == 1                                               % For bilateral 
 end
 
 %============= Find selected structures
+ReturnIndx = 1;
 if ~isempty(Searchterms)
-    if ischar(Searchterms)
-        Searchterm = Searchterms;
-        clear Searchterms;
-        Searchterms{1} = Searchterm;
+    switch class(Searchterms)
+        case 'char'                                           	% Search term is character...
+            Searchterms = {Searchterms};                      	% Put string in cell  
+        case 'double'
+            ReturnIndx = 0;
+            Selection = Searchterms;
+        otherwise
+            if ~iscell(Searchterms)
+                error('Search term input is type: ''%s''. Accepted input types are: cell, string or double!\n', class(Searchterms));
+            end
     end
-    if ~iscell(Searchterms)
-        error('Search term input is type: ''%s''. Accepted input types are: cell array or string!\n', class(Searchterms));
+    if ReturnIndx == 1
+        Searchterms = lower(Searchterms);                           % Make search terms lower-case
+        Selection = [];                                             % Initialize variable for selection
+        for t = 1:numel(Searchterms)
+            Searchterms{t}(regexp(Searchterms{t},' ')) = '_';       % Replace any white space in search term with underscore
+            IndicesA = strfind(StructureNames,Searchterms{t});      % Find cells containing search term t
+            IndicesB = find(not(cellfun('isempty', IndicesA)));     % Find non-empty cells
+            Selection = [Selection, IndicesB'];                    	% Add indices to selection list
+        end
     end
-    Searchterms = lower(Searchterms);                           % Make search terms lower-case
-    Selection = [];
-    for t = 1:numel(Searchterms)
-      	Searchterms{t}(regexp(Searchterms{t},' ')) = '_';       % Replace any white space in search term with underscore
-        IndicesA = strfind(StructureNames,Searchterms{t});      % Find cells containing search term t
-        IndicesB = find(not(cellfun('isempty', IndicesA)));     % Find non-empty cells
-        Selection = [Selection, IndicesB'];                    	% Add indices to selection list
-    end
-    
-else
+elseif isempty(Searchterms)
     [Selection,ok] = listdlg(   'ListString',StructureNames,...
                                 'SelectionMode','multi',...
                                 'ListSize',[300 300],...
@@ -76,16 +84,24 @@ else
     end
 end
 
-%============= Return atlas indices for selected structures
-si = 1;                                                         % Set structure index count to 1
-for s = 1:numel(Selection)                                    	% For each stucture selected...
-    SelectedStructs{s} = StructureNames{Selection(s)};        	% Find selected structure name
-    Selected = strfind(txt{2},SelectedStructs{s});              % Get index in structure name list
-    Index = find(not(cellfun('isempty', Selected)));            
-    for i = 1:numel(Index)                                      % In case number of indices is more than 1...
-        SelectedStructIndx{s}(i) = txt{1}(Index(i));            
-        SelectedIndx(si) = txt{1}(Index(i));                  	% Find NeuroMaps index for selected structure(s)
-        si = si+1;                                              % Advance structure count
+
+if ReturnIndx == 1  %============= Return atlas indices for selected structures
+    si = 1;                                                         % Set structure index count to 1
+    for s = 1:numel(Selection)                                    	% For each stucture selected...
+        SelectedStructs{s} = StructureNames{Selection(s)};        	% Find selected structure name
+        Selected = strfind(txt{2},SelectedStructs{s});              % Get index in structure name list
+        Index = find(not(cellfun('isempty', Selected)));            
+        for i = 1:numel(Index)                                      % In case number of indices is more than 1...
+            SelectedStructIndx{s}(i) = txt{1}(Index(i));            
+            SelectedIndx(si) = txt{1}(Index(i));                  	% Find NeuroMaps index for selected structure(s)
+            si = si+1;                                              % Advance structure count
+        end
+    end
+elseif ReturnIndx == 0	%============= Return structure names for selected indices                                          
+    for s = 1:numel(Selection)                                  	% For each index provided...
+        SelectedStructIndx{s} = Selection(s);                       % Find row containing that index
+        SelectedStructs{s} = txt{2}{Selection(s)};                  % Find selected structure name
     end
 end
+
 end

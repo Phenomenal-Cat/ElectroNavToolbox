@@ -49,9 +49,10 @@ if exist('datetime.m','file')==2                   	%============ MATLAB R2014a 
     else
         error('File ''%s'' is not a valid spreadsheet format!', HistoryFile);
     end
-else                                                %============ MATLAB R2013b and earlier    
-    [num,txt,raw] =  xlsread(HistoryFile,1,'');                 % Read data from Excel file
-    Header = txt{1,:};                                       	% Skip row containing column titles
+else                                                %============ MATLAB R2013b and earlier 
+    [status, sheets] = xlsfinfo(HistoryFile);
+    [num,txt,raw] =  xlsread(HistoryFile,sheets{1});            % Read data from Excel file
+    Header = txt(1,:);                                       	% Skip row containing column titles
     num(1,:) = [];                                            	% Remove header NaNs
     Dates = num(:,1)+datenum('30-Dec-1899');                 	% Convert Excel dates to Matlab dates
     DateStrings = datestr(Dates);                               
@@ -87,11 +88,11 @@ end
 if strcmpi(HistoryFormat, '.xls')
     [status, sheets] = xlsfinfo(HistoryFile);
     if numel(sheets) >= 2
-        [num,txt,raw] =  xlsread(HistoryFile,sheets{2},'');                         % Read data from Excel file sheet 2
+        [num2,txt2,raw2] =  xlsread(HistoryFile,sheets{2},'');                         % Read data from Excel file sheet 2
         for d = 1:numel(SessionDate)
-            DateIndx = strfind(num(1,:), datenum(SessionDate{d})-datenum('30-Dec-1899'));
+            DateIndx = strfind(num2(1,:), datenum(SessionDate{d})-datenum('30-Dec-1899'));
             for e = 1:numel(DateIndx)
-                SessionParams(d).ContactData{e} = num(3:end,DateIndx(e));
+                SessionParams(d).ContactData{e} = num2(3:end,DateIndx(e));
                 SessionParams(d).ContactData{e}(isnan(SessionParams(d).ContactData{e})) = 0;
             end
         end

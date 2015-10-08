@@ -176,7 +176,7 @@ for n = 1:numel(Layer.Filenames)
     Layer.MRI(n).VoxelDim = nii.hdr.dime.pixdim(2:4);                               % Get voxel size (mm)
     Layer.MRI(n).DimVox = size(nii.img);                                            % Get full volume dimensions (voxels)
     Layer.MRI(n).DimMM = Layer.MRI(n).DimVox.*Layer.MRI(n).VoxelDim;                % Convert volume dim to mm
-    Layer.MRI(n).OriginVox = nii.hdr.hist.originator(1:3);                          % Get origin coordinates (voxels)
+    Layer.MRI(n).OriginVox = round(nii.hdr.hist.originator(1:3));                  	% Get origin coordinates (voxels)
     Layer.MRI(n).OriginMM = Layer.MRI(n).OriginVox.*Layer.MRI(n).VoxelDim;        	% Convert origin to mm
     if nii.hdr.hist.sform_code > 0                                                  % Use S-form?
         Layer.MRI(n).Sform = [nii.hdr.hist.srow_x; nii.hdr.hist.srow_y; nii.hdr.hist.srow_z];
@@ -298,7 +298,7 @@ end
 
 %======================= EDIT TAB
 Fig.EditMenuH{1} = uimenu(Fig.Handle,'Label','Edit'); 
-Fig.EditLabels = {'Load volumes','Remove volumes','Add electrode','Delete electrode'};
+Fig.EditLabels = {'Load volumes','Remove volumes','Add electrode','Delete electrode','Adjust MRI'};
 Fig.EditAccelerators = {'','','','',''};
 for n = 1:numel(Fig.EditLabels)
     Fig.EditMenuH{2}(n) = uimenu(Fig.EditMenuH{1},...
@@ -741,7 +741,7 @@ function Electrode = DrawElectrode(Electrode)
     end
     Electrode = DrawCurrentContact(Electrode);
     
-    %========================= Plot corsshair planes in 3D view
+    %========================= Plot crosshair planes in 3D view
     if Brain.PlanesOn == 1
         set(Fig.Handle, 'currentaxes', Fig.PlotHandle(2));
         Xlim = get(gca,'Xlim');
@@ -825,7 +825,7 @@ function M = DrawMRI(Electrode)
     for Ln = 1:numel(Layer.MRI)
         
         %=============== GET SLICE INDEX
-        Layer.MRI(Ln).CurrentSlice = Layer.MRI(Ln).OriginVox + round(SlicePosMM./Layer.MRI(Ln).VoxelDim);           % Get slice index of current selected contact
+        Layer.MRI(Ln).CurrentSlice = round(Layer.MRI(Ln).OriginVox) + round(SlicePosMM./Layer.MRI(Ln).VoxelDim);           % Get slice index of current selected contact
         X = 1:Layer.MRI(Ln).DimVox(1);
         Y = 1:Layer.MRI(Ln).DimVox(2);
         Z = 1:Layer.MRI(Ln).DimVox(3);
@@ -987,15 +987,30 @@ global Layer Fig
                 for b = 1:numel(B)
                     switch Layer.CurrentSliceView
                         case 1
-                            InplaneMM = Layer.MRI(indx).ImageHandle.XData(1,1)+0.5;
+                            if ~isfield(Layer.MRI(indx).ImageHandle, 'XData')               % Deal with MATLAB < 2014b graphics handles!
+                                Xpos = get(Layer.MRI(indx).ImageHandle, 'XData');
+                                InplaneMM = Xpos(1,1)+0.5;
+                            else
+                                InplaneMM = Layer.MRI(indx).ImageHandle.XData(1,1)+0.5;
+                            end
                             B{b} = (B{b}-repmat(Layer.MRI(indx).OriginVox([2,3]), [size(B{b},1), 1])).*repmat(Layer.MRI(indx).VoxelDim([2,3]), [size(B{b},1), 1]);
                             Layer.MRI(indx).Outline{b} = plot3(repmat(InplaneMM, [size(B{b},1),1]), B{b}(:,1), B{b}(:,2));
                         case 2
-                            InplaneMM = Layer.MRI(indx).ImageHandle.YData(1,1)+0.5;
+                        	if ~isfield(Layer.MRI(indx).ImageHandle, 'YData')               % Deal with MATLAB < 2014b graphics handles!
+                                Xpos = get(Layer.MRI(indx).ImageHandle, 'YData');
+                                InplaneMM = Xpos(1,1)+0.5;
+                            else
+                                InplaneMM = Layer.MRI(indx).ImageHandle.YData(1,1)+0.5;
+                            end
                             B{b} = (B{b}-repmat(Layer.MRI(indx).OriginVox([1,3]), [size(B{b},1), 1])).*repmat(Layer.MRI(indx).VoxelDim([1,3]), [size(B{b},1), 1]);
                             Layer.MRI(indx).Outline{b} = plot3(B{b}(:,1), repmat(InplaneMM, [size(B{b},1),1]), B{b}(:,2));
                         case 3
-                            InplaneMM = Layer.MRI(indx).ImageHandle.ZData(1,1)+0.5;
+                        	if ~isfield(Layer.MRI(indx).ImageHandle, 'ZData')               % Deal with MATLAB < 2014b graphics handles!
+                                Xpos = get(Layer.MRI(indx).ImageHandle, 'ZData');
+                                InplaneMM = Xpos(1,1)+0.5;
+                            else
+                                InplaneMM = Layer.MRI(indx).ImageHandle.ZData(1,1)+0.5;
+                            end
                             B{b} = (B{b}-repmat(Layer.MRI(indx).OriginVox([1,2]), [size(B{b},1), 1])).*repmat(Layer.MRI(indx).VoxelDim([1,2]), [size(B{b},1), 1]);
                             Layer.MRI(indx).Outline{b} = plot3(B{b}(:,1), B{b}(:,2), repmat(InplaneMM, [size(B{b},1),1]));
                     end
@@ -1013,7 +1028,9 @@ global Layer Fig
             end
         end
     end
-
+    if numel(Fig.PlotHandle)>=5
+        uistack(Fig.PlotHandle(5), 'top')
+    end
 end
 
 
@@ -1762,6 +1779,12 @@ function EditSelect(hObj, Event, Indx)
             set(Session.InputHandle(4), 'value', find(strncmp(Electrode(Electrode(1).Selected).ID, Electrode(1).AllTypes, 2)));
             set(Session.InputHandle(5), 'string', num2str(Electrode(Electrode(1).Selected).ContactNumber));
             SessionParams(Session.InputHandle(3),[],3);             	% Update number of channels
+            
+        case 5  %============================ ADJUST MRI APPEARANCE
+            
+            
+            
+            
             
     end
 end

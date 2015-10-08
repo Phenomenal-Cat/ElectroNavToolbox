@@ -1,4 +1,4 @@
-% [SelectedIndx, SelectedStructs] = ENT_GetStructureIndex(Searchterms, Bilateral)
+% [StructIndx, StructNames, StructRGB] =  ENT_GetStructureIndex(Searchterms, Bilateral)
 
 %======================== ENT_GetStructureIndex.m =========================
 % Reads the atlas structure labels for the NeuroMaps Atlas from text file, 
@@ -11,7 +11,7 @@
 %   Searchterms: cell containing strings of search terms to include.
 %
 % EAMPLE:
-%   [SelectedIndx, SelectedStructs] = GetStructureIndex('Lateral genic', 1);
+%   [StructIndx, StructNames, StructRGB] = GetStructureIndex('Lateral genic', 1);
 %
 % REVISION HISTORY:
 %   01/10/2013 - Written by APM (murphyap@mail.nih.gov)
@@ -23,7 +23,7 @@
 % Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
 %==========================================================================
 
-function [SelectedStructIndx, SelectedStructs] = ENT_GetStructureIndex(Searchterms, Bilateral)
+function [StructIndx, StructNames, StructRGB] = ENT_GetStructureIndex(Searchterms, Bilateral)
 
 if nargin == 0                                                  % If no input variable was provided...
     Searchterms = [];                                            
@@ -48,6 +48,7 @@ if Bilateral == 1                                               % For bilateral 
     StructureNames = StructureNames(strncmp('l_',txt{2},2));    
     StructureNames = cellfun(@(s) s(3:end), StructureNames, 'UniformOutput', false);
 end
+RGB = [txt{3}, txt{4}, txt{5}];
 
 %============= Find selected structures
 ReturnIndx = 1;
@@ -79,7 +80,7 @@ elseif isempty(Searchterms)
                                 'ListSize',[300 300],...
                                 'PromptString','Select structure(s):');
     if ok == 0
-        SelectedStructIndx = [];
+        StructIndx = [];
         return;
     end
 end
@@ -88,19 +89,21 @@ end
 if ReturnIndx == 1  %============= Return atlas indices for selected structures
     si = 1;                                                         % Set structure index count to 1
     for s = 1:numel(Selection)                                    	% For each stucture selected...
-        SelectedStructs{s} = StructureNames{Selection(s)};        	% Find selected structure name
-        Selected = strfind(txt{2},SelectedStructs{s});              % Get index in structure name list
+        StructNames{s} = StructureNames{Selection(s)};              % Find selected structure name
+        Selected = strfind(txt{2},StructNames{s});                  % Get index in structure name list
         Index = find(not(cellfun('isempty', Selected)));            
         for i = 1:numel(Index)                                      % In case number of indices is more than 1...
-            SelectedStructIndx{s}(i) = txt{1}(Index(i));            
+            StructIndx{s}(i) = txt{1}(Index(i));            
             SelectedIndx(si) = txt{1}(Index(i));                  	% Find NeuroMaps index for selected structure(s)
+            StructRGB{s} = RGB(Index(i), :);                        % Find default colormap for selected structures
             si = si+1;                                              % Advance structure count
         end
     end
 elseif ReturnIndx == 0	%============= Return structure names for selected indices                                          
     for s = 1:numel(Selection)                                  	% For each index provided...
-        SelectedStructIndx{s} = Selection(s);                       % Find row containing that index
-        SelectedStructs{s} = txt{2}{Selection(s)};                  % Find selected structure name
+        StructIndx{s} = Selection(s);                               % Find row containing that index
+        StructNames{s} = txt{2}{Selection(s)};                      % Find selected structure name
+        StructRGB{s} = RGB(Selection(s), :);                       	% Find default colormap for selected structures
     end
 end
 

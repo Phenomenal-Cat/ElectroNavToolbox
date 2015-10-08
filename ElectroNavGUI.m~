@@ -205,6 +205,8 @@ for n = 1:numel(Layer.Filenames)
         Layer.MRI(n).img = ((Layer.MRI(n).img-Layer.MRI(n).MRImin)/(Layer.MRI(n).MRImax-Layer.MRI(n).MRImin))+n-1;
         Layer.MRI(n).img = Layer.MRI(n).img-0.0001;
     end
+    Layer.MRI(n).SelectedStructIndx = 0;
+    Layer.MRI(n).SelectedXYZ = [];
 end
 
 
@@ -512,9 +514,7 @@ for i = 1:numel(Layer.LabelStrings)
     Layer.LabelHandle(i) = uicontrol('Style','text', 'string', Layer.LabelStrings{i},'HorizontalAlignment','Left', 'pos', [Layer.ButtonPos(i,:), Layer.ButtonDim],'parent',Layer.UIhandle);
     Layer.InputHandle(i) = uicontrol('Style',Layer.InputType{i},'String',Layer.InputStrings{i},'value',Layer.InputValue{i}, 'pos',[Layer.ButtonPos(i,:)+[Layer.ButtonDim(1), 0], Layer.ButtonDim],'parent',Layer.UIhandle,'Callback',{@LayerView,i}); 
 end
-Layer.SliderLabel(1) = uicontrol('Style','Text','String',sprintf('%d %%', Layer.Opacity*100), 'HorizontalAlignment','Left','Position',[Layer.ButtonPos(5,:)+[Layer.ButtonDim(1)*2,0],50,20],'parent',Layer.UIhandle);
-Layer.SliderLabel(2) = uicontrol('Style','Text','String',sprintf('%.0f mm', Layer.sigma),'BackgroundColor',Fig.Background,'HorizontalAlignment','Left','Position',[Layer.ButtonPos(5,:)+[Layer.ButtonDim(1)*2,0],50,20],'parent',Layer.UIhandle);
-set([Layer.UIhandle, Layer.SliderLabel, Layer.LabelHandle], 'BackgroundColor',Fig.Background);
+set([Layer.UIhandle, Layer.LabelHandle], 'BackgroundColor',Fig.Background);
 set(Layer.InputHandle(3), 'BackgroundColor', Layer.Colors(Layer.CurrentStructure, :));
 set(Layer.InputHandle(6), 'BackgroundColor',Fig.Background);
 
@@ -832,26 +832,33 @@ function M = DrawMRI(Electrode)
         switch Layer.CurrentSliceView
             case 1      %==================== SAGITTAL
                 X = Layer.MRI(Ln).CurrentSlice(Layer.CurrentSliceView);
-               	xPos = repmat(SlicePosMM(Layer.CurrentSliceView),[2,2]) - Layer.MRI(Ln).VoxelDim(Layer.CurrentSliceView);
+               	xPos = repmat(SlicePosMM(Layer.CurrentSliceView),[2,2]) + Layer.MRI(Ln).VoxelDim(Layer.CurrentSliceView)*(Ln-2);
                 yPos = [Layer.MRI(Ln).BoundsCorMM; Layer.MRI(Ln).BoundsCorMM];
                 zPos = repmat(Layer.MRI(Ln).BoundsAxMM,[2,1])';
             case 2      %==================== CORONAL
                 Y = Layer.MRI(Ln).CurrentSlice(Layer.CurrentSliceView);
                 xPos = [Layer.MRI(Ln).BoundsSagMM; Layer.MRI(Ln).BoundsSagMM];
-                yPos = repmat(SlicePosMM(Layer.CurrentSliceView),[2,2])-Layer.MRI(Ln).VoxelDim(Layer.CurrentSliceView);
+                yPos = repmat(SlicePosMM(Layer.CurrentSliceView),[2,2]) + Layer.MRI(Ln).VoxelDim(Layer.CurrentSliceView)*(Ln-2);
                 zPos = repmat(Layer.MRI(Ln).BoundsAxMM,[2,1])';
             case 3      %==================== AXIAL
                 Z = Layer.MRI(Ln).CurrentSlice(Layer.CurrentSliceView);
                	xPos = repmat(Layer.MRI(Ln).BoundsSagMM,[2,1])';
                 yPos = [Layer.MRI(Ln).BoundsCorMM; Layer.MRI(Ln).BoundsCorMM];
-                zPos = repmat(SlicePosMM(Layer.CurrentSliceView),[2,2])-Layer.MRI(Ln).VoxelDim(Layer.CurrentSliceView);
+                zPos = repmat(SlicePosMM(Layer.CurrentSliceView),[2,2]) + Layer.MRI(Ln).VoxelDim(Layer.CurrentSliceView)*(Ln-2);
         end
-        %=============== GET SLICE DATA
-        CurrentMRISlice = squeeze(Layer.MRI(Ln).img(X,Y,Z));
-        if ~isempty(Layer.MRI(Ln).AlphaMaskVolume)
-            CurrentAlpha = squeeze(Layer.MRI(Ln).AlphaMaskVolume(X,Y,Z))*Layer.Opacity(Ln);                   % Get current slice alpha layer
-        else
+        %=============== CHECK REQUESTED SLICE IS WITHIN DATA RANGE
+        
+        if any([X,Y,Z] <= 0) || any([max(X),max(Y),max(Z)] > Layer.MRI(Ln).VoxelDim
+            CurrentMRISlice = zeros(numel(X), numel(Y), numel(Z));
             CurrentAlpha = [];
+        else
+      	%=============== GET SLICE DATA
+            CurrentMRISlice = squeeze(Layer.MRI(Ln).img(X,Y,Z));
+            if ~isempty(Layer.MRI(Ln).AlphaMaskVolume)
+                CurrentAlpha = squeeze(Layer.MRI(Ln).AlphaMaskVolume(X,Y,Z))*Layer.Opacity(Ln);                                     % Get current slice alpha layer
+            else
+                CurrentAlpha = [];
+            end
         end
         %=============== REORIENT SLICE
       	if Layer.CurrentSliceView <3
@@ -899,15 +906,14 @@ function M = DrawMRI(Electrode)
     %===================== AXIS SETTINGS
   	axis equal tight xy;
     colormap(Layer.Colormap);
-    set(gca,'Clim',[0 2]);
-    set(gca,'TickDir','out');
+    set(gca,'Clim',[0 2],'TickDir','out');
+    
     if Fig.CoordinatesInMM == 1
         title(sprintf('[XYZ] = %.2f, %.2f, %.2f mm', SlicePosMM), 'fontsize',16, 'units','normalized','pos',[0 1.01],'HorizontalAlignment','left');
     elseif Fig.CoordinatesInMM == 0
         SlicePosVox = Layer.MRI(1).OriginVox + round(SlicePosMM./Layer.MRI(1).VoxelDim);
         title(sprintf('[XYZ] = %d, %d, %d voxels', SlicePosVox), 'fontsize',16, 'units','normalized','pos',[0 1.01],'HorizontalAlignment','left');
     end
-    
 
   	if Layer.ZoomOn==1                          %================== ZOOM ON
         Contacts = find(isgraphics2(Electrode(Electrode(1).Selected).E{4}));
@@ -938,6 +944,76 @@ function M = DrawMRI(Electrode)
     xlabel('M - L (mm)','Fontsize',Fig.FontSize);
     ylabel('P - A (mm)','Fontsize',Fig.FontSize);
     zlabel('I - S (mm)','Fontsize',Fig.FontSize);
+    DrawStructureOutline;                           % Update structure outline (if on)
+end
+
+
+%========================= DRAW 3D BRAIN SURFACE ==========================
+function DrawStructureOutline
+global Layer Fig
+    axes(Fig.PlotHandle(4));
+    indx = Layer.CurrentStructure;
+    XYZmm = Layer.MRI(indx).SelectedXYZ;
+    XYZmm(Layer.CurrentSliceView) = Layer.MRI(Layer.CurrentStructure).CurrentSlice(Layer.CurrentSliceView);
+    
+    %========= Delete current outline and label text
+    if isfield(Layer.MRI(indx), 'text_handle') && ishandle(Layer.MRI(indx).text_handle)
+        delete(Layer.MRI(indx).text_handle);
+    end
+    if isfield(Layer.MRI(indx),'Outline') && ~isempty(Layer.MRI(indx).Outline{1}) && ishandle(Layer.MRI(indx).Outline{1}(1))
+        for i = 1:numel(Layer.MRI(indx).Outline)
+            delete(Layer.MRI(indx).Outline{i});
+            Layer.MRI(indx).Outline{i} = [];
+        end
+    end
+    
+    if Layer.MRI(indx).SelectedStructIndx > 0                                                           % If a structure is selected...
+        
+        %================== Draw structure outline
+        if get(Layer.InputHandle(6),'value')==1                                                         % if 'Outline on' is selected and structure was selected...
+            StructureVolume = Layer.MRI(indx).img(:,:,:);                                               % Create binary mask for selected structure
+            StructureVolume(StructureVolume~= Layer.MRI(Layer.CurrentStructure).SelectedStructIndx) = 0;
+            StructureVolume(StructureVolume== Layer.MRI(Layer.CurrentStructure).SelectedStructIndx) = 1;
+            switch Layer.CurrentSliceView
+                case 1
+                    SliceImage = squeeze(StructureVolume(Layer.MRI(Layer.CurrentStructure).CurrentSlice(Layer.CurrentSliceView),:,:));
+                case 2
+                    SliceImage = squeeze(StructureVolume(:,Layer.MRI(Layer.CurrentStructure).CurrentSlice(Layer.CurrentSliceView),:));
+                case 3
+                    SliceImage = squeeze(StructureVolume(:,:,Layer.MRI(Layer.CurrentStructure).CurrentSlice(Layer.CurrentSliceView)));
+            end
+            if sum(SliceImage(:)) > 0                                                                      % If currently selected structure appears in current slice...
+                B = bwboundaries(SliceImage);
+                for b = 1:numel(B)
+                    switch Layer.CurrentSliceView
+                        case 1
+                            InplaneMM = Layer.MRI(indx).ImageHandle.XData(1,1)+0.5;
+                            B{b} = (B{b}-repmat(Layer.MRI(indx).OriginVox([2,3]), [size(B{b},1), 1])).*repmat(Layer.MRI(indx).VoxelDim([2,3]), [size(B{b},1), 1]);
+                            Layer.MRI(indx).Outline{b} = plot3(repmat(InplaneMM, [size(B{b},1),1]), B{b}(:,1), B{b}(:,2));
+                        case 2
+                            InplaneMM = Layer.MRI(indx).ImageHandle.YData(1,1)+0.5;
+                            B{b} = (B{b}-repmat(Layer.MRI(indx).OriginVox([1,3]), [size(B{b},1), 1])).*repmat(Layer.MRI(indx).VoxelDim([1,3]), [size(B{b},1), 1]);
+                            Layer.MRI(indx).Outline{b} = plot3(B{b}(:,1), repmat(InplaneMM, [size(B{b},1),1]), B{b}(:,2));
+                        case 3
+                            InplaneMM = Layer.MRI(indx).ImageHandle.ZData(1,1)+0.5;
+                            B{b} = (B{b}-repmat(Layer.MRI(indx).OriginVox([1,2]), [size(B{b},1), 1])).*repmat(Layer.MRI(indx).VoxelDim([1,2]), [size(B{b},1), 1]);
+                            Layer.MRI(indx).Outline{b} = plot3(B{b}(:,1), B{b}(:,2), repmat(InplaneMM, [size(B{b},1),1]));
+                    end
+                    set(Layer.MRI(indx).Outline{b}, 'color', Layer.Colors(indx,:),'linewidth',3);
+                    hold on;
+                end
+
+                %================== Draw structure label
+                [SelectedIndx, SelectedStructs] = ENT_GetStructureIndex(Layer.MRI(indx).SelectedStructIndx);    % Get structure name
+                SelectedStructs{1}(strfind(SelectedStructs{1}, '_')) = ' ';                                     % Replace underscores with space
+                SelectedStructs{1}(1:2) = [];                                                                   % Remove hemisphere label (for Neuromaps)
+%                 XYZmm(3) = -XYZmm(3);
+                Layer.MRI(indx).text_handle = text(XYZmm(1), XYZmm(2), XYZmm(3), SelectedStructs{1});     % 
+                set(Layer.MRI(indx).text_handle,'Color',[1 1 1], 'fontsize', 18);                               % Set text appearance
+            end
+        end
+    end
+
 end
 
 
@@ -1126,59 +1202,21 @@ global Layer
         pan on; 
     elseif indx >= 2        %============= Atlas structure was clicked...
     	XYZmm = get(axesHandle,'Currentpoint');
-        XYZmm(:,2) = -XYZmm(:,2);                                                               % Flip y dimension (because slice image is flipped in DrawMRI)
+     	XYZmm(:,[2, 3]) = -XYZmm(:,[2, 3]);                                                      	% Flip y and z dimension (because slice image is flipped in DrawMRI)
         XYZvx = Layer.MRI(indx).OriginVox - round(XYZmm(1,:)./Layer.MRI(indx).VoxelDim);        
         XYZvx(Layer.CurrentSliceView) = Layer.MRI(indx).CurrentSlice(Layer.CurrentSliceView);
-        VoxelValue = Layer.MRI(indx).img(XYZvx(1), XYZvx(2), XYZvx(3));
-        XYZmm(:,2) = -XYZmm(:,2);                                                               % Unflip y dimension (because selection is not flipped)
+        Layer.MRI(indx).SelectedStructIndx = Layer.MRI(indx).img(XYZvx(1), XYZvx(2), XYZvx(3));
+        if Layer.CurrentSliceView == 1
+            XYZmm(:,2) = -XYZmm(:,2); 
+        else
+            XYZmm(:,[2,3]) = -XYZmm(:,[2,3]);                                                                   % Unflip y dimension (because selection is not flipped)
+        end
         
         %=========== Update GUI
-        if VoxelValue > 0
-            %========= Draw structure label
-            [SelectedIndx, SelectedStructs] = ENT_GetStructureIndex(VoxelValue);
-            SelectedStructs{1}(strfind(SelectedStructs{1}, '_')) = ' ';
-            SelectedStructs{1}(1:2) = [];
-            if isfield(Layer.MRI(indx), 'text_handle') && ishandle(Layer.MRI(indx).text_handle)
-                delete(Layer.MRI(indx).text_handle);
-            end
-            Layer.MRI(indx).text_handle = text(XYZmm(1,1), XYZmm(1,2), XYZmm(1,3), SelectedStructs{1});
-            set(Layer.MRI(indx).text_handle,'Color',[1 1 1], 'fontsize', 18);
-            
-            %========= Draw structure outline
-            if get(Layer.InputHandle(6),'value')==1
-                if isfield(Layer.MRI(indx),'Outline') && ishandle(Layer.MRI(indx).Outline{1}(1))
-                   	for i = 1:numel(Layer.MRI(indx).Outline)
-                        delete(Layer.MRI(indx).Outline{i});
-                        Layer.MRI(Layer.CurrentStructure).Outline{i} = [];
-                    end
-                end
-                StructureVolume = Layer.MRI(indx).img(:,:,:);                       % Create binary mask for selected structure
-                StructureVolume(StructureVolume~= VoxelValue) = 0;
-                StructureVolume(StructureVolume== VoxelValue) = 1;
-                SliceImage = StructureVolume(:,:,Layer.MRI(indx).CurrentSlice(3));
-                B = bwboundaries(SliceImage);
-                XYZmm = get(axesHandle,'Currentpoint');
-                for b = 1:numel(B)
-                    B{b} = (B{b}-repmat(Layer.MRI(indx).OriginVox([1,2]), [size(B{b},1), 1])).*repmat(Layer.MRI(indx).VoxelDim([1,2]), [size(B{b},1), 1]);
-                    Layer.MRI(indx).Outline{b} = plot3(B{b}(:,1), B{b}(:,2), repmat(XYZmm(1,3), [size(B{b},1),1]),'-w','linewidth',3);
-                    set(Layer.MRI(indx).Outline{b}, 'color', Layer.Colors(indx,:));
-                    hold on;
-                end
-            end
-                
-        else
-            if isfield(Layer.MRI(indx), 'text_handle') && ishandle(Layer.MRI(indx).text_handle)
-                delete(Layer.MRI(indx).text_handle);
-            end
-          	if isfield(Layer.MRI(indx),'Outline') && ishandle(Layer.MRI(indx).Outline{1}(1))
-                for i = 1:numel(Layer.MRI(indx).Outline)
-                    delete(Layer.MRI(indx).Outline{i});
-                    Layer.MRI(Layer.CurrentStructure).Outline{i} = [];
-                end
-            end
-        end
+        XYZmm = XYZmm(1,:);
+        Layer.MRI(indx).SelectedXYZ = XYZmm;
+        DrawStructureOutline;                                                                           % Draw structure outline
     end
-
     
 end
 
@@ -1329,12 +1367,12 @@ function LayerView(hObj, Evnt, Indx)
         case 4                          %============== Update layer transparency
             Layer.Opacity(Layer.CurrentStructure) = get(hObj,'Value');
             ValueString = sprintf('%.0f %%', Layer.Opacity(Layer.CurrentStructure)*100);
-            set(Layer.SliderLabel(1), 'String',ValueString);
-
+            set(Layer.LabelHandle(4), 'string',['Opacity (',ValueString,')']);
+            
         case 5                    	%============== Update gaussian blur
             Layer.sigma(Layer.CurrentStructure) = max([get(hObj,'Value')*Layer.SigmaMax, Layer.SigmaMin]);
             ValueString = sprintf('%.1f mm', Layer.sigma(Layer.CurrentStructure));
-            set(Layer.SliderLabel(2), 'String',ValueString);
+            set(Layer.LabelHandle(5), 'string', ['Smoothing (', ValueString,')']);
             if Layer.sigma > 0
                 Layer.G{Layer.CurrentStructure} = fspecial('gaussian',Layer.hsize,Layer.sigma(Layer.CurrentStructure));
             end

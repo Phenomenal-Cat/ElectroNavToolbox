@@ -28,26 +28,35 @@ end
 %========================== Load recording history data
 [a,b,HistoryFormat] = fileparts(HistoryFile);
 if exist('datetime.m','file')==2                   	%============ MATLAB R2014a and later
-    if strcmpi(HistoryFormat, '.xls')
-        T = readtable(HistoryFile);
-        T.Date = datetime(T.Date,'ConvertFrom','excel');
-      	DateStrings = datestr(T.Date);
-        C = table2cell(T);
-        Header = T.Properties.VariableNames;
+    switch HistoryFormat
+        case '.xls'
+            T = readtable(HistoryFile);
+            T.Date = datetime(T.Date,'ConvertFrom','excel');
+            DateStrings = datestr(T.Date);
+            C = table2cell(T);
+            Header = T.Properties.VariableNames;
         
-    elseif strcmpi(HistoryFormat, '.csv') 
-%         formatSpec = '%{dd-MMM-yyyy}D%f%f%f%f%f%C';
-%         T = readtable(HistoryFile,'Delimiter',',','Format',formatSpec);
-     	fid = fopen(HistoryFile,'rt');
-        Header = textscan(fid, '%s%s%s%s%s%s%s\n', 1, 'delimiter', ',');
-        data = textscan(fid, '%f %f %f %f %f %f %s','headerlines',1,'delimiter',',');
-        fclose(fid);
-        Dates = data{1};   
-        DateStrings = datestr(Dates);
-        C = num2cell(cell2mat(data(1:6)));
-        C(:,7) = data{7};
-    else
-        error('File ''%s'' is not a valid spreadsheet format!', HistoryFile);
+        case '.csv'
+    %         formatSpec = '%{dd-MMM-yyyy}D%f%f%f%f%f%C';
+    %         T = readtable(HistoryFile,'Delimiter',',','Format',formatSpec);
+            fid = fopen(HistoryFile,'rt');
+            Header = textscan(fid, '%s%s%s%s%s%s%s\n', 1, 'delimiter', ',');
+            data = textscan(fid, '%f %f %f %f %f %f %s','headerlines',1,'delimiter',',');
+            fclose(fid);
+            Dates = data{1};   
+            DateStrings = datestr(Dates);
+            C = num2cell(cell2mat(data(1:6)));
+            C(:,7) = data{7};
+            
+        case '.mat'
+            load(HistoryFile);
+            Header = raw(1,:);
+            Dates = raw(2:end,1)+datenum('30-Dec-1899');        	% Convert Excel dates to Matlab dates
+            DateStrings = datestr(Dates);      
+            C = raw(2:end,:);
+            
+        otherwise
+            error('File ''%s'' is not a valid spreadsheet format!', HistoryFile);
     end
 else                                                %============ MATLAB R2013b and earlier 
     [status, sheets] = xlsfinfo(HistoryFile);
@@ -85,6 +94,7 @@ else
 end
 
 %========================== Load spike quality data
+SessionParams.ContactData = [];
 if strcmpi(HistoryFormat, '.xls')
     [status, sheets] = xlsfinfo(HistoryFile);
     if numel(sheets) >= 2

@@ -79,29 +79,32 @@ if exist('readtable','file')~=0
     end
 end
 if exist('readtable','file')==0 || UseXLS == 1  %==================== WRITE DATA TO .XLS FILE   
-    try
-        [num,txt,raw] =  xlsread(HistoryFile,1,'');                 % Read data from Excel file
-        Headers = txt{1,:};                                       	% Skip row containing column titles
-        for i = 2:size(raw,1) 
-            raw{i,1} = raw{i,1}+datenum('30-Dec-1899');             % Convert Excel dates to Matlab dates
-        end
-        if size(raw,2) > size(CurrentParams,2)
-            CurrentParams{size(raw,2)} = NaN;
-            CurrentParams(cellfun(@isempty, CurrentParams)) = {NaN};
-        elseif size(raw,2) < size(CurrentParams,2)
-            raw(:, end+1:size(CurrentParams,2)) = NaN;
-        end
-        raw(end+1,:) = CurrentParams;
-        [Success, Msg] = xlswrite(HistoryFile, raw, 1);
-        if Success ~= 1
-            disp(Msg);
-        end
-    catch
-        fprintf('Writing to %s failed! Try writing to .csv format instead.\n', HistoryFile);
-        [Filename, Pathname, Indx] = uiputfile('.csv', 'Save current session to .csv file');  	% Ask user to specify file to save to
-        HistoryFile = fullfile(Pathname, Filename);
+
+    [num,txt,raw] =  xlsread(HistoryFile,1,'');                 % Read data from Excel file
+    for i = 2:size(raw,1) 
+        raw{i,1} = raw{i,1}+datenum('30-Dec-1899');             % Convert Excel dates to Matlab dates
+    end
+    if size(raw,2) > numel(CurrentParams)
+        CurrentParams((end+1):size(raw,2)) = deal({nan});       % Pad with NaNs
+    elseif size(raw,2) < size(CurrentParams,2)
+        raw(:, (end+1):size(CurrentParams,2)) = deal({nan});    
+    end
+    raw(end+1,:) = CurrentParams;
+    [Success, Msg] = xlswrite(HistoryFile, raw, 1);
+    if Success ~= 1
+        disp(Msg(1).message);
     end
 end
+
+if Success ~= 2
+    [path, file, format] = fileparts(HistoryFile);
+    Matfilename = fullfile(path, [file, '.mat']);
+    fprintf('Writing to %s failed! Saving backup to .mat file %s instead.\n', HistoryFile, Matfilename);
+%         [Filename, Pathname, Indx] = uiputfile('.csv', 'Save current session to .csv file');  	% Ask user to specify file to save to
+    save(Matfilename, 'raw');
+end
+
+
 
 if strcmpi(HistoryFile(end-2:end), 'csv')       %==================== WRITE DATA TO .CSV FILE               
     formatSpec = '%{dd-MMM-yyyy}D%f%f%f%f%f%C';

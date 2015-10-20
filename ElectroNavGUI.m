@@ -1538,7 +1538,11 @@ global Electrode Session Button Layer
     end
  	Electrode                       = ENT_GetElectrodeParams(Electrode);     	% Get remaining default electrode parameters based on electrode ID
     for e = Electrode(1).Numbers
-    	Electrode(e).ContactData  	= Params(1).ContactData{e}(1:Electrode(e).ContactNumber);
+        if ~isempty(Params(1).ContactData)
+            Electrode(e).ContactData  	= Params(1).ContactData{e}(1:Electrode(e).ContactNumber);
+        else
+            Electrode(e).ContactData  	= zeros(1, Electrode(e).ContactNumber);
+        end
     end
     
     %=========== Update variables in GUI
@@ -1598,7 +1602,8 @@ function FileSelect(hObj, Event, Indx, Indx2)
                 h = msgbox('Session data has been saved.','Save successful!','modal');      % inform user that data was saved
                 uiwait(h);  
             else
-                
+                h = msgbox('Error saving session data!','Save failed!','modal');
+                uiwait(h);  
             end
                                                
 

@@ -33,7 +33,7 @@ if nargin < 2
 end
 
 %============= Load list of structure names
-LabelsFile = 'Atlases/inia19/inia19-NeuroMaps.txt';          	% Specify filename of NeuroMaps structure data
+LabelsFile = 'Atlases/Macaque/inia19/inia19-NeuroMaps.txt';          	% Specify filename of NeuroMaps structure data
 if exist(LabelsFile,'file')==0
     uiwait(msgbox(sprintf('Atlas structure file ''%s'' was not found!\n', LabelsFile),'Error', 'error'));
     [file, path] = uigetfile('.txt', 'Select atlas label file');

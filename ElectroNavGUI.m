@@ -1022,7 +1022,7 @@ global Layer Fig
                 [SelectedIndx, SelectedStructs] = ENT_GetStructureIndex(Layer.MRI(indx).SelectedStructIndx);    % Get structure name
                 SelectedStructs{1}(strfind(SelectedStructs{1}, '_')) = ' ';                                     % Replace underscores with space
                 SelectedStructs{1}(1:2) = [];                                                                   % Remove hemisphere label (for Neuromaps)
-%                 XYZmm(3) = -XYZmm(3);
+                XYZmm(3) = -XYZmm(3);
                 Layer.MRI(indx).text_handle = text(XYZmm(1), XYZmm(2), XYZmm(3), SelectedStructs{1});     % 
                 set(Layer.MRI(indx).text_handle,'Color',[1 1 1], 'fontsize', 18);                               % Set text appearance
             end

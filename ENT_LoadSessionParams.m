@@ -30,7 +30,7 @@ end
 if exist('datetime.m','file')==2                   	%============ MATLAB R2014a and later
     switch HistoryFormat
         case '.xls'
-            T = readtable(HistoryFile);
+            T = readtable(HistoryFile,'basic',1);
             T.Date = datetime(T.Date,'ConvertFrom','excel');
             DateStrings = datestr(T.Date);
             C = table2cell(T);

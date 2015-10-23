@@ -17,7 +17,10 @@ global Fig Data Waveform Burst SpikeData
 [ENroot, b, c]= fileparts(mfilename('fullpath'));
 addpath(genpath(ENroot));
 if nargin == 0
-    Data.File = '/Volumes/PROJECTS/murphya/Physio/Analysis/SpikeAnalysis/SpikeWaveformData_20140130-20150319.mat';
+    DefaultPath = '/Volumes/PROJECTS/murphya/Physio/Analysis/SpikeAnalysis/SpikeWaveformData*';
+    [file, path] = uigetfile(DefaultPath, 'Select waveform data file');
+    Data.File = fullfile(path, file);
+%     Data.File = '/Volumes/PROJECTS/murphya/Physio/Analysis/SpikeAnalysis/SpikeWaveformData_20140130-20150319.mat';
 end
 
 %================= LOAD SPIKE WAVEFORM DATA
@@ -57,7 +60,7 @@ Fig.WavColor            = [0.7,0.7,0.7, 0.5 0.5 0.5; 0.5 0.5 1, 0 0 1];
 Fig.Pannel.Handle       = uipanel('BackgroundColor',Fig.Background,'Units','normalized','Position',[0.7,0.1,0.25,0.75],'Title','Current cell','FontSize',14);
 Fig.Pannel.Labels       = {'Data file','Session date','Channel #','Cell #','X-axis','Y-axis'};
 Fig.Pannel.InputType    = {'pushbutton','popup','popup','popup','popup','popup'};
-Fig.AxisLabels          = {'Frequency','Spike width (ms)','Spike amplitude (uV)','Median inter-spike interval (ms)','Median inter-burst interval (ms)'};
+Fig.AxisLabels          = {'Frequency','Peak to trough (ms)','FWHM (ms)','HWHM (ms)','Spike amplitude (uV)','Median inter-spike interval (ms)','Median inter-burst interval (ms)'};
 Fig.Pannel.Inputs       = {Data.File, Data.Dates, Data.Channels, Data.Cells, Fig.AxisLabels, Fig.AxisLabels};
 set(Fig.Pannel.Handle,'units','pixels')
 PannelSize = get(Fig.Pannel.Handle,'position');
@@ -71,7 +74,7 @@ for th = 1:size(ThreshBoxPos,1)
     Fig.Pannel.ThreshInput(th) = uicontrol('Style', 'edit', 'String', '0','parent',Fig.Pannel.Handle,'position',ThreshBoxPos(th,:), 'callback',{@MenuInput,n+th});
 end
 Fig.Xaxis = 2;
-Fig.Yaxis = 3;
+Fig.Yaxis = 5;
 set(Fig.Pannel.LabelsH, 'backgroundcolor', Fig.Background);
 set(Fig.Pannel.InputsH(5), 'value', Fig.Xaxis);
 set(Fig.Pannel.InputsH(6), 'value', Fig.Yaxis);
@@ -132,7 +135,7 @@ global Fig Waveform Data SpikeData
  	set(Fig.Pannel.InputsH(2), 'value', Fig.Current.DateNo);
     set(Fig.Pannel.InputsH(3), 'string', Data.Channels,'value',Fig.Current.ChannelNo);
     set(Fig.Pannel.InputsH(4), 'string', Data.Cells,'value',Fig.Current.CellNo);
-    set(Fig.Panel.VoidH, 'value', Waveform(Fig.Current.CellIndx).Valid);
+    set(Fig.Pannel.VoidH, 'value', Waveform(Fig.Current.CellIndx).Valid);
 
     PlotCellData;                   
 end
@@ -146,24 +149,32 @@ global Fig Data Waveform SpikeData Burst
     
     for i = 1:numel(Fig.Data.Handle)
         switch Fig.Xaxis
-            case 2	%================== SPIKE WIDTH
+            case 2	%================== SPIKE WIDTH (PEAK TO TROUGH)
                 set(Fig.Data.Handle(i), 'XData', Waveform(i).PeakToTroughDuration);
-            case 3	%================== SPIKE AMPLITUDE
+          	case 3	%================== SPIKE WIDTH (FULL WIDTH AT HALF MAX)
+                set(Fig.Data.Handle(i), 'XData', Waveform(i).FWHM);
+            case 4	%================== SPIKE WIDTH (HALF WIDTH AT HALF MAX)
+                set(Fig.Data.Handle(i), 'XData', Waveform(i).HWHM);
+            case 5	%================== SPIKE AMPLITUDE
                 set(Fig.Data.Handle(i), 'XData', abs(Waveform(i).PeakToTroughAmp));
-            case 4	%================== ISI
+            case 6	%================== ISI
                 set(Fig.Data.Handle(i), 'XData', Burst(i).ISIPercentiles(3));
-            case 5	%================== IBI
+            case 7	%================== IBI
                 set(Fig.Data.Handle(i), 'XData', Burst(i).IBIPercentiles(3));  
         end
 
         switch Fig.Yaxis
             case 2	%================== SPIKE WIDTH
-                set(Fig.Data.Handle(i), 'YData', Waveform(i).PeakToTroughDuration);   
-            case 3
-                set(Fig.Data.Handle(i), 'YData', abs(Waveform(i).PeakToTroughAmp));
-            case 4
-                set(Fig.Data.Handle(i), 'YData', Burst(i).ISIPercentiles(3));
+                set(Fig.Data.Handle(i), 'YData', Waveform(i).PeakToTroughDuration);  
+          	case 3	%================== SPIKE WIDTH (FULL WIDTH AT HALF MAX)
+                set(Fig.Data.Handle(i), 'YData', Waveform(i).FWHM);
+            case 4	%================== SPIKE WIDTH (HALF WIDTH AT HALF MAX)
+                set(Fig.Data.Handle(i), 'YData', Waveform(i).HWHM);
             case 5
+                set(Fig.Data.Handle(i), 'YData', abs(Waveform(i).PeakToTroughAmp));
+            case 6
+                set(Fig.Data.Handle(i), 'YData', Burst(i).ISIPercentiles(3));
+            case 7
                 set(Fig.Data.Handle(i), 'YData', Burst(i).IBIPercentiles(3)); 
         end
     end
@@ -233,6 +244,15 @@ global Fig Data Waveform Burst
     ph(2) = plot([0 Waveform(Fig.Current.CellIndx).PeakTime], [Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).PeakAmp], '--r');
     ph(3) = plot([Waveform(Fig.Current.CellIndx).PeakTime,Waveform(Fig.Current.CellIndx).TroughTime],[Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).PeakAmp],'-r','linewidth',5);
     ph(4) = plot(repmat(Waveform(Fig.Current.CellIndx).TroughTime,[1,2]),[Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).TroughAmp],'-g','linewidth',2);
+    
+    if isfield(Waveform, 'HWHM')
+        HWHMamp = Waveform(Fig.Current.CellIndx).PeakAmp+ Waveform(Fig.Current.CellIndx).PeakToTroughAmp/2;
+        ph(5) = plot(Waveform(Fig.Current.CellIndx).PeakTime+[0, Waveform(Fig.Current.CellIndx).HWHM], [HWHMamp, HWHMamp], '-c', linewidth',5);
+        
+        FWHMamp = Waveform(Fig.Current.CellIndx).PeakAmp+ Waveform(Fig.Current.CellIndx).PeakToTroughAmp/2;
+        ph(6) = plot(Waveform(Fig.Current.CellIndx).Times(Waveform(Fig.Current.CellIndx).HalfMaxIndex(1))+[0, Waveform(Fig.Current.CellIndx).FWHM] , [FWHMamp, FWHMamp], '-m', linewidth',5);
+       
+    end
     set(ph(3), 'ButtonDownFcn', {@ChangeWaveTime,1});
     set(ph(4), 'ButtonDownFcn', {@ChangeWaveTime,2});
     axis tight

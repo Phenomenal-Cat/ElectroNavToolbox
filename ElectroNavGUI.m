@@ -1622,7 +1622,9 @@ function FileSelect(hObj, Event, Indx, Indx2)
             set(gcf,'InvertHardcopy','off');
             if Indx2 == 1       %========= Capture whole GUI window
                 export_fig(FullFilename,['-',ImFormat],'-nocrop');
-            
+              	Message = sprintf('Figure was saved to %s', FullFilename);
+                h = msgbox(Message,'Saved!');
+                
             elseif Indx2 == 2   %========= Copy MRI panel to new figure window
                 NewFigH = figure('Color',Fig.Background,...             % Set the figure window background color
                               	'Renderer','OpenGL',...               	% Use OpenGL renderer
@@ -1639,6 +1641,8 @@ function FileSelect(hObj, Event, Indx, Indx2)
              	set(s,'clim',[0 1]);
                 export_fig(FullFilename,['-',ImFormat],'-nocrop');
                 close(NewFigH);
+              	Message = sprintf('Figure was saved to %s', FullFilename);
+                h = msgbox(Message,'Saved!');
             end
             
         case 5      %============================= OPEN POST-SESSION STRUCTURAL MRI

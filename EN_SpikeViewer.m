@@ -246,11 +246,11 @@ global Fig Data Waveform Burst
     ph(4) = plot(repmat(Waveform(Fig.Current.CellIndx).TroughTime,[1,2]),[Waveform(Fig.Current.CellIndx).PeakAmp,Waveform(Fig.Current.CellIndx).TroughAmp],'-g','linewidth',2);
     
     if isfield(Waveform, 'HWHM')
-        HWHMamp = Waveform(Fig.Current.CellIndx).PeakAmp+ Waveform(Fig.Current.CellIndx).PeakToTroughAmp/2;
-        ph(5) = plot(Waveform(Fig.Current.CellIndx).PeakTime+[0, Waveform(Fig.Current.CellIndx).HWHM], [HWHMamp, HWHMamp], '-c', linewidth',5);
+        HWHMamp = Waveform(Fig.Current.CellIndx).PeakAmp+ abs(Waveform(Fig.Current.CellIndx).PeakToTroughAmp/2);
+        ph(5) = plot(Waveform(Fig.Current.CellIndx).PeakTime+[0, Waveform(Fig.Current.CellIndx).HWHM], [HWHMamp, HWHMamp], '-c', 'linewidth',5);
         
-        FWHMamp = Waveform(Fig.Current.CellIndx).PeakAmp+ Waveform(Fig.Current.CellIndx).PeakToTroughAmp/2;
-        ph(6) = plot(Waveform(Fig.Current.CellIndx).Times(Waveform(Fig.Current.CellIndx).HalfMaxIndex(1))+[0, Waveform(Fig.Current.CellIndx).FWHM] , [FWHMamp, FWHMamp], '-m', linewidth',5);
+        FWHMamp = Waveform(Fig.Current.CellIndx).PeakAmp+ abs(Waveform(Fig.Current.CellIndx).PeakToTroughAmp/2);
+        ph(6) = plot(Waveform(Fig.Current.CellIndx).Times(Waveform(Fig.Current.CellIndx).MinusHalfMaxIndex(end))+[0, Waveform(Fig.Current.CellIndx).FWHM] , [FWHMamp, FWHMamp], '-m', 'linewidth',5);
        
     end
     set(ph(3), 'ButtonDownFcn', {@ChangeWaveTime,1});
@@ -259,19 +259,19 @@ global Fig Data Waveform Burst
     
     axes(Fig.Pannel.AxH(2)); 	%================ plot inter-spike interval distribution
     [N,X] = hist(Burst(Fig.Current.CellIndx).ISIs, 0:20:1000);
-    ph(5) = bar(X,N);
+    ph(7) = bar(X,N);
     hold on;
-    ph(6) = plot(repmat(median(Burst(Fig.Current.CellIndx).ISIs),[1,2]),ylim,'-r');
-    ph(7) = plot(repmat(mean(Burst(Fig.Current.CellIndx).ISIs),[1,2]),ylim,'-m');
+    ph(8) = plot(repmat(median(Burst(Fig.Current.CellIndx).ISIs),[1,2]),ylim,'-r');
+    ph(9) = plot(repmat(mean(Burst(Fig.Current.CellIndx).ISIs),[1,2]),ylim,'-m');
 	axis tight
     legend({'','median','mean'});
     
     axes(Fig.Pannel.AxH(3)); 	%================ plot inter-burst interval distribution
     [N,X] = hist(Burst(Fig.Current.CellIndx).IBIs, 0:20:1000);
-	ph(8) = bar(X,N);
+	ph(10) = bar(X,N);
     hold on;
-    ph(9) = plot(repmat(median(Burst(Fig.Current.CellIndx).IBIs),[1,2]),ylim,'-r');
-    ph(10) = plot(repmat(mean(Burst(Fig.Current.CellIndx).IBIs),[1,2]),ylim,'-m');
+    ph(11) = plot(repmat(median(Burst(Fig.Current.CellIndx).IBIs),[1,2]),ylim,'-r');
+    ph(12) = plot(repmat(mean(Burst(Fig.Current.CellIndx).IBIs),[1,2]),ylim,'-m');
 	axis tight
     
     Xlabels = {'Time (us)','ISI (ms)', 'IBI (ms)'};

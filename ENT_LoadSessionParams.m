@@ -117,6 +117,7 @@ end
 for d = 1:numel(Selection)                                                                                      % For each session selected...
     SessionParams(d).Date               = datestr(C{Selection(d),1});                                           % Record session date string
     SessionParams(d).DateString         = DateStrings(Selection(d),:);
+    SessionParams(d).DateNum            = datenum(DateStrings(Selection(d),:));
     SessionParams(d).DateIndex       	= Selection(d);
     SessionParams(d).NoElectrodes       = numel(find(~cellfun(@isnan, C(Selection(d),3:5:end))));               % How many electrodes were used?
     for e = 1:SessionParams(d).NoElectrodes                                                                     % For each electrode...

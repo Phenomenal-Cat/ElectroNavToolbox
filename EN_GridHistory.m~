@@ -51,6 +51,8 @@ for i = 1:Grid.HolesPerDim
 end
 
 %========================== Load recording history data
+% Hist = ENT_LoadHistory(SessionHistory);
+global Hist
 Hist = ENT_LoadSessionParams(SessionHistory, 'All');
 [Selection,ok] = listdlg('ListString',{Hist.DateString},'SelectionMode','multi','PromptString','Select sessions to include:');
 if ok==0
@@ -58,19 +60,17 @@ if ok==0
     return;
 end
 
-AllDateNumes    = [];
-Target          = [];
-TargetDepth     =[];
-GuideLength     =[];
-for S = 1:numel(Selection)
-    for e = 1:numel(Hist(Selection(S)).Target)
-        AllDateNumes(end+1)     = Hist(Selection(S)).DateNum;
-        Target(end+1,:)         = Hist(Selection(S)).Target{e};
-        TargetDepth(end+1)  	= Hist(Selection(S)).Depth{e};
-        GuideLength(end+1)      = Hist(Selection(S)).GuideLength{e};
-    end         
-end
+for e = 1:numel(Hist(Selection).Target)
+    
+    Target(end+1,:)         = Hist(Selection).Target{e};
+    TargetDepth(end+1,:)  	= Hist(Selection).Depth{e};
+    GuideLength(end+1
+
+Target          = Hist(Selection).Target;
+TargetDepth     = Hist(Selection).Depth;                              
+% Session.Date    = Hist(Selection).DateString;  
 DaysElapsed     = repmat(datenum(date),[1,numel(Selection)])-[Hist(Selection).DateNum];   	% Days since each recording
+
 
 
 %========================== Set visualization parameters
@@ -108,19 +108,19 @@ FigHandle = figure( 'Name','Recording History',...          % Open a figure wind
                     'Color',FigBackground,...               % Set the figure window background color
                     'Menu','none','Toolbar','none');       	% Turn off toolbars to save space
 GridObject = DrawGrid(Grid);
-title(sprintf('Total recordings: %s - %s',Hist(Selection(1)).DateString, Hist(Selection(end)).DateString),'FontWeight','bold','FontSize',18);
+title(sprintf('Total recordings: %s - %s',Hist.DateStrings(Selection(1),:),Hist.DateStrings(Selection(end),:)),'FontWeight','bold','FontSize',14);
 set(gca,'XTick',-8:2:8);
 set(gca,'YTick',-8:2:8);
-set(gca,'fontsize',16);
+set(gca,'fontsize',12);
 set(gca,'color',FigBackground);
-Labels(1) = xlabel('Medial-Lateral','fontsize',18);                                        
-Labels(2) = ylabel('Posterior-Anterior','fontsize',18);
+Labels(1) = xlabel('Medial-Lateral');                                        
+Labels(2) = ylabel('Posterior-Anterior');
 grid on;
 axis equal tight;
 cbr = colorbar;
 colormap(ColormapMode);
 set(cbr,'YTick',YTicks,'YLim',YLims);
-set(get(cbr,'ylabel'),'String', ColorTitle,'FontSize',16);
+set(get(cbr,'ylabel'),'String', ColorTitle,'FontSize',12);
 end
 
 

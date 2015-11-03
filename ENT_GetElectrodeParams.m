@@ -19,6 +19,7 @@
 
 function Electrode = ENT_GetElectrodeParams(Electrode)
 
+%================ CHECK INPUTS
 Brands = {'AO','NN','PLX','TR'};
 LineNumber = 22;                                                            % Line number to edit from
 if nargin == 0                                                              % If no input variable...
@@ -30,7 +31,9 @@ if ~isstruct(Electrode)
     clear Electrode;
     Electrode.ID = ElectrodeType; 
 end
-NoElectrodes =  length(Electrode);                                          % If Electrode structure contains data for multiple electrodes...
+NoElectrodes = length(Electrode);                                           % If Electrode structure contains data for multiple electrodes...
+
+%================ FOR EACH ELECTRODE...
 for e = 1:NoElectrodes                                                      % For each electrode...
     Electrode(e).AllTypes = Brands;
     if ~isfield(Electrode,'ID') || isempty(Electrode(e).ID)

@@ -62,7 +62,7 @@ HistoryFile = HistoryFile{1};
 if isempty(HistoryFile)
     error('No recording history file (.xls/.csv) was found in ''%s''!', SubjectDir);
 end
-TformFile = wildcardsearch(SubjectDir,'*.mat');
+TformFile = wildcardsearch(SubjectDir,'*Xform*.mat');
 if ~isempty(TformFile)
 	load(TformFile{1});
 end
@@ -81,22 +81,23 @@ if exist('Dates','var') && ~isempty(Dates)
     end
 %     Dates = datestr(sort(datenum(Dates)));                           	% Check date formats and sort in chronological order
     Dates = datestr(datenum(Dates));
-    SessionParams = EN_LoadSessionParams(HistoryFile, cellstr(Dates)); 	% Get electrode location information
+    SessionParams = ENT_LoadSessionParams(HistoryFile, cellstr(Dates)); 	% Get electrode location information
 else
-    SessionParams = EN_LoadSessionParams(HistoryFile);                  % Get electrode location information
+    SessionParams = ENT_LoadSessionParams(HistoryFile);                  % Get electrode location information
 end
 
 
 %% =========================== LOAD RECORDING HISTORY DATA     
 GridCoords = nan(numel(SessionParams),3,24);                            % Pre-allocate at matrix to store all contact coordinates
 for d = 1:numel(SessionParams)                                          % For each session date requested...
-    Electrode = GetElectrodeParams(SessionParams(d).ElectrodeID);       % Get the electrode paramaters for the electrode used in this session
-    if SessionParams(d).Depth > 0                                       % If tip depth (mm) is positive
-        SessionParams(d).Depth = -SessionParams(d).Depth;               % Invert the depth
+    e = 1;
+    Electrode = ENT_GetElectrodeParams(SessionParams(d).ElectrodeID{e});       % Get the electrode paramaters for the electrode(s) used in this session
+    if SessionParams(d).Depth{e} > 0                                       % If tip depth (mm) is positive
+        SessionParams(d).Depth{e} = -SessionParams(d).Depth{e};          	% Invert the depth
     end
     for c = 1:Electrode.ContactNumber                                   % For each electrode contact...
-        GridCoords(d,[1,2],c) = SessionParams(d).Target;                % Get the grid hole coordinate
-        GridCoords(d,3,c) = SessionParams(d).Depth+Electrode.TipLength+((c-1)*Electrode.ContactSpacing);
+        GridCoords(d,[1,2],c) = SessionParams(d).Target{e};                % Get the grid hole coordinate
+        GridCoords(d,3,c) = SessionParams(d).Depth{e}+Electrode.TipLength+((c-1)*Electrode.ContactSpacing);
     end
     if exist('T','var')                                                 % If transformation matrix was loaded...
         GridCoords(d,4,:) = 1;                                          % Pad 4th row with 1s

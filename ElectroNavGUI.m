@@ -127,9 +127,9 @@ end
 
 
 %=============== LOAD RECORDING HISTORY FROM SPREADSHEET
-if exist(Defaults.HistoryFile, 'file') ==2                             	% If recording history file was found...
-    Hist = ENT_LoadHistory(Defaults.HistoryFile);        
-    Session.DateStrings = Hist.DateStrings;
+if exist(Defaults.HistoryFile, 'file') ==2                             	% If recording history file was found...   
+    Hist = ENT_LoadSessionParams(Defaults.HistoryFile, 'All'); 
+    Session.DateStrings = cell2mat({Hist.DateString}');
 else
     Session.DateStrings = [];
 end

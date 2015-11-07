@@ -89,7 +89,7 @@ end
 
 %% =========================== LOAD RECORDING HISTORY DATA     
 NoContacts  = 24;                                                               
-GridCoords  = nan(numel(SessionParams),3,NoContacts);                          	% Pre-allocate at matrix to store all contact coordinates
+GridCoords  = nan(numel(SessionParams),3,NoContacts*2);                       	% Pre-allocate at matrix to store all contact coordinates
 for d = 1:numel(SessionParams)                                                  % For each session date requested...
     Electrode = cell2struct(SessionParams(d).ElectrodeID,'ID');                 % Convert electrode ID(s) to structure
     Electrode = ENT_GetElectrodeParams(Electrode);                              % Get the electrode paramaters for the electrode(s) used in this session
@@ -108,8 +108,11 @@ for d = 1:numel(SessionParams)                                                  
     if exist('T','var')                                                     % If transformation matrix was loaded...
         GridCoords(d,4,:) = 1;                                              % Pad 4th row with 1s
         temp = T*squeeze(GridCoords(d,:,:));                                % Apply transformation
-        ContactCoords(d,:,:) = temp(1:3,:);                                 % Remove 4th row
+        ContactCoords(d,:,1:size(temp,2)) = temp(1:3,:);                  	% Remove 4th row
     else
         ContactCoords(d,:,:) = GridCoords(d,:,:);
     end
 end
+
+
+

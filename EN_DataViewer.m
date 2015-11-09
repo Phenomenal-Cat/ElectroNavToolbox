@@ -117,6 +117,8 @@ end
 if exist('DefaultMaskFile', 'var')
     Mask = load(DefaultMaskFile);                                                 	% Load default mask data
     MaskData(Mask);
+else
+    Contact.Mask = ones(size(Contact.Alpha));
 end
 AlphaRange = [min(Contact.Alpha), max(Contact.Alpha)];                              % Get range of alpha values
 if diff(AlphaRange)==0

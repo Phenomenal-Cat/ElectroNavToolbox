@@ -64,6 +64,7 @@ if isempty(HistoryFile)
 end
 TformFile = wildcardsearch(SubjectDir,'*Xform*.mat');
 if ~isempty(TformFile)
+    fprintf('Applying transform matrix from %s...\n', TformFile{1});
 	load(TformFile{1});
 end
 if ~exist('T','var')  

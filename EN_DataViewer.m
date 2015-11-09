@@ -305,8 +305,8 @@ set(Fig.Handles.DataInput(7), 'value', Fig.Data.InvertAlpha);
 %======================== MRI PANEL
 MRI.SelectedAxis = 2;
 MRI.SliceAlpha = 1;
-Fig.MRI.LabelStrings = {'MR volume','Slice axis','Position (mm)', sprintf('Opacity = %d %%', round(MRI.SliceAlpha*100)),'Threshold'};
-Fig.MRI.InputType = {'Pushbutton','popupmenu','slider','slider','slider'};
+Fig.MRI.LabelStrings = {'MR volume','Slice axis','Position (mm)', sprintf('Opacity = %d %%', round(MRI.SliceAlpha*100)),'Threshold (min)','Threshold (max)'};
+Fig.MRI.InputType = {'Pushbutton','popupmenu','slider','slider','slider','slider'};
 Fig.MRI.InputStrings = {{'Select volume'}, {'Sagittal','Coronal','Axial'}};
 Fig.MRI.InputValue = {0, MRI.SelectedAxis, 0, MRI.SliceAlpha, 0, 1};
 Ypos = (0:-30:(-30*(numel(Fig.MRI.LabelStrings)+1))) + BoxPos(5,4)-50;
@@ -326,7 +326,7 @@ for i = 1:numel(Fig.MRI.LabelStrings)
 end
 set(Fig.Handles.MRIInput(4),'min',0,'max',1,'SliderStep',[0.05 0.05]);
 set(Fig.Handles.MRIInput([2,3,4]), 'enable', 'off');
-set(Fig.Handles.MRIInput(5),'min',0,'max',1,'SliderStep',[0.01 0.01],'backgroundcolor',[0.4, 0.4, 0.4]);
+set(Fig.Handles.MRIInput([5,6]),'min',0,'max',1,'SliderStep',[0.01 0.01],'backgroundcolor',[0.4, 0.4, 0.4]);
 Fig.Handles.MRIint = axes('parent',Fig.Handles.UIpannel(3), 'units','pixels','position',[40 40 200 80]);
 xlabel('Voxel intensities');
 ylabel('# voxels');

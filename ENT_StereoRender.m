@@ -14,7 +14,7 @@ end
 HighRes         = 0;                                        
 [Az, El]        = view;                                   	% Get current azimuth and elevation angles
 parallaxAngle   = [-0.5, 0.5];                             	% 
-cameraAnchor    = [max(H.XLim), max(H.YLim), min(H.ZLim)]; 	% Point in space to lock camera to  
+cameraAnchor    = [max(get(H, 'Xlim')), max(get(H,'Ylim')), min(get(H,'Zlim'))]; 	% Point in space to lock camera to  
 set(gca, 'Units', 'pixels');
 AxesPos         = get(gca, 'position');
 Rect            = AxesPos;

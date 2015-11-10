@@ -31,7 +31,6 @@ NiiFile2 = '/Volumes/RAWDATA/murphya/MRI/Dexter/20140219/Dexter_meanT1_BET_resli
 
 
 %======================= LOAD VOLUMES
-fprintf('Loading volumes...\n')
 Nii{1} = load_nii(NiiFile1);
 Nii{2} = load_nii(NiiFile2);
 
@@ -40,13 +39,13 @@ if Nii{1}.hdr.dime.pixdim(2:4) ~= Nii{2}.hdr.dime.pixdim(2:4)
 end
 for n = 1:2
     Fig.VoxelDim{n}       	= Nii{n}.hdr.dime.pixdim(2:4);
-    Fig.Origin{n}          	= Nii{n}.hdr.hist.originator(1:3);
-    Fig.OriginMM{n}        	= Nii{n}.hdr.hist.originator(1:3).*Fig.VoxelDim{n};
-    Fig.VolumeDim{n}       	= size(Nii{n}.img);
-    Fig.VolumeDimMM{n}    	= size(Nii{n}.img).*Fig.VoxelDim{n};
-    Fig.AxLims{n}          	= [-Fig.OriginMM{n}; Fig.VolumeDimMM{n}-Fig.OriginMM{n}]';
+    Fig.Origin{n}              = Nii{n}.hdr.hist.originator(1:3);
+    Fig.OriginMM{n}            = Nii{n}.hdr.hist.originator(1:3).*Fig.VoxelDim;
+    Fig.VolumeDim{n}           = size(Nii{n}.img);
+    Fig.VolumeDimMM{n}    	= size(Nii{n}.img).*Fig.VoxelDim;
+    Fig.AxLims{n}          	= [-Fig.OriginMM; Fig.VolumeDimMM-Fig.OriginMM]';
     Fig.SliceOrientation    = 1;
-    Fig.SlicePosition       = Fig.Origin{1};
+    Fig.SlicePosition       = Fig.Origin;
     Fig.SlicePositionMM    	= [0 0 0];
 end
 
@@ -73,7 +72,7 @@ for n = (1:2)+numel(Fig.MenuLabels)
     Fig.MenuInputH(n) = uicontrol('Style','slider','HorizontalAlignment','Left','pos',[240, Ypos(n-2), 100, 25],'parent',Fig.UIpannel,'Callback',{@MenuInput,n});
 end
 set(Fig.MenuLabelH, 'HorizontalAlignment','Left', 'backgroundcolor', Fig.Background);
-set(Fig.MenuInputH(2),'min', 1,'max', Fig.VolumeDim{1}(Fig.SliceOrientation),'SliderStep', repmat(1/Fig.VolumeDim{1}(Fig.SliceOrientation),[1,2]), 'value',Fig.SlicePosition(Fig.SliceOrientation));
+set(Fig.MenuInputH(2),'min', 1,'max', Fig.VolumeDim(Fig.SliceOrientation),'SliderStep', repmat(1/Fig.VolumeDim(Fig.SliceOrientation),[1,2]), 'value',Fig.SlicePosition(Fig.SliceOrientation));
 set(Fig.MenuLabelH(1), 'value', Fig.SliceOrientation);      
 set(Fig.MenuInputH([5,6]),'value',0);
 set(Fig.MenuInputH([7,8]),'value',1);
@@ -81,7 +80,7 @@ set(Fig.MenuInputH([7,8]),'value',1);
 
 %======================= PLOT DATA               
 Fig.ax(1) = axes('units','normalized','position',[0.05 0.1 0.3 0.6]);
-Fig.Im(1) = imagesc(Fig.AxLims{1}(2,1):Fig.AxLims{1}(2,2), Fig.AxLims{1}(1,1):Fig.AxLims{1}(1,2), Nii{1}.img(:,:,Fig.Origin{1}(Fig.SliceOrientation)));
+Fig.Im(1) = imagesc(Fig.AxLims(2,1):Fig.AxLims(2,2), Fig.AxLims(1,1):Fig.AxLims(1,2), Nii{1}.img(:,:,Nii{1}.hdr.hist.originator(3)));
 axis equal tight xy;
 hold on;
 Fig.OriginHx(1) = plot(xlim, [0 0],'--c');
@@ -91,7 +90,7 @@ name(strfind(name,'_'))=' ';
 title(name, 'fontsize',18);
 
 Fig.ax(2) = axes('units','normalized','position',[0.4 0.1 0.3 0.6]);
-Fig.Im(2) = imagesc(Fig.AxLims{2}(2,1):Fig.AxLims{2}(2,2), Fig.AxLims{2}(1,1):Fig.AxLims{2}(1,2), Nii{2}.img(:,:,Fig.Origin{2}(Fig.SliceOrientation)));
+Fig.Im(2) = imagesc(Fig.AxLims(2,1):Fig.AxLims(2,2), Fig.AxLims(1,1):Fig.AxLims(1,2), Nii{2}.img(:,:,Nii{2}.hdr.hist.originator(3)));
 axis equal tight xy;
 hold on;
 Fig.OriginHx(2) = plot(xlim, [0 0],'--c');
@@ -130,24 +129,23 @@ global Fig Nii
             set(Fig.MenuInputH(2),'max', Fig.VolumeDim(Fig.SliceOrientation),'SliderStep', repmat(1/Fig.VolumeDim(Fig.SliceOrientation),[1,2]), 'value',Fig.SlicePosition(Fig.SliceOrientation));
             switch Fig.SliceOrientation
                 case 1
-
+                    set(Fig.ax([1,2]), 'xlim', Fig.AxLims(2,:), 'ylim', Fig.AxLims(3,:));
                     for i=1:2
                         axes(Fig.ax(i));
-                       	set(Fig.ax(i), 'xlim', Fig.AxLims{i}(2,:), 'ylim', Fig.AxLims{i}(3,:));
                         xlabel('Posterior-Anterior (mm)','fontsize',16);
                         ylabel('Inferior-Superior (mm)','fontsize',16);
                     end
                 case 2
+                    set(Fig.ax([1,2]), 'xlim', Fig.AxLims(1,:), 'ylim', Fig.AxLims(3,:));
                  	for i=1:2
                         axes(Fig.ax(i));
-                        set(Fig.ax(i), 'xlim', Fig.AxLims{i}(1,:), 'ylim', Fig.AxLims{i}(3,:));
                         xlabel('Medial-Lateral (mm)','fontsize',16);
                         ylabel('Inferior-Superior (mm)','fontsize',16);
                     end
                 case 3
+                	set(Fig.ax([1,2]), 'xlim', Fig.AxLims(2,:), 'ylim', Fig.AxLims(1,:));
                   	for i=1:2
                         axes(Fig.ax(i));
-                        set(Fig.ax(i), 'xlim', Fig.AxLims{i}(2,:), 'ylim', Fig.AxLims{i}(1,:));
                         xlabel('Medial-Lateral (mm)','fontsize',16);
                         ylabel('Posterior-Anterior (mm)','fontsize',16);
                     end
@@ -156,8 +154,7 @@ global Fig Nii
             
         case 2      %========== Change slice position
             Fig.SlicePosition(Fig.SliceOrientation) = round(get(hObj,'Value'));
-            n = 1;
-            Fig.SlicePositionMM = (Fig.SlicePosition-Fig.Origin{n}).*Fig.VoxelDim{n};
+            Fig.SlicePositionMM = (Fig.SlicePosition-Fig.Origin).*Fig.VoxelDim;
             set(Fig.MenuLabelH(2), 'string', sprintf('Position = %.2f mm', Fig.SlicePositionMM(Fig.SliceOrientation)));
             UpdateSlice;
 
@@ -219,21 +216,24 @@ end
 
 function UpdateSlice
 global Fig Nii
-    for n = 1:2
-        switch Fig.SliceOrientation
-            case 1      %======= SAGITTAL
-                set(Fig.Im(n), 'xdata', Fig.AxLims{n}(2,1):Fig.AxLims{n}(2,2), 'ydata', Fig.AxLims{n}(3,1):Fig.AxLims{n}(3,2));
-                set(Fig.Im(n), 'cdata', rot90(squeeze(Nii{n}.img(Fig.SlicePosition(Fig.SliceOrientation),:,:))));
-
-            case 2      %======= CORONAL
-                set(Fig.Im(n), 'xdata', Fig.AxLims{n}(1,1):Fig.AxLims{n}(1,2), 'ydata', Fig.AxLims{n}(3,1):Fig.AxLims{n}(3,2));
-                set(Fig.Im(n), 'cdata', rot90(squeeze(Nii{n}.img(:,Fig.SlicePosition(Fig.SliceOrientation),:))));
-
-            case 3      %======= AXIAL
-                set(Fig.Im(n), 'xdata', Fig.AxLims{n}(2,1):Fig.AxLims{n}(2,2), 'ydata', Fig.AxLims{n}(1,1):Fig.AxLims{n}(1,2));
-                set(Fig.Im(n), 'cdata', Nii{n}.img(:,:,Fig.SlicePosition(Fig.SliceOrientation)));
-        end    
-    end
+    switch Fig.SliceOrientation
+        case 1      %======= SAGITTAL
+            set(Fig.Im, 'xdata', Fig.AxLims(2,1):Fig.AxLims(2,2), 'ydata', Fig.AxLims(3,1):Fig.AxLims(3,2));
+            set(Fig.Im(1), 'cdata', rot90(squeeze(Nii{1}.img(Fig.SlicePosition(Fig.SliceOrientation),:,:))));
+            set(Fig.Im(2), 'cdata', rot90(squeeze(Nii{2}.img(Fig.SlicePosition(Fig.SliceOrientation),:,:))));
+            
+            
+        case 2      %======= CORONAL
+            set(Fig.Im, 'xdata', Fig.AxLims(1,1):Fig.AxLims(1,2), 'ydata', Fig.AxLims(3,1):Fig.AxLims(3,2));
+            set(Fig.Im(1), 'cdata', rot90(squeeze(Nii{1}.img(:,Fig.SlicePosition(Fig.SliceOrientation),:))));
+            set(Fig.Im(2), 'cdata', rot90(squeeze(Nii{2}.img(:,Fig.SlicePosition(Fig.SliceOrientation),:))));
+            
+            
+        case 3      %======= AXIAL
+          	set(Fig.Im, 'xdata', Fig.AxLims(2,1):Fig.AxLims(2,2), 'ydata', Fig.AxLims(1,1):Fig.AxLims(1,2));
+            set(Fig.Im(1), 'cdata', Nii{1}.img(:,:,Fig.SlicePosition(Fig.SliceOrientation)));
+            set(Fig.Im(2), 'cdata', Nii{2}.img(:,:,Fig.SlicePosition(Fig.SliceOrientation)));
+    end    
 end
 
 function PointerCallback(objectHandle, eventData)
@@ -249,10 +249,11 @@ global Fig Nii
     end
 
     
+	CoordinateVox = round(CoordinateMM./Fig.VoxelDim)+Fig.Origin;
+    
     %============= GET INTENSITY VALUES OF SELECTED VOXEL
     for im = 1:2
-        CoordinateVox{im} = round(CoordinateMM./Fig.VoxelDim{im})+Fig.Origin{im};
-        Intensity(im) = Nii{im}.img(CoordinateVox{im}(3), CoordinateVox{im}(2), CoordinateVox{im}(1));
+        Intensity(im) = Nii{im}.img(CoordinateVox(3), CoordinateVox(2), CoordinateVox(1));
         if ~isfield(Fig, 'IntensityH') || numel(Fig.IntensityH)<2 
             axes(Fig.ax(2+im));
             Fig.IntensityH(im) = plot(repmat(Intensity(im),[1,2]), ylim, '-r');
@@ -265,8 +266,8 @@ global Fig Nii
     if ~isfield(Fig, 'SelectedVoxH')
         for a = 1:2
             axes(Fig.ax(a));
-            Fig.SelectedVoxH(1,a) = plot(repmat(CoordinateMM(1), [1,2]), Fig.AxLims{a}(3,:), '-r');
-            Fig.SelectedVoxH(2,a) = plot(Fig.AxLims{a}(1,:), repmat(CoordinateMM(2), [1,2]), '-r');
+            Fig.SelectedVoxH(1,a) = plot(repmat(CoordinateMM(1), [1,2]), Fig.AxLims(3,:), '-r');
+            Fig.SelectedVoxH(2,a) = plot(Fig.AxLims(1,:), repmat(CoordinateMM(2), [1,2]), '-r');
         end
         set(Fig.SelectedVoxH, 'PickableParts','none');
     else

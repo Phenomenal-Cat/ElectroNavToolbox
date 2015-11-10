@@ -35,9 +35,10 @@ Fig.Handle = figure('Name',sprintf('ElectroNav%c - Adjust MRI',char(169)),... 	%
 
                 
 %====================== SET DEFAULTS
-ImParams.Thresh     = [min(Vol(:), max(Vol(:))];
+ImParams.Thresh     = [min(Vol(:)), max(Vol(:))];
 ImParams.Colormap   = gray;
-ImParams.
+ImParams.Resolution = nii.hdr.dime.pixdim(2:4);
+
  
 %====================== CREATE GUI BUTTONS                
 Fig.MRI.LabelStrings = {'MR volume','Slice axis','Position (mm)', sprintf('Opacity = %d %%', round(MRI.SliceAlpha*100)),'Threshold'};

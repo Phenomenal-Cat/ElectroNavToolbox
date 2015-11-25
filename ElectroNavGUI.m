@@ -1538,7 +1538,7 @@ global Electrode Session Button Layer
     end
  	Electrode                       = ENT_GetElectrodeParams(Electrode);     	% Get remaining default electrode parameters based on electrode ID
     for e = Electrode(1).Numbers
-        if ~isempty(Params(1).ContactData)
+        if ~isempty(Params(1).ContactData) && numel(Params(1).ContactData{1})>1
             Electrode(e).ContactData  	= Params(1).ContactData{e}(1:Electrode(e).ContactNumber);
         else
             Electrode(e).ContactData  	= zeros(1, Electrode(e).ContactNumber);

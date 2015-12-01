@@ -1,4 +1,4 @@
-function [Contact] = EN_DataViewer(DataPath)
+function [Contact] = EN_DataViewer(SubjectID, DataPath)
 
 %=========================== EN_DataViewer.m ==============================
 % This function loads analysed physiology data from multiple prior sessions 
@@ -46,13 +46,35 @@ global Fig Contact Structures Data MRI Mask
 
 %==================== LOAD PHYSIOLOGY RESULTS DATA
 if nargin == 0
-    Data.Dir = '/Volumes/projects/murphya/Physio/MapPlotTools/MapData/';        % <<< Hardcoded path is TEMPORARY!
-%     DefaultMaskFile = fullfile(Data.Dir,'Layla_SpikeOrNot_Mask.mat');         
-%     Data.Dir = uigetdir(root, 'Select data directory');
+    Data.Dir        = '/Volumes/projects/murphya/Physio/MapPlotTools/MapData/';        % <<< Hardcoded path is TEMPORARY!
+    Data.SubjectID  = 'Dexter';
+%     Data.Dir = uigetdir(root, 'Select map data directory');
 else
-    Data.Dir = DataPath;
-end                         
-Data.Files = wildcardsearch(Data.Dir,'*.mat');  
+    Data.SubjectID  = SubjectID;
+    Data.Dir        = DataPath;
+end 
+
+switch Data.SubjectID
+    case 'Layla'
+        SubjectDir    	= '/projects/murphya/EN_data/Subjects/Layla';
+        MRI.DefaultFile	= '/projects/murphya/EN_data/Subjects/Layla/Layla_GridScan_ACPC.nii';
+%         MRI.DefaultFile = '/rawdata/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_MDEFT_postelgiloy_025mm_BET_Masked_rot.nii';
+%         MRI.DefaultFile = '/rawdata/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_FLASH_postelgiloy_iso_BET_aligned_rot.nii';
+        Fig.Xlim        = [-16, 0];
+        StructuresOn    = [2,6,7,9,11];                                    % Pulvinar subdivisions default to 'on'      
+        
+    case 'Dexter'
+        SubjectDir    	= '/projects/murphya/EN_data/Subjects/Dexter';
+        MRI.DefaultFile	= '/projects/murphya/EN_data/Subjects/Dexter/Dexter_20150917_ACPC.nii';
+        Fig.Xlim        = [0, 16];
+        StructuresOn	= [2,4];                                            % Pulvinar subdivisions default to 'on'  
+        
+    otherwise
+        error(sprintf('SubjectID ''%s'' not recognized!', Data.SubjectID));
+end
+
+DefaultMaskFile = fullfile(Data.Dir,sprintf('%s_SpikeOrNot_Mask.mat', Data.SubjectID));
+Data.Files      = wildcardsearch(Data.Dir,[Data.SubjectID, '*.mat']);  
 for d = 1:numel(Data.Files)
     [a,Data.Filenames{d},c] = fileparts(Data.Files{d});
 end
@@ -82,13 +104,13 @@ Fig.Handles.Figure  = figure('Name',sprintf('ElectroNav%c - Data Viewer',char(16
                     'NumberTitle','off',...                                     % Remove figure number from title
                     'IntegerHandle','off');                                     % Don't use integer handles
 Fig.Colormap        = 'jet';                                                  	% Set default colormap
-Fig.HighlightColor  = [1 0 0];                                                	% Set color for highlighted contacts
+Fig.HighlightColor  = [0 1 0];                                                	% Set color for highlighted contacts
 Fig.HighlightAlpha  = 0.3;                                                    	% Set alpha transparency for outer highlight volume
-Fig.HighlightRad    = 0.5;                                                    	% Set radius (mm) of outer highlight volume
+Fig.HighlightRad    = 0.75;                                                    	% Set radius (mm) of outer highlight volume
 Fig.View          	= [220, 30];                                             	% Set default camera angle [azimuth, elevation] (degrees)
 Fig.SphereRadii     = [0.05, 0.15];                                           	% Set the range of radii (mm) of contacts
 Fig.SphereN         = 20;                                                     	% Set number of segments per sphere (redcude for faster rendering, increase for higher quality)
-Fig.Xlim            = [-16 0];                                                	% Set default axis limits for 3D plot
+% Fig.Xlim            = [0, 16];                                                	% Set default axis limits for 3D plot
 Fig.Ylim            = [-20,-8];
 Fig.Zlim            = [-8,8];
 Fig.MarkerSize      = 10;                                                     	% Default marker size for 2D plots
@@ -164,37 +186,34 @@ zlabel('Inferior-Superior (mm)','fontsize',18);
 set(gca,'fontsize',Fig.FontSize,'color',Fig.AxesBkgColor);                      
 set(gca,'xlim',Fig.Xlim','ylim',Fig.Ylim,'zlim',Fig.Zlim);                      % Set axes limits to defaults
 colormap(Fig.Colormap);                                                         % Set colormap to requested default
-Fig.cbh = colorbar('EastOutside','units','pixels','position',[80 200 25 500]);  % Plot colorbar scale
-Fig.cbh.Label.String = Contact.DataVariable;                                    % Set axis label on colorbar
-Fig.cbh.Label.FontSize = 18;                                                    % Set fontsize for axis label
-Fig.cbh.FontSize = 12;                                                          
-Fig.cbh.ButtonDownFcn = @SelectColormap;                                        % Set callback function for colorbar (select new colormap)
-Contact.Indx = 1;                                                               % Currently selected contact/cell defaults to 1
-Fig.ZoomH = zoom;                                                               % Create zoom object
+Fig.cbh                 = colorbar('EastOutside','units','pixels','position',[80 200 25 500]);  % Plot colorbar scale
+Fig.cbh.Label.String    = Contact.DataVariable;                                	% Set axis label on colorbar
+Fig.cbh.Label.FontSize  = 18;                                                  	% Set fontsize for axis label
+Fig.cbh.FontSize        = 12;                                                          
+Fig.cbh.ButtonDownFcn   = @SelectColormap;                                   	% Set callback function for colorbar (select new colormap)
+Contact.Indx            = 1;                                                   	% Currently selected contact/cell defaults to 1
+Fig.ZoomH               = zoom;                                               	% Create zoom object
 
 %================ Plot structures
-SubjectDir = '/projects/murphya/EN_data/Subjects/Layla';
-MRI.DefaultFile = '/projects/murphya/EN_data/Subjects/Layla/Layla_GridScan_ACPC.nii';
-% MRI.DefaultFile = '/rawdata/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_MDEFT_postelgiloy_025mm_BET_Masked_rot.nii';
-% MRI.DefaultFile = '/rawdata/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_FLASH_postelgiloy_iso_BET_aligned_rot.nii';
 if ismac
     SubjectDir = fullfile('/Volumes',SubjectDir); 
     MRI.DefaultFile = fullfile('/Volumes', MRI.DefaultFile); 
 end
 MeshFiles = wildcardsearch(fullfile(SubjectDir,'VTKs'),'*.vtk');
-Structures = Plot3DMeshes(MeshFiles);
-Structures.Materials.Ambient = 0.3;                              
-Structures.Materials.Diffuse = 0.5;          
-Structures.Materials.Specular = 0.4;         
-Structures.Materials.SpecExp = 6;            
-Structures.Materials.SpecCol = 1; 
+Structures                      = Plot3DMeshes(MeshFiles);
+Structures.Materials.Ambient    = 0.3;                              
+Structures.Materials.Diffuse    = 0.5;          
+Structures.Materials.Specular   = 0.4;         
+Structures.Materials.SpecExp    = 6;            
+Structures.Materials.SpecCol    = 1; 
+Structures.CurrentStructure     = 1;
+Structures.Smoothing            = zeros(1, numel(Structures.Names));
+Structures.Wire                 = ones(1, numel(Structures.Names));
+Structures.On                   = zeros(1, numel(Structures.Names));
+if exist('StructuresOn','var')
+    Structures.On(StructuresOn) = 1;
+end
 material(cell2mat(struct2cell(Structures.Materials))');
-
-Structures.CurrentStructure = 1;
-Structures.Smoothing = zeros(1, numel(Structures.Names));
-Structures.On = zeros(1, numel(Structures.Names));
-% Structures.On([2,5,6,8,9]) = 1;                             
-Structures.Wire = ones(1, numel(Structures.Names));
 for s = 1:numel(Structures.Handles)
     if Structures.On(s)==1
         set(Structures.Handles{s},'visible','on');
@@ -210,7 +229,7 @@ end
 %% =========================== ADD GUI PANELS ===============================
 Fig.Handles.OuterPannel = uipanel('BackgroundColor',Fig.Background,'Units','normalized','Position',[0.5,0.05,0.48,0.9]);
 
-PanelNames = {'Selected cell', 'Atlas structures', 'MRI', 'Data', 'Options'};       % Set GUI pannel titles
+PanelNames  = {'Selected cell', 'Atlas structures', 'MRI', 'Data', 'Options'};       % Set GUI pannel titles
 BoxPos(1,:) = [400, 600, 260, 240];                                                 % Pannel 1 = cell info
 BoxPos(2,:) = [400, 380, 260, 210];                                                 % Pannel 2 = atlas structures
 BoxPos(3,:) = [400, 20, 260, 350];                                                  % Pannel 3 = MRI
@@ -382,10 +401,10 @@ end
 function ContactSelect(objectHandle, eventData)
 global Contact Fig
     axesHandle  = get(objectHandle,'Parent');                               % Get axes handle
-    Contact.Indx = find(Contact.Handles==objectHandle);                     % Get cell index number
-    Contact.Current.DateIndx = Contact.CellIndxData(Contact.Indx,2);
+    Contact.Indx                = find(Contact.Handles==objectHandle);    	% Get cell index number
+    Contact.Current.DateIndx    = Contact.CellIndxData(Contact.Indx,2);
     Contact.Current.ChannelIndx = Contact.CellIndxData(Contact.Indx,3);  
-    Contact.Current.CellIndx = Contact.CellIndxData(Contact.Indx,4);
+    Contact.Current.CellIndx    = Contact.CellIndxData(Contact.Indx,4);
     UpdateHighlight(Contact);
     UpdateUIFields(Contact.Indx);
 end
@@ -393,9 +412,9 @@ end
 %==================== UPDATE VALUES IN UI FIELDS ==========================
 function UpdateUIFields(ContactIndx)
 global Contact Fig
- 	Contact.Current.DateIndx = Contact.CellIndxData(Contact.Indx,2);
+ 	Contact.Current.DateIndx    = Contact.CellIndxData(Contact.Indx,2);
     Contact.Current.ChannelIndx = Contact.CellIndxData(Contact.Indx,3);  
-    Contact.Current.CellIndx = Contact.CellIndxData(Contact.Indx,4);
+    Contact.Current.CellIndx    = Contact.CellIndxData(Contact.Indx,4);
     Coordinates = Contact.XYZ(Contact.Current.DateIndx,Contact.Current.ChannelIndx,:);  	% Get coordinates of selected contact
     Inputs = {Contact.Current.DateIndx, Coordinates(1),Coordinates(2),Coordinates(3),...
               Contact.Current.ChannelIndx,Contact.Current.CellIndx, Contact.ColorVals(ContactIndx),Contact.Alpha(ContactIndx),Contact.rad(ContactIndx)};
@@ -437,9 +456,9 @@ function DataSelect(objectHandle, eventData, Indx)
 global Contact Fig
     Contact.Indx = Indx;                                                        % Get cell index number
     axesHandle  = get(objectHandle,'Parent');                                   % Get axes handle
-    Contact.Current.DateIndx = Contact.CellIndxData(Contact.Indx,2);
+    Contact.Current.DateIndx    = Contact.CellIndxData(Contact.Indx,2);
     Contact.Current.ChannelIndx = Contact.CellIndxData(Contact.Indx,3);  
-    Contact.Current.CellIndx = Contact.CellIndxData(Contact.Indx,4);
+    Contact.Current.CellIndx    = Contact.CellIndxData(Contact.Indx,4);
     UpdateHighlight(Contact);
     UpdateUIFields(Contact.Indx);
 end
@@ -494,7 +513,7 @@ global Fig Contact
     end
     Fig.Data.Spatial.ph = plot(Allpos(PosIndx), Contact.ColorVals,'.b');                % Plot position versus data
  	AllLims = [Fig.Xlim; Fig.Ylim; Fig.Zlim];
-    Thresh
+
     set(Fig.Handles.DataAx(1), 'xlim', Thresh);
     set(Fig.Handles.DataAx(2), 'ylim', Thresh);
  	set(Fig.Handles.DataAx(2),'xlim', AllLims(Fig.AxisSelected,:));
@@ -873,6 +892,7 @@ global Contact
     else
         Contact.Mask = Alpha.Contact.Alpha;
     end
+    Contact.Mask(isnan(Contact.Mask)) = 0;
     Contact.Alpha = Contact.Alpha.*Contact.Mask;
 end
 

@@ -30,43 +30,44 @@ end
 if exist('datetime.m','file')==2                   	%============ MATLAB R2014a and later
     switch HistoryFormat
         case '.xls'
-            T = readtable(HistoryFile,'basic',1);
-            T.Date = datetime(T.Date,'ConvertFrom','excel');
+            T           = readtable(HistoryFile,'basic',1);
+            T.Date      = datetime(T.Date,'ConvertFrom','excel');
             DateStrings = datestr(T.Date);
-            C = table2cell(T);
-            Header = T.Properties.VariableNames;
+            C           = table2cell(T);
+            Header      = T.Properties.VariableNames;
         
         case '.csv'
     %         formatSpec = '%{dd-MMM-yyyy}D%f%f%f%f%f%C';
     %         T = readtable(HistoryFile,'Delimiter',',','Format',formatSpec);
-            fid = fopen(HistoryFile,'rt');
-            Header = textscan(fid, '%s%s%s%s%s%s%s\n', 1, 'delimiter', ',');
-            data = textscan(fid, '%f %f %f %f %f %f %s','headerlines',1,'delimiter',',');
+            fid         = fopen(HistoryFile,'rt');
+            Header      = textscan(fid, '%s%s%s%s%s%s%s\n', 1, 'delimiter', ',');
+            data        = textscan(fid, '%f %f %f %f %f %f %s','headerlines',1,'delimiter',',');
             fclose(fid);
-            Dates = data{1};   
+            Dates       = data{1};   
             DateStrings = datestr(Dates);
-            C = num2cell(cell2mat(data(1:6)));
-            C(:,7) = data{7};
+            C           = num2cell(cell2mat(data(1:6)));
+            C(:,7)      = data{7};
             
         case '.mat'
             load(HistoryFile);
-            Header = raw(1,:);
-            Dates = raw(2:end,1)+datenum('30-Dec-1899');        	% Convert Excel dates to Matlab dates
+            Header      = raw(1,:);
+            Dates       = raw(2:end,1)+datenum('30-Dec-1899');          % Convert Excel dates to Matlab dates
             DateStrings = datestr(Dates);      
-            C = raw(2:end,:);
+            C           = raw(2:end,:);
             
         otherwise
             error('File ''%s'' is not a valid spreadsheet format!', HistoryFile);
     end
 else                                                %============ MATLAB R2013b and earlier 
-    [status, sheets] = xlsfinfo(HistoryFile);
-    [num,txt,raw] =  xlsread(HistoryFile,sheets{1});            % Read data from Excel file
-    Header = txt(1,:);                                       	% Skip row containing column titles
-    num(1,:) = [];                                            	% Remove header NaNs
-    Dates = num(:,1)+datenum('30-Dec-1899');                 	% Convert Excel dates to Matlab dates
-    DateStrings = datestr(Dates);                               
-    C = raw(2:end,:);                                           
+    [status, sheets]	= xlsfinfo(HistoryFile);
+    [num,txt,raw]       =  xlsread(HistoryFile,sheets{1});         	% Read data from Excel file
+    Header              = txt(1,:);                               	% Skip row containing column titles
+    num(1,:)            = [];                                      	% Remove header NaNs
+    Dates               = num(:,1)+datenum('30-Dec-1899');        	% Convert Excel dates to Matlab dates
+    DateStrings         = datestr(Dates);                               
+    C                   = raw(2:end,:);                                           
 end
+
 
 %========================== Get a date input
 if ~exist('SessionDate','var')
@@ -80,7 +81,7 @@ end
 
 if ischar(SessionDate) && strcmpi(SessionDate, 'all')
     SessionDate = cellstr(DateStrings);
-    Selection = 1:numel(SessionDate);
+    Selection   = 1:numel(SessionDate);
 else
     if ischar(SessionDate)
         SessionDate = {SessionDate};
@@ -121,11 +122,11 @@ for h = 1:numel(HeaderStrings)
     ColumnIndx{h} = find(~cellfun(@isempty, strfind(Header, HeaderStrings{h})));
 end
 for d = 1:numel(Selection)                                                                                      % For each session selected...
-    SessionParams(d).Date               = datestr(C{Selection(d),1});                                           % Record session date string
-    SessionParams(d).DateString         = DateStrings(Selection(d),:);
-    SessionParams(d).DateNum            = datenum(DateStrings(Selection(d),:));
-    SessionParams(d).DateIndex       	= Selection(d);
-    SessionParams(d).NoElectrodes       = numel(find(~cellfun(@isnan, C(Selection(d),3:5:end))));               % How many electrodes were used?
+    SessionParams(d).Date                   = datestr(C{Selection(d),1});                                   	% Record session date string
+    SessionParams(d).DateString             = DateStrings(Selection(d),:);
+    SessionParams(d).DateNum                = datenum(DateStrings(Selection(d),:));
+    SessionParams(d).DateIndex              = Selection(d);
+    SessionParams(d).NoElectrodes           = numel(find(~cellfun(@isnan, C(Selection(d),3:5:end))));        	% How many electrodes were used?
     for e = 1:SessionParams(d).NoElectrodes                                                                     % For each electrode...
         SessionParams(d).ElectrodeID{e}     = C{Selection(d),ColumnIndx{1}(e)};                             	% Get the elctrode identifier
         SessionParams(d).Target{e}          = [C{Selection(d),ColumnIndx{2}(e)},C{Selection(d),ColumnIndx{3}(e)}];    % Get medial-lateral and anetrior-posterior grid hole coordinates

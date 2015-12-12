@@ -25,7 +25,7 @@ if nargin == 2              %========== Matrix coordinate input
         verts = Tform*x;
     elseif find(size(x)==3)==2
         if Append==1
-            x = [x; ones(size(x,2),1)];
+            x = [x, ones(size(x,1),1)];
         end
         verts = Tform*x';
     elseif size(x,1)==4

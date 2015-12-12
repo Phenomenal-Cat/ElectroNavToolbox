@@ -1,7 +1,7 @@
 
 %========================== ENT_ApplyTransform.m ==============================
 % This function applies the spatial transformation specified by a 4x4 
-% matrix and applies it to the specified volume(s).
+% matrix to the specified volume(s).
 %
 % INPUTS:
 %   Volumes:        full path of the MR volume(s) to apply transform to.

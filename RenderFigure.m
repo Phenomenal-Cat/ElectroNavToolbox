@@ -47,7 +47,7 @@ switch Surface.Atlas
 end 
 
 %=========== Load grid
-Grid = GetGridParams('19mm_cylindrical');
+Grid = ENT_GetGridParams('19mm_cylindrical');
 for dim = 1:3
     GridFV.vertices(:,dim) = Grid.vertices(:,dim)+Brain.ChamberOrigin(dim);
 end

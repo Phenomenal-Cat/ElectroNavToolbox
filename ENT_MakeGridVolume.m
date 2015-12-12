@@ -1,6 +1,6 @@
-function MakeGridVolume(GridFile, HeaderSource)
+function ENT_MakeGridVolume(GridFile, HeaderSource)
 
-%========================== MakeGridVolume.m ==============================
+%========================== ENT_MakeGridVolume.m ==========================
 % Converts a 3D model of a recording grid (saved in .stl/.obj/.ply/.vtk 
 % formats), into a niftii (.nii) volume file. This is next manually aligned 
 % to a structural MRI scan of the actual grid inside the implanted recording 
@@ -22,11 +22,11 @@ function MakeGridVolume(GridFile, HeaderSource)
 %   05/02/2014 - Updated to copy scanner alignment data from existing header
 %==========================================================================
 if nargin < 2
-    GridFile = 'Grid/Grid.stl';                                 	% Specify which grid file to convert
+    GridFile    = 'Grid.stl';                                     	% Specify which grid file to convert
     HeaderSource = 'Layla_fullT1_20091002_MangoBET.nii';          	% Scan to copy scanner alignment data from
 end
-addpath(genpath(fullfile(cd,'ENSubfunctions')));                 % Add required subfunctions to path
-GridFormat = GridFile(end-2:end);                                   % Get input file format
+addpath(genpath(fullfile(cd,'ENSubfunctions')));                    % Add required subfunctions to path
+GridFormat  = GridFile(end-2:end);                                	% Get input file format
 switch GridFormat                                                   % Check input format
     case 'stl'                                                      
         [v, f, n, c, stltitle] = stlread(GridFile);              	% Load .stl file
@@ -44,13 +44,13 @@ switch GridFormat                                                   % Check inpu
                 '\t- Visualization Toolkit (.VTK)\n']);
     	return;
 end
-GridSize = max(v)-min(v);                                           % Get grid dimensions
-VoxelSize = [0.25 0.25 0.25];                                       % Set default voxel size to 0.25mm isotropic
-DimSize = GridSize.*VoxelSize;                                      % Set volume grid size
-Origin = DimSize/2;                                                 % Find origin
-Origin(3) = 0;                                                      % Set origin of z axis to 0
+GridSize    = max(v)-min(v);                                                % Get grid dimensions
+VoxelSize   = [0.25 0.25 0.25];                                             % Set default voxel size to 0.25mm isotropic
+DimSize     = GridSize.*VoxelSize;                                          % Set volume grid size
+Origin      = DimSize/2;                                                    % Find origin
+Origin(3)   = 0;                                                            % Set origin of z axis to 0
 [gridOUTPUT,gridCOx,gridCOy,gridCOz] = Voxelize(DimSize(1),DimSize(2),DimSize(3));%,GridFile);
-Gridnii = make_nii(double(gridOUTPUT),VoxelSize,Origin,[],'Grid'); 	% Create a new .nii file
-Brainnii = load_nii_hdr(HeaderSource);                             	% Load selected volume header
-Gridnii.hdr.hist = hdr.hist;                                     	% Copy scanner alignment to header                         
-save_nii(Gridnii,'Grid/Grid.nii');                               	% Save volume as .nii
+Gridnii     = make_nii(double(gridOUTPUT),VoxelSize,Origin,[],'Grid');      % Create a new .nii file
+Brainnii    = load_nii_hdr(HeaderSource);                                   % Load selected volume header
+Gridnii.hdr.hist = hdr.hist;                                                % Copy scanner alignment to header                         
+save_nii(Gridnii,'Grid/Grid.nii');                                          % Save volume as .nii

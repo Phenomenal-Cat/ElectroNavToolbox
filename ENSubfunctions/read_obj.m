@@ -35,6 +35,7 @@ end
 frewind(fid);
 vertex = [];
 faces = [];
+normal = [];
 while 1
     s = fgetl(fid);
     if ~ischar(s), 

@@ -1,4 +1,4 @@
-function ExportRotationMovie(fh, Filename, Duration)
+function MakeRotationGif(fh, Filename, Options)
 
 %========================= ExportRotationMovie.m ==========================
 % This function will create a movie file of one full rotation of a 3D plot
@@ -9,8 +9,9 @@ function ExportRotationMovie(fh, Filename, Duration)
 % INPUTS:
 %   fh:         figure handle (optional)
 %   Filename:   File to save movie to, including file format extension
-%   Duration:   Time in seconds for complete rotation
-%   Velocity:   velocity profile, 1 = linear; 2 = sinusoidal;
+%   Options.Duration:   Time in seconds for complete rotation
+%   Options.Velocity:   velocity profile, 1 = linear; 2 = sinusoidal;
+%   Options
 %
 % REFERENCES:
 %   http://www.mathworks.com/help/matlab/ref/videowriter-class.html
@@ -19,15 +20,15 @@ function ExportRotationMovie(fh, Filename, Duration)
 % 
 %==========================================================================
 
-
-% if exist(fh,'var')==0                               % If no figure handle was supplied...
-    fh = gcf;                                       % Get handle to current figure
-% end
-Rect = get(fh,'position')-[0 0 0 40];               % Get the size of the figure window
+if nargin == 0
+    fh          = gcf;                                 	% Get handle to current figure
+    Filename    = 'Neuromaps_structures.mov';
+    Options.Duration = 8;                               % Duration of animation (seconds)
+end
+Rect = get(fh,'position');%-[0 0 0 40];                   % Get the size of the figure window
+set(gca,'units','pixels');
+Rect = get(gca,'position');
 % set(fh, 'toolbar','none','menu','none');            % Remove menu and toolbar
-
-
-Filename = 'Neuromaps_structures.mov';
 
 if isempty(strfind(Filename,'.'))                   % If no extension was provided...
     error('File format extension not specified in filename ''%s''!\n', Filename);
@@ -50,15 +51,11 @@ switch FileFormat
 end
 
 
-Duration = 8;                                       % Duration of animation
-FPS = 60;                                           % Default frame rate is 60Hz
-TotalFrames = Duration*FPS;                         % Number of frames to render
-                      
-
-El = 10;
-Az = 90;
-Theta = linspace(Az, Az+360, TotalFrames+1);
-Frame = getframe(fh, Rect);
+FPS         = 60;                                               % Default frame rate is 60Hz
+TotalFrames = round(Options.Duration*FPS);                     	% Number of frames to render
+[Az, El]    = view;                                 
+Theta       = linspace(Az, Az+360, TotalFrames+1);  
+Frame       = getframe(fh, Rect);
 
 
 %% ========================= RUN ANIMATION LOOP ===========================

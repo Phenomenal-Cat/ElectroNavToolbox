@@ -41,7 +41,7 @@ ImParams.Resolution = nii.hdr.dime.pixdim(2:4);
 
  
 %====================== CREATE GUI BUTTONS                
-Fig.MRI.LabelStrings = {'MR volume','Slice axis','Position (mm)', sprintf('Opacity = %d %%', round(MRI.SliceAlpha*100)),'Threshold'};
+Fig.MRI.LabelStrings = {'MR volume','Slice axis','Position (mm)','Threshold'};
 
 Fig.MRI.InputType = {'Pushbutton','popupmenu','slider','slider','Jslider'};
 Fig.MRI.InputStrings = {{'Select volume'}, {'Sagittal','Coronal','Axial'}};

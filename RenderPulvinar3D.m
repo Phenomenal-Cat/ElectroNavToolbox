@@ -101,7 +101,7 @@ Atlas = 1;
 if Atlas == 1
     Structure = 'pulvinar';
     Bilateral = 0;      
-    [StructIndex, StructNames] = GetStructureIndex(Structure, Bilateral);           % Get atlas indices for requested structure(s)
+    [StructIndex, StructNames] = ENT_GetStructureIndex(Structure, Bilateral);           % Get atlas indices for requested structure(s)
     StructIndex(1:4) = [];
     StructNames(1:4) = [];
 elseif Atlas == 2

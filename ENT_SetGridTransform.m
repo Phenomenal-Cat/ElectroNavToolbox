@@ -21,21 +21,24 @@ if nargin == 0
 %     [file, path]        = uigetfile({'*.nii'}, 'Select ACPC-aligned grid scan');
 %     NiiFile             = fullfile(path, file);
 %     NiiFile             = '/Volumes/rawdata/murphya/MRI/Dexter/20151203/Dexter_20151203_MDEFT_hi_ACPC.nii';
-    NiiFile             = '/Volumes/rawdata/murphya/MRI/Dexter/20151209/Dexter_20151209_ACPC.nii';
+    NiiFile             = '/Volumes/rawdata/murphya/MRI/Dexter/20151209/Dexter_20151209_ACPC_origin.nii';
+    Grid.TformFile          = '/Volumes/PROJECTS/murphya/EN_data/Subjects/Dexter/ManualXform.mat';
 end
 nii = LoadMRI(NiiFile);
 
-
+[~,Grid.TformName]      = fileparts(Grid.TformFile);
+T                       = load(Grid.TformFile);
+Grid.Tform             	= T.T;
 Grid.VolFile           	= 'Grid1.nii';
 Grid.SurfFile         	= 'Grid1.stl';
 Grid.nii              	= load_nii(Grid.VolFile);                 	% Load grid volume
 [FV.vertices, FV.faces]	= stlread(Grid.SurfFile);                  	% Load grid surface
-Grid.rot                = [-15, 0, 0];                              % Rotations about cardinal axes (degrees)
-Grid.Trans              = [7, -15, 15];                             % Translations relative to AC origin
-Grid.Tform             	= makehgtform('translate',Grid.Trans(1), Grid.Trans(2), Grid.Trans(3),'xrotate',Grid.rot(1),'yrotate',Grid.rot(2),'zrotate',Grid.rot(3));
+Grid.Rot                = [-15, 0, 0];                              % Rotations about cardinal axes (degrees)
+Grid.Trans              = Grid.Tform(1:3,4)';                     	% Translations relative to AC origin
+Grid.Tform             	= makehgtform('translate',Grid.Trans(1), Grid.Trans(2), Grid.Trans(3),'xrotate',Grid.Rot(1),'yrotate',Grid.Rot(2),'zrotate',Grid.Rot(3));
 FV(2).vertices          = ENT_ApplyTform(Grid.Tform, FV(1).vertices);
 Grid.Colors            	= [1 0 0; 0 1 0];
-
+Grid.Alpha              = 1;
 
 %% ========================== OPEN FIGURE WINDOW ==========================
 Fig.Handle      = figure('position', get(0, 'ScreenSize'),'name', 'ENT_SetGridTransform');
@@ -48,11 +51,12 @@ Fig.Background  = get(Fig.Handle, 'color');
 
 %=============== MRI GUI PANEL
 Fig.MRI.BoxPos      = [0.75,0.6,0.2,0.3];
-Fig.MRI.InputDim    = [150 20];
-Fig.MRI.Labels      = {'Anatomical','Resolution (mm)','Origin (vx)','Permute','Flip', 'Rotate 90', 'Contrast'};
-Fig.MRI.Style       = {'pushbutton','text','edit','pushbutton','pushbutton','pushbutton','pushbutton'};
-Fig.MRI.List        = {nii.filename, nii.VoxDim, nii.OriginVox, 'Permute', 'Flip', 'Rotate 90', 'Contrast'};
+Fig.MRI.InputDim    = [120 20];
+Fig.MRI.Labels      = {'Anatomical','Resolution (mm)','Dimensions (voxels)','Origin (voxels)','Permute','Save volume', 'Rotate 90', 'Contrast'};
+Fig.MRI.Style       = {'pushbutton','edit','edit','edit','pushbutton','pushbutton','pushbutton','pushbutton'};
+Fig.MRI.List        = {nii.filename, nii.VoxDim, nii.DimVox, nii.OriginVox, 'Permute', 'Save', 'Rotate 90', 'Contrast'};
 Fig.MRI.UIhandle    = uipanel('Title','Anatomical MRI','FontSize', Fig.UIFontsize,'BackgroundColor',Fig.Background,'Units','normalized','Position',Fig.MRI.BoxPos);
+Fig.MRI.InputSizes  = [150, 40, 40, 40, 100, 100, 100, 100];
 for i = 1:numel(Fig.MRI.Labels)
     Pos = numel(Fig.MRI.Labels)-i;
     Fig.MRI.LabelPos{i} = [20, 10+Pos*Fig.MRI.InputDim(2)*1.5, Fig.MRI.InputDim];
@@ -61,19 +65,19 @@ for i = 1:numel(Fig.MRI.Labels)
                                         'HorizontalAlignment','Left',...
                                         'pos',Fig.MRI.LabelPos{i},...
                                         'parent',Fig.MRI.UIhandle);
-   	if ~any(ismember(i, [2,3]))
+   	if ~any(ismember(i, [2,3,4]))
         Fig.MRI.InputHandle(i) = uicontrol( 'Style',Fig.MRI.Style{i},...
                                             'String',Fig.MRI.List{i},...
                                             'HorizontalAlignment','Left',...
-                                            'pos',[Fig.MRI.InputDim(1)+10,15+Pos*Fig.MRI.InputDim(2)*1.5,100,20],...
+                                            'pos',[Fig.MRI.InputDim(1)+10,15+Pos*Fig.MRI.InputDim(2)*1.5,Fig.MRI.InputSizes(i),20],...
                                             'Callback',{@MRIparams,i,0},...
                                             'parent',Fig.MRI.UIhandle);
-    elseif any(ismember(i, [2,3]))
+    elseif any(ismember(i, [2,3,4]))
         for n = 1:3
             Fig.MRI.MultiInputH(i,n) = uicontrol( 'Style',Fig.MRI.Style{i},...
                                             'String', num2str(Fig.MRI.List{i}(n)),...
                                             'HorizontalAlignment','Left',...
-                                            'pos',[Fig.MRI.InputDim(1)+10+((n-1)*50), 15+Pos*Fig.MRI.InputDim(2)*1.5, 40, 20],...
+                                            'pos',[Fig.MRI.InputDim(1)+10+((n-1)*50), 15+Pos*Fig.MRI.InputDim(2)*1.5, Fig.MRI.InputSizes(i), 20],...
                                             'HorizontalAlignment','Left',...
                                             'Callback',{@MRIparams,i,n},...
                                             'parent',Fig.MRI.UIhandle);
@@ -81,16 +85,15 @@ for i = 1:numel(Fig.MRI.Labels)
     end
 end
 % set([Fig.MRI.LabelHandle, Fig.MRI.InputHandle], 'BackgroundColor',Fig.Background);
-% set(Fig.MRI.InputHandle(2),'value', Fig.MRI.CurrentDate);
-% set(Fig.MRI.InputHandle(3),'value', Electrode(1).Selected);
-% set(Fig.MRI.InputHandle(4),'value', find(~cellfun(@isempty, strfind(Electrode(Electrode(1).Selected).AllTypes, Electrode(Electrode(1).Selected).Brand))));
+
 
 %=============== GRID GUI PANEL
 Fig.Grid.BoxPos      = [0.75,0.2,0.2,0.3];
 Fig.Grid.InputDim    = [150 20];
-Fig.Grid.Labels      = {'Grid type','Origin (mm)','Rotation','Transparency','Save transform'};
-Fig.Grid.Style       = {'popupmenu','edit','edit','edit','pushbutton'};
-Fig.Grid.List        = {{'19mm cylindrical'}, Grid.Trans, Grid.rot, 1, 'Save'};
+Fig.Grid.InputSizes  = [150, 150, 40, 40, 60, 100];
+Fig.Grid.Labels      = {'Grid type','Trasnform matrix','Origin (mm)','Rotation','Transparency','Save transform'};
+Fig.Grid.Style       = {'popupmenu','pushbutton','edit','edit','edit','pushbutton'};
+Fig.Grid.List        = {{'19mm cylindrical'}, Grid.TformName, Grid.Trans, Grid.Rot, Grid.Alpha, 'Save'};
 Fig.Grid.UIhandle    = uipanel('Title','Grid','FontSize', Fig.UIFontsize,'BackgroundColor',Fig.Background,'Units','normalized','Position',Fig.Grid.BoxPos);
 for i = 1:numel(Fig.Grid.Labels)
     Pos = numel(Fig.Grid.Labels)-i;
@@ -100,25 +103,25 @@ for i = 1:numel(Fig.Grid.Labels)
                                         'HorizontalAlignment','Left',...
                                         'pos',Fig.Grid.LabelPos{i},...
                                         'parent',Fig.Grid.UIhandle);
-    if ~any(ismember(i, [2,3]))                                
+    if ~any(ismember(i, [3,4]))                                
         Fig.Grid.InputHandle(i) = uicontrol( 'Style',Fig.Grid.Style{i},...
                                             'String',Fig.Grid.List{i},...
                                             'HorizontalAlignment','Left',...
-                                            'pos',[Fig.Grid.InputDim(1)+10,15+Pos*Fig.Grid.InputDim(2)*1.5,100,20],...
-                                            'Callback',{@Gridparams,i},...
+                                            'pos',[Fig.Grid.InputDim(1)+10,15+Pos*Fig.Grid.InputDim(2)*1.5,Fig.Grid.InputSizes(i),20],...
+                                            'Callback',{@Gridparams,i, []},...
                                             'parent',Fig.Grid.UIhandle);
-    elseif any(ismember(i, [2,3]))
+    elseif any(ismember(i, [3,4]))
         for n = 1:3
             Fig.Grid.MultiInputH(i,n) = uicontrol( 'Style',Fig.Grid.Style{i},...
                                         'String',Fig.Grid.List{i}(n),...
                                         'HorizontalAlignment','Left',...
-                                        'pos',[Fig.Grid.InputDim(1)+10+((n-1)*50),15+Pos*Fig.Grid.InputDim(2)*1.5,40,20],...
-                                        'Callback',{@Gridparams,i},...
+                                        'pos',[Fig.Grid.InputDim(1)+10+((n-1)*50),15+Pos*Fig.Grid.InputDim(2)*1.5,Fig.Grid.InputSizes(i),20],...
+                                        'Callback',{@Gridparams,i,n},...
                                         'parent',Fig.Grid.UIhandle);
         end
     end
 end
-set([Fig.Grid.LabelHandle,Fig.Grid.InputHandle([1,4])], 'BackgroundColor',Fig.Background);
+set([Fig.Grid.LabelHandle,Fig.Grid.InputHandle([1,5])], 'BackgroundColor',Fig.Background);
 
 
 
@@ -180,9 +183,10 @@ global Fig Grid nii FV
         Grid.h(g) = patch(FV(g), 'facecolor', Grid.Colors(g,:), 'edgecolor', 'none');     % Plot grid at origin
         hold on;
     end
-    tform =	hgtransform('Parent', Fig.axh(1));
-    set(Grid.h(2), 'Parent', tform);
-    set(tform, 'Matrix', Grid.Tform);
+    Grid.tformHandle =	hgtransform('Parent', Fig.axh(1));
+    set(Grid.h, 'facealpha', Grid.Alpha);
+%     set(Grid.h(2), 'Parent', Grid.tformHandle);
+%     set(Grid.tformHandle, 'Matrix', Grid.Tform);
 
     camlight('infinite');
     xlabel('X (mm)', 'fontsize', 14);
@@ -226,7 +230,7 @@ global Fig Grid nii FV
     colormap gray
 end
 
-
+%========================== Update slice views ============================
 function UpdateSlices(XYZ)
 global Fig Grid nii
     set(Fig.imh(2), 'cdata', squeeze(nii.img(:,:,XYZ(3))), 'xdata', nii.AxLims(:,2)', 'ydata', nii.AxLims(:,1)');
@@ -246,7 +250,7 @@ global Fig Grid nii
     end
 end
 
-
+%======================= Update MR volume parameters ======================
 function MRIparams(hObj, event, indx, indx2)
 global Fig Grid nii
 
@@ -263,14 +267,23 @@ switch indx
         end
         UpdateSlices(nii.OriginVox);
         
-    case 3          %=============== ADJUST ORIGIN COORDINATES
+    case 2          %=============== RESLICE VOLUME
+        
+        
+    case 3          %=============== CROP/ PAD VOLUME
+        
+        
+    case 4          %=============== ADJUST ORIGIN COORDINATES
         nii.OriginVox(indx2)= str2num(get(hObj,'string'));
         nii.OriginMm        = nii.OriginVox.*nii.VoxDim;
         nii.AxLims          = [-nii.OriginMm; nii.DimMm-nii.OriginMm];
         UpdateSlices(nii.OriginVox);
 
         
-    case 4          %===============           
+    case 5          %=============== PERMUTE VOLUME
+        
+        
+    case 6          %=============== SAVE VOLUME CHANGES
         
         
 end
@@ -278,17 +291,49 @@ end
 
 end
 
-function Gridparams(hObj, event, indx)
+%======================= Update grid parameters ===========================
+function Gridparams(hObj, event, indx, indx2)
 global Fig Grid nii
 
 switch indx
-    case 1          %=============== CHANGE GRID TYPE
+    case 1     	%=============== CHANGE GRID TYPE
+        Grid.TypeIndx = get(hObj, 'value');
         
-    case {2,3,4}    %=============== CHANGE ORIGIN
         
-    case {5,6,7}    %=============== CHANGE ORIENTATION
         
-    case 8          %=============== CHANGE OPACITY
+    case 2      %=============== LOAD NEW T-FORM
+        [file, path]    = uigetfile('*.mat', 'Select trasnform matrix file');
+        Grid.TformFile 	= fullfile(path, file);
+        load(Grid.TformFile);
+        Grid.Tform      = T;
+        Grid.Rot        = [];
+        Grid.Trans     	= Grid.Tform(1:3,4)';                     	% Translations relative to AC origin
+        for n = 1:3
+            set(Fig.Grid.MultiInputH(3,n), 'string', num2str(Grid.Trans(n)));
+            set(Fig.Grid.MultiInputH(4,n), 'string', num2str(Grid.Rot(n)));
+        end
+        set(Grid.tformHandle, 'Matrix', Grid.Tform);
+        
+    case 3      %=============== CHANGE ORIGIN
+        Grid.Trans(indx2)   = str2num(get(hObj, 'string'));
+        Grid.Tform        	= makehgtform('translate',Grid.Trans(1), Grid.Trans(2), Grid.Trans(3), ...
+                            'xrotate',Grid.Rot(1),'yrotate',Grid.Rot(2),'zrotate',Grid.Rot(3));
+        set(Grid.tformHandle, 'Matrix', Grid.Tform);
+        
+    case 4      %=============== CHANGE ORIENTATION
+        Grid.Rot(indx2)     = str2num(get(hObj, 'string'));
+        Grid.Tform        	= makehgtform('translate',Grid.Trans(1), Grid.Trans(2), Grid.Trans(3), ...
+                            'xrotate',Grid.Rot(1),'yrotate',Grid.Rot(2),'zrotate',Grid.Rot(3));
+        set(Grid.tformHandle, 'Matrix', Grid.Tform);
+        
+    case 5     	%=============== CHANGE OPACITY
+        Grid.Alpha  = str2num(get(hObj, 'string'));
+        set(Grid.h, 'facealpha', Grid.Alpha);
+        
+    case 6      %=============== SAVE TRANSFORM
+        
+        
         
 end
+
 end

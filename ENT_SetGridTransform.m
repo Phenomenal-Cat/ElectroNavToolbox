@@ -159,23 +159,23 @@ global Fig Grid nii FV
     for v = 1:3
         switch v                                             
             case 1
-                XCoords = repmat(nii.AxLims(1,1), [2,2]);
-                YCoords = [nii.AxLims(1,2), nii.AxLims(1,2); nii.AxLims(2,2), nii.AxLims(2,2)]';
-                ZCoords = [nii.AxLims(:,3), nii.AxLims(:,3)];
-                CurrentSlice = repmat(squeeze(nii.img(:,:,nii.OriginVox(3))),[1,1,3]);
-            case 2
-                XCoords = [nii.AxLims(1,1), nii.AxLims(1,1); nii.AxLims(2,1), nii.AxLims(2,1)]';
-                YCoords = repmat(nii.AxLims(1,2), [2,2]);
-                ZCoords = [nii.AxLims(:,3), nii.AxLims(:,3)];
-                CurrentSlice = repmat(squeeze(nii.img(nii.OriginVox(1),:,:)),[1,1,3]);
-            case 3
-
-                XCoords = [nii.AxLims(1,1), nii.AxLims(1,1); nii.AxLims(2,1), nii.AxLims(2,1)]';
+             	XCoords = [nii.AxLims(1,1), nii.AxLims(1,1); nii.AxLims(2,1), nii.AxLims(2,1)]';
                 YCoords = [nii.AxLims(:,2), nii.AxLims(:,2)];
                 ZCoords = repmat(nii.AxLims(1,3), [2,2]);
-                CurrentSlice = repmat(squeeze(nii.img(:,nii.OriginVox(2),:)),[1,1,3]);
+                CurrentSlice = repmat(squeeze(nii.img(:,:,nii.OriginVox(3)))',[1,1,3]);
+            case 2
+            	XCoords = repmat(nii.AxLims(1,1), [2,2]);
+                YCoords = [nii.AxLims(1,2), nii.AxLims(1,2); nii.AxLims(2,2), nii.AxLims(2,2)]';
+                ZCoords = [nii.AxLims(:,3), nii.AxLims(:,3)];
+                CurrentSlice = repmat(squeeze(nii.img(nii.OriginVox(1),:,:))',[1,1,3]);
+            case 3
+              	XCoords = [nii.AxLims(1,1), nii.AxLims(1,1); nii.AxLims(2,1), nii.AxLims(2,1)]';
+                YCoords = repmat(nii.AxLims(1,2), [2,2]);
+                ZCoords = [nii.AxLims(:,3), nii.AxLims(:,3)];
+                CurrentSlice = repmat(squeeze(nii.img(:,nii.OriginVox(2),:))',[1,1,3]);
         end    
-        Fig.ph(v) = surf(XCoords, YCoords, ZCoords,'CData', repmat(squeeze(nii.img(:,:,nii.OriginVox(3))),[1,1,3]),'FaceColor','texturemap','EdgeColor','k');         % Draw MRI slice to axes
+        Fig.ph(v) = surf(XCoords, YCoords, ZCoords,'CData', CurrentSlice,'FaceColor','texturemap','EdgeColor','k');         % Draw MRI slice to axes
+        hold on;
     end
     
     %=========== PLOT 3D GRID(S)

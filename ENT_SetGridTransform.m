@@ -35,8 +35,9 @@ Grid.nii              	= load_nii(Grid.VolFile);                 	% Load grid vo
 [FV.vertices, FV.faces]	= stlread(Grid.SurfFile);                  	% Load grid surface
 Grid.Rot                = [-15, 0, 0];                              % Rotations about cardinal axes (degrees)
 Grid.Trans              = Grid.Tform(1:3,4)';                     	% Translations relative to AC origin
-Grid.Tform             	= makehgtform('translate',Grid.Trans(1), Grid.Trans(2), Grid.Trans(3),'xrotate',Grid.Rot(1),'yrotate',Grid.Rot(2),'zrotate',Grid.Rot(3));
-FV(2).vertices          = ENT_ApplyTform(Grid.Tform, FV(1).vertices);
+Grid.Tform             	= makehgtform('xrotate',Grid.Rot(1),'yrotate',Grid.Rot(2),'zrotate',Grid.Rot(3), 'translate',Grid.Trans(1), Grid.Trans(2), Grid.Trans(3));
+FV(2)                   = FV(1);
+% FV(2).vertices          = ENT_ApplyTform(Grid.Tform, FV(1).vertices);
 Grid.Colors            	= [1 0 0; 0 1 0];
 Grid.Alpha              = 1;
 
@@ -123,6 +124,9 @@ for i = 1:numel(Fig.Grid.Labels)
 end
 set([Fig.Grid.LabelHandle,Fig.Grid.InputHandle([1,5])], 'BackgroundColor',Fig.Background);
 
+%=============== MARKER FIT GUI PANEL
+
+
 
 
 UpdatePlots;
@@ -149,10 +153,6 @@ end
 function UpdatePlots
 
 global Fig Grid nii FV
-
-%     ph(1) = patch(nii.AxLims([1,1,2,2],1)', nii.AxLims([1,2,2,1],2)', zeros(1,4), zeros(1,4));%, 'Cdata', squeeze(nii.img(:,:,nii.OriginVox(3))),'FaceColor','texturemap');
-%     ph(2) = patch(zeros(1,4), nii.AxLims([1,1,2,2],2)', nii.AxLims([1,2,2,1],3)', zeros(1,4));%, 'Cdata', squeeze(nii.img(nii.OriginVox(1),:,:)),'FaceColor','texturemap');
-%     ph(3) = patch(nii.AxLims([1,1,2,2],1)', zeros(1,4), nii.AxLims([1,2,2,1],3)', zeros(1,4));%, 'Cdata', squeeze(nii.img(:,nii.OriginVox(2),:)),'FaceColor','texturemap');
 
     %============= PLOT 3D VIEW
     axes(Fig.axh(1));
@@ -185,8 +185,8 @@ global Fig Grid nii FV
     end
     Grid.tformHandle =	hgtransform('Parent', Fig.axh(1));
     set(Grid.h, 'facealpha', Grid.Alpha);
-%     set(Grid.h(2), 'Parent', Grid.tformHandle);
-%     set(Grid.tformHandle, 'Matrix', Grid.Tform);
+    set(Grid.h(2), 'Parent', Grid.tformHandle);
+    set(Grid.tformHandle, 'Matrix', Grid.Tform);
 
     camlight('infinite');
     xlabel('X (mm)', 'fontsize', 14);
@@ -317,13 +317,14 @@ switch indx
     case 3      %=============== CHANGE ORIGIN
         Grid.Trans(indx2)   = str2num(get(hObj, 'string'));
         Grid.Tform        	= makehgtform('translate',Grid.Trans(1), Grid.Trans(2), Grid.Trans(3), ...
-                            'xrotate',Grid.Rot(1),'yrotate',Grid.Rot(2),'zrotate',Grid.Rot(3));
+                            'xrotate',Grid.RotRad(1),'yrotate',Grid.RotRad(2),'zrotate',Grid.RotRad(3));
         set(Grid.tformHandle, 'Matrix', Grid.Tform);
         
     case 4      %=============== CHANGE ORIENTATION
         Grid.Rot(indx2)     = str2num(get(hObj, 'string'));
+        Grid.RotRad         = Grid.Rot/180*pi;
         Grid.Tform        	= makehgtform('translate',Grid.Trans(1), Grid.Trans(2), Grid.Trans(3), ...
-                            'xrotate',Grid.Rot(1),'yrotate',Grid.Rot(2),'zrotate',Grid.Rot(3));
+                            'xrotate',Grid.RotRad(1),'yrotate',Grid.RotRad(2),'zrotate',Grid.RotRad(3));
         set(Grid.tformHandle, 'Matrix', Grid.Tform);
         
     case 5     	%=============== CHANGE OPACITY
@@ -331,8 +332,12 @@ switch indx
         set(Grid.h, 'facealpha', Grid.Alpha);
         
     case 6      %=============== SAVE TRANSFORM
-        
-        
+        [file, path]        = uiputfile('ManualXform.mat', 'Save trasnform matrix');
+        Grid.TformFile      = fullfile(path, file);
+        [~,Grid.TformName]	= fileparts(Grid.TformFile);
+        T = Grid.Tform;
+        save(Grid.TformFile, 'T');
+        set(Fig.Grid.InputHandle(1), 'string', Grid.TformName);
         
 end
 

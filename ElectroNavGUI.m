@@ -299,7 +299,7 @@ end
 %======================= EDIT TAB
 Fig.EditMenuH{1} = uimenu(Fig.Handle,'Label','Edit'); 
 Fig.EditLabels = {'Load volumes','Remove volumes','Add electrode','Delete electrode','Adjust transform','Adjust MRI'};
-Fig.EditAccelerators = {'','','','',''};
+Fig.EditAccelerators = {'','','','','',''};
 for n = 1:numel(Fig.EditLabels)
     Fig.EditMenuH{2}(n) = uimenu(Fig.EditMenuH{1},...
                                 'Label',Fig.EditLabels{n},...

@@ -31,8 +31,9 @@ end
 
 %===== Check volumes have same resolution
 if Nii1.hdr.dime.pixdim(2:4)~= Nii2.hdr.dime.pixdim(2:4)
-    NewRes = min([Nii1.hdr.dime.pixdim(2:4), Nii2.hdr.dime.pixdim(2:4)]);
-    Indx = find([Nii1.hdr.dime.pixdim(2:4), Nii2.hdr.dime.pixdim(2:4)]==NewRes);
+    NewRes  = min([Nii1.hdr.dime.pixdim(2:4), Nii2.hdr.dime.pixdim(2:4)]);
+    Indx    = find([Nii1.hdr.dime.pixdim(2:4), Nii2.hdr.dime.pixdim(2:4)]==NewRes);
+    
     NewNiiFile = NiiFiles{Indx};
     reslice_nii(NiiFiles{Indx}, NewNiiFile, NewRes);
     NiiFiles{Indx} = load_nii(NewNiiFile);

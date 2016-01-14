@@ -140,6 +140,7 @@ if exist('DefaultMaskFile', 'var')
     Mask = load(DefaultMaskFile);                                                 	% Load default mask data
     MaskData(Mask);
 else
+    fprintf('WARNING: default data mask ''%s'' does not exist!\n', DefaultMaskFile);
     Contact.Mask = ones(size(Contact.Alpha));
 end
 AlphaRange = [min(Contact.Alpha), max(Contact.Alpha)];                              % Get range of alpha values

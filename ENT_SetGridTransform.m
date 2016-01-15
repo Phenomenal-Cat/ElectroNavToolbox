@@ -33,9 +33,10 @@ Grid.VolFile           	= 'Grid1.nii';
 Grid.SurfFile         	= 'Grid1.stl';
 Grid.nii              	= load_nii(Grid.VolFile);                 	% Load grid volume
 [FV.vertices, FV.faces]	= stlread(Grid.SurfFile);                  	% Load grid surface
-Grid.Rot                = [17, 0, 0];                               % Rotations about cardinal axes (degrees)
+Grid.RotDeg            	= [17, 0, 0];                               % Rotations about cardinal axes (degrees)
+Grid.RotRad             = Grid.RotDeg/180*pi;
 Grid.Trans              = Grid.Tform(1:3,4)';                     	% Translations relative to AC origin
-Grid.Tform             	= makehgtform('translate',Grid.Trans(1), Grid.Trans(2), Grid.Trans(3),'xrotate',Grid.Rot(1),'yrotate',Grid.Rot(2),'zrotate',Grid.Rot(3));
+Grid.Tform             	= makehgtform('translate',Grid.Trans(1), Grid.Trans(2), Grid.Trans(3),'xrotate',Grid.RotRad(1),'yrotate',Grid.RotRad(2),'zrotate',Grid.RotRad(3));
 FV(2)                   = FV(1);
 % FV(2).vertices          = ENT_ApplyTform(Grid.Tform, FV(1).vertices);
 Grid.Colors            	= [1 0 0; 0 1 0];
@@ -91,10 +92,10 @@ end
 %=============== GRID GUI PANEL
 Fig.Grid.BoxPos      = [0.75,0.2,0.2,0.3];
 Fig.Grid.InputDim    = [150 20];
-Fig.Grid.InputSizes  = [150, 150, 40, 40, 60, 100];
-Fig.Grid.Labels      = {'Grid type','Trasnform matrix','Origin (mm)','Rotation','Transparency','Save transform'};
-Fig.Grid.Style       = {'popupmenu','pushbutton','edit','edit','edit','pushbutton'};
-Fig.Grid.List        = {{'19mm cylindrical'}, Grid.TformName, Grid.Trans, Grid.Rot, Grid.Alpha, 'Save'};
+Fig.Grid.InputSizes  = [150, 150, 40, 40, 60, 100, 100];
+Fig.Grid.Labels      = {'Grid type','Trasnform matrix','Origin (mm)','Rotation','Transparency','Add trajectory','Save transform'};
+Fig.Grid.Style       = {'popupmenu','pushbutton','edit','edit','edit','pushbutton','pushbutton'};
+Fig.Grid.List        = {{'19mm cylindrical'}, Grid.TformName, Grid.Trans, Grid.RotDeg, Grid.Alpha, 'Add', 'Save'};
 Fig.Grid.UIhandle    = uipanel('Title','Grid','FontSize', Fig.UIFontsize,'BackgroundColor',Fig.Background,'Units','normalized','Position',Fig.Grid.BoxPos);
 for i = 1:numel(Fig.Grid.Labels)
     Pos = numel(Fig.Grid.Labels)-i;
@@ -163,35 +164,37 @@ global Fig Grid nii FV
              	XCoords = [nii.AxLims(1,1), nii.AxLims(1,1); nii.AxLims(2,1), nii.AxLims(2,1)]';
                 YCoords = [nii.AxLims(:,2), nii.AxLims(:,2)];
                 ZCoords = repmat(nii.AxLims(1,3), [2,2]);
-                CurrentSlice = repmat(squeeze(nii.img(:,:,Grid.SliceIndex(3)))',[1,1,3]);
+                CurrentSlice = double(repmat(squeeze(nii.img(:,:,Grid.SliceIndex(3)))',[1,1,3]));
             case 2
             	XCoords = repmat(nii.AxLims(1,1), [2,2]);
                 YCoords = [nii.AxLims(1,2), nii.AxLims(1,2); nii.AxLims(2,2), nii.AxLims(2,2)]';
                 ZCoords = [nii.AxLims(:,3), nii.AxLims(:,3)];
-                CurrentSlice = repmat(squeeze(nii.img(Grid.SliceIndex(1),:,:))',[1,1,3]);
+                CurrentSlice = double(repmat(squeeze(nii.img(Grid.SliceIndex(1),:,:))',[1,1,3]));
             case 3
               	XCoords = [nii.AxLims(1,1), nii.AxLims(1,1); nii.AxLims(2,1), nii.AxLims(2,1)]';
                 YCoords = repmat(nii.AxLims(1,2), [2,2]);
                 ZCoords = [nii.AxLims(:,3), nii.AxLims(:,3)];
-                CurrentSlice = repmat(squeeze(nii.img(:,Grid.SliceIndex(2),:))',[1,1,3]);
+                CurrentSlice = double(repmat(squeeze(nii.img(:,Grid.SliceIndex(2),:))',[1,1,3]));
         end    
         if ~isfield(Fig, 'ph') || numel(Fig.ph) < v
-            Fig.ph(v) = surf(XCoords, YCoords, ZCoords,'CData', CurrentSlice,'FaceColor','texturemap','EdgeColor','k');         % Draw MRI slice to axes
+            Fig.ph(v) = surf(XCoords, YCoords, ZCoords,'CData', CurrentSlice/max(CurrentSlice(:)),'FaceColor','texturemap','EdgeColor','k');         % Draw MRI slice to axes
         else
-            set(Fig.ph(v), 'xdata', XCoords, 'ydata', YCoords, 'zdata', ZCoords, 'cdata', CurrentSlice);
+            set(Fig.ph(v), 'xdata', XCoords, 'ydata', YCoords, 'zdata', ZCoords, 'cdata', CurrentSlice/max(CurrentSlice(:)));
         end
         hold on;
     end
     
     %=========== PLOT 3D GRID(S)
-    for g = 1:2
-        Grid.h(g) = patch(FV(g), 'facecolor', Grid.Colors(g,:), 'edgecolor', 'none');     % Plot grid at origin
-        hold on;
+    if ~isfield(Grid, 'h')
+        for g = 1:2
+            Grid.h(g) = patch(FV(g), 'facecolor', Grid.Colors(g,:), 'edgecolor', 'none');     % Plot grid at origin
+            hold on;
+        end
+        Grid.tformHandle =	hgtransform('Parent', Fig.axh(1));
+        set(Grid.h, 'facealpha', Grid.Alpha);
+        set(Grid.h(2), 'Parent', Grid.tformHandle);
+        set(Grid.tformHandle, 'Matrix', Grid.Tform);
     end
-    Grid.tformHandle =	hgtransform('Parent', Fig.axh(1));
-    set(Grid.h, 'facealpha', Grid.Alpha);
-    set(Grid.h(2), 'Parent', Grid.tformHandle);
-    set(Grid.tformHandle, 'Matrix', Grid.Tform);
 
     if ~isfield(Fig, 'lh')
         Fig.lh = camlight('infinite');
@@ -314,11 +317,11 @@ switch indx
         Grid.TformFile 	= fullfile(path, file);
         load(Grid.TformFile);
         Grid.Tform      = T;
-        Grid.Rot        = [];
+        Grid.RotDeg   	= [];
         Grid.Trans     	= Grid.Tform(1:3,4)';                     	% Translations relative to AC origin
         for n = 1:3
             set(Fig.Grid.MultiInputH(3,n), 'string', num2str(Grid.Trans(n)));
-            set(Fig.Grid.MultiInputH(4,n), 'string', num2str(Grid.Rot(n)));
+            set(Fig.Grid.MultiInputH(4,n), 'string', num2str(Grid.RotDeg(n)));
         end
         set(Grid.tformHandle, 'Matrix', Grid.Tform);
         
@@ -331,7 +334,7 @@ switch indx
         
     case 4      %=============== CHANGE ORIENTATION
         Grid.Rot(indx2)     = str2num(get(hObj, 'string'));
-        Grid.RotRad         = Grid.Rot/180*pi;
+        Grid.RotRad         = Grid.RotDeg/180*pi;
         Grid.Tform        	= makehgtform('translate',Grid.Trans(1), Grid.Trans(2), Grid.Trans(3), ...
                             'xrotate',Grid.RotRad(1),'yrotate',Grid.RotRad(2),'zrotate',Grid.RotRad(3));
         set(Grid.tformHandle, 'Matrix', Grid.Tform);
@@ -339,8 +342,26 @@ switch indx
     case 5     	%=============== CHANGE OPACITY
         Grid.Alpha  = str2num(get(hObj, 'string'));
         set(Grid.h, 'facealpha', Grid.Alpha);
+        if isfield(Grid, 'Trajectory')
+            set(Grid.Trajectory.Handle, 'facealpha', Grid.Alpha);
+        end
         
-    case 6      %=============== SAVE TRANSFORM
+    case 6    	%=============== ADD TRAJECTORY PATH
+        Response = inputdlg({'Grid hole coordinate (X)','Grid hole coordinate (Y)','Length (mm)','Diameter (mm)','Color (RGB)'},'Add trajectory path',1,{'0','0','20','0.5','0 0 1'});
+        Grid.Trajectory.XY          = [str2num(Response{1}), str2num(Response{1})];
+        Grid.Trajectory.Length      = str2num(Response{3});
+        Grid.Trajectory.Diameter    = str2num(Response{4});
+        Grid.Trajectory.Color       = str2num(Response{5});
+        [X,Y,Z] = cylinder(repmat(Grid.Trajectory.Diameter,[1,2]), 20);
+        X = X+Grid.Trajectory.XY(1);
+        Y = Y+Grid.Trajectory.XY(2);
+        Z = Z*-Grid.Trajectory.Length;
+        Grid.Trajectory.Handle      = surf(X, Y, Z, 'facecolor', Grid.Trajectory.Color, 'edgecolor', 'none');
+        set(Grid.Trajectory.Handle, 'Parent', Grid.tformHandle);
+        set(Grid.tformHandle, 'Matrix', Grid.Tform);
+        
+        
+    case 7      %=============== SAVE TRANSFORM
         [file, path]        = uiputfile('ManualXform.mat', 'Save trasnform matrix');
         Grid.TformFile      = fullfile(path, file);
         [~,Grid.TformName]	= fileparts(Grid.TformFile);

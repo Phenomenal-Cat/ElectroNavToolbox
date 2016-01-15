@@ -139,9 +139,11 @@ end
 if exist('DefaultMaskFile', 'var')
     Mask = load(DefaultMaskFile);                                                 	% Load default mask data
     MaskData(Mask);
+    [~,MaskLabel] = fileparts(DefaultMaskFile);
 else
     fprintf('WARNING: default data mask ''%s'' does not exist!\n', DefaultMaskFile);
     Contact.Mask = ones(size(Contact.Alpha));
+    MaskLabel = 'Load';
 end
 AlphaRange = [min(Contact.Alpha), max(Contact.Alpha)];                              % Get range of alpha values
 if diff(AlphaRange)==0
@@ -307,7 +309,7 @@ Fig.Data.LabelStrings = {'Filename:','Number of sessions:','Number of neurons:',
 Fig.Data.InputType = {'popupmenu','text','text','popupmenu','edit','edit','checkbox','pushbutton','edit','edit'};
 ColorThresh = [min(Contact.ColorVals), max(Contact.ColorVals)];
 AlphaThresh = [min(Contact.Alpha), max(Contact.Alpha)];
-Fig.Data.InputStrings = {Data.Filenames, num2str(numel(Contact.Dates)),num2str(size(Contact.CellIndxData,1)),Fig.Data.AxisLabels, num2str(ColorThresh(1)), num2str(AlphaThresh(1)), 'Inverted','Load', num2str(ColorThresh(2)), num2str(AlphaThresh(2))};
+Fig.Data.InputStrings = {Data.Filenames, num2str(numel(Contact.Dates)),num2str(size(Contact.CellIndxData,1)),Fig.Data.AxisLabels, num2str(ColorThresh(1)), num2str(AlphaThresh(1)), 'Inverted', MaskLabel, num2str(ColorThresh(2)), num2str(AlphaThresh(2))};
 Fig.Data.InputValue = {Data.Selected, [], [], Fig.AxisSelected, [], [], Fig.Data.InvertAlpha, [], [], []};
 Ypos = (0:-30:(-30*(numel(Fig.Data.LabelStrings)+1))) + BoxPos(4,4)-50;
 Ypos([9,10]) = Ypos([5,6]);

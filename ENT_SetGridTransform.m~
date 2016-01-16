@@ -40,7 +40,7 @@ Grid.Tform             	= makehgtform('translate',Grid.Trans(1), Grid.Trans(2), 
 FV(2)                   = FV(1);
 % FV(2).vertices          = ENT_ApplyTform(Grid.Tform, FV(1).vertices);
 Grid.Colors            	= [1 0 0; 0 1 0];
-Grid.Alpha              = 1;
+Grid.Alpha              = 0.5;
 
 %% ========================== OPEN FIGURE WINDOW ==========================
 Fig.Handle      = figure('position', get(0, 'ScreenSize'),'name', 'ENT_SetGridTransform');
@@ -92,7 +92,7 @@ end
 %=============== GRID GUI PANEL
 Fig.Grid.BoxPos      = [0.75,0.2,0.2,0.3];
 Fig.Grid.InputDim    = [150 20];
-Fig.Grid.InputSizes  = [150, 150, 40, 40, 60, 100];
+Fig.Grid.InputSizes  = [150, 150, 40, 40, 60, 100, 100];
 Fig.Grid.Labels      = {'Grid type','Trasnform matrix','Origin (mm)','Rotation','Transparency','Add trajectory','Save transform'};
 Fig.Grid.Style       = {'popupmenu','pushbutton','edit','edit','edit','pushbutton','pushbutton'};
 Fig.Grid.List        = {{'19mm cylindrical'}, Grid.TformName, Grid.Trans, Grid.RotDeg, Grid.Alpha, 'Add', 'Save'};
@@ -184,6 +184,10 @@ global Fig Grid nii FV
         hold on;
     end
     
+    %============= PLOT 3D GRID ORIGIN TO SLICE
+    Grid.OriginHandle(1) = plot(
+    
+    
     %=========== PLOT 3D GRID(S)
     if ~isfield(Grid, 'h')
         for g = 1:2
@@ -194,11 +198,14 @@ global Fig Grid nii FV
         set(Grid.h, 'facealpha', Grid.Alpha);
         set(Grid.h(2), 'Parent', Grid.tformHandle);
         set(Grid.tformHandle, 'Matrix', Grid.Tform);
+        set(Grid.h, 'facealpha', Grid.Alpha);
     end
 
     if ~isfield(Fig, 'lh')
+        view(90, 0);
         Fig.lh = camlight('infinite');
-        view(45, 25);
+        
+        set(gca,'color',[0 0 0])
       	xlabel('X (mm)', 'fontsize', 14);
         ylabel('Y (mm)', 'fontsize', 14);
         zlabel('Z (mm)', 'fontsize', 14);
@@ -342,9 +349,30 @@ switch indx
     case 5     	%=============== CHANGE OPACITY
         Grid.Alpha  = str2num(get(hObj, 'string'));
         set(Grid.h, 'facealpha', Grid.Alpha);
+        if isfield(Grid, 'Trajectory')
+            set(Grid.Trajectory.Handle, 'facealpha', Grid.Alpha);
+        end
         
     case 6    	%=============== ADD TRAJECTORY PATH
-        ans = inputdlg({'Grid hole coordinate (X, ',},'Add trajectory path',);
+        Response = inputdlg({'Grid hole coordinate (X)','Grid hole coordinate (Y)','Length (mm)','Diameter (mm)','Color (RGB)'},'Add trajectory path',1,{'0','0','20','0.5','0 0 1'});
+        if ~isempty(Response)
+            if isfield(Grid, 'Trajectory')
+                n = numel(Grid.Trajectory)+1;
+            else
+                n = 1;
+            end
+            Grid.Trajectory(n).XY          = [str2num(Response{1}), str2num(Response{2})];
+            Grid.Trajectory(n).Length      = str2num(Response{3});
+            Grid.Trajectory(n).Diameter    = str2num(Response{4});
+            Grid.Trajectory(n).Color       = str2num(Response{5});
+            [X,Y,Z] = cylinder(repmat(Grid.Trajectory(n).Diameter,[1,2]), 20);
+            X = X+Grid.Trajectory(n).XY(1);
+            Y = Y+Grid.Trajectory(n).XY(2);
+            Z = Z*-Grid.Trajectory(n).Length;
+            Grid.Trajectory(1).Handle(n)  	= surf(X, Y, Z, 'facecolor', Grid.Trajectory(n).Color, 'edgecolor', 'none');
+            set(Grid.Trajectory(1).Handle(n), 'Parent', Grid.tformHandle);
+            set(Grid.tformHandle, 'Matrix', Grid.Tform);
+        end
         
     case 7      %=============== SAVE TRANSFORM
         [file, path]        = uiputfile('ManualXform.mat', 'Save trasnform matrix');

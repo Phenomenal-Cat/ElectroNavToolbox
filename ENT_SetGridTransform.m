@@ -20,8 +20,8 @@ global Fig Grid nii FV
 if nargin == 0
 %     [file, path]        = uigetfile({'*.nii'}, 'Select ACPC-aligned grid scan');
 %     NiiFile             = fullfile(path, file);
-%     NiiFile             = '/Volumes/rawdata/murphya/MRI/Dexter/20151203/Dexter_20151203_MDEFT_hi_ACPC.nii';
-    NiiFile             = '/Volumes/rawdata/murphya/MRI/Dexter/20151209/Dexter_20151209_ACPC_origin.nii';
+    NiiFile             = '/Volumes/rawdata/murphya/MRI/Dexter/20151203/Dexter_20151203_MDEFT_hi_ACPC.nii';
+%     NiiFile             = '/Volumes/rawdata/murphya/MRI/Dexter/20151209/Dexter_20151209_ACPC_origin.nii';
     Grid.TformFile          = '/Volumes/PROJECTS/murphya/EN_data/Subjects/Dexter/ManualXform.mat';
 end
 nii = LoadMRI(NiiFile);
@@ -40,7 +40,7 @@ Grid.Tform             	= makehgtform('translate',Grid.Trans(1), Grid.Trans(2), 
 FV(2)                   = FV(1);
 % FV(2).vertices          = ENT_ApplyTform(Grid.Tform, FV(1).vertices);
 Grid.Colors            	= [1 0 0; 0 1 0];
-Grid.Alpha              = 1;
+Grid.Alpha              = 0.5;
 
 %% ========================== OPEN FIGURE WINDOW ==========================
 Fig.Handle      = figure('position', get(0, 'ScreenSize'),'name', 'ENT_SetGridTransform');
@@ -156,7 +156,8 @@ function UpdatePlots
 global Fig Grid nii FV
 
     %============= PLOT 3D VIEW
-    Grid.SliceIndex = nii.OriginVox+round(Grid.Trans./nii.VoxDim)
+    Grid.SliceIndex = nii.OriginVox+round(Grid.Trans./nii.VoxDim);
+    Grid.SliceIndex(Grid.SliceIndex > nii.DimVox) = nii.DimVox(Grid.SliceIndex > nii.DimVox);
     axes(Fig.axh(1));
     for v = 1:3
         switch v                                             
@@ -184,6 +185,17 @@ global Fig Grid nii FV
         hold on;
     end
     
+    %============= PLOT 3D GRID ORIGIN TO SLICE
+    if ~isfield(Grid, 'OriginHandle')
+        Grid.OriginHandle(1) = plot3(Grid.Trans(1), Grid.Trans(2), nii.AxLims(1,3), '.r', 'markersize', 30);
+        Grid.OriginHandle(2) = plot3(nii.AxLims(1,1), Grid.Trans(2), Grid.Trans(3), '.r', 'markersize', 30);
+        Grid.OriginHandle(3) = plot3(Grid.Trans(1), nii.AxLims(1,2), Grid.Trans(3), '.r', 'markersize', 30);
+    else
+        set(Grid.OriginHandle(1), 'xdata', Grid.Trans(1), 'ydata', Grid.Trans(2));
+        set(Grid.OriginHandle(2), 'ydata', Grid.Trans(2), 'zdata', Grid.Trans(3));
+        set(Grid.OriginHandle(3), 'xdata', Grid.Trans(1), 'zdata', Grid.Trans(3));
+    end
+    
     %=========== PLOT 3D GRID(S)
     if ~isfield(Grid, 'h')
         for g = 1:2
@@ -194,11 +206,14 @@ global Fig Grid nii FV
         set(Grid.h, 'facealpha', Grid.Alpha);
         set(Grid.h(2), 'Parent', Grid.tformHandle);
         set(Grid.tformHandle, 'Matrix', Grid.Tform);
+        set(Grid.h, 'facealpha', Grid.Alpha);
     end
 
     if ~isfield(Fig, 'lh')
+        view(90, 0);
         Fig.lh = camlight('infinite');
-        view(45, 25);
+        
+        set(gca,'color',[0 0 0])
       	xlabel('X (mm)', 'fontsize', 14);
         ylabel('Y (mm)', 'fontsize', 14);
         zlabel('Z (mm)', 'fontsize', 14);
@@ -277,6 +292,7 @@ switch indx
             set(Fig.MRI.MultiInputH(3,n),'String', num2str(nii.OriginVox(n)));
         end
         UpdateSlices(nii.OriginVox);
+        UpdatePlots;
         
     case 2          %=============== RESLICE VOLUME
         
@@ -333,42 +349,56 @@ switch indx
         UpdatePlots;
         
     case 4      %=============== CHANGE ORIENTATION
-        Grid.Rot(indx2)     = str2num(get(hObj, 'string'));
+        Grid.RotDeg(indx2)     = str2num(get(hObj, 'string'));
         Grid.RotRad         = Grid.RotDeg/180*pi;
         Grid.Tform        	= makehgtform('translate',Grid.Trans(1), Grid.Trans(2), Grid.Trans(3), ...
                             'xrotate',Grid.RotRad(1),'yrotate',Grid.RotRad(2),'zrotate',Grid.RotRad(3));
         set(Grid.tformHandle, 'Matrix', Grid.Tform);
+        UpdatePlots;
         
     case 5     	%=============== CHANGE OPACITY
         Grid.Alpha  = str2num(get(hObj, 'string'));
         set(Grid.h, 'facealpha', Grid.Alpha);
         if isfield(Grid, 'Trajectory')
-            set(Grid.Trajectory.Handle, 'facealpha', Grid.Alpha);
+            set(Grid.Trajectory(1).Handle, 'facealpha', Grid.Alpha);
         end
         
     case 6    	%=============== ADD TRAJECTORY PATH
         Response = inputdlg({'Grid hole coordinate (X)','Grid hole coordinate (Y)','Length (mm)','Diameter (mm)','Color (RGB)'},'Add trajectory path',1,{'0','0','20','0.5','0 0 1'});
-        Grid.Trajectory.XY          = [str2num(Response{1}), str2num(Response{1})];
-        Grid.Trajectory.Length      = str2num(Response{3});
-        Grid.Trajectory.Diameter    = str2num(Response{4});
-        Grid.Trajectory.Color       = str2num(Response{5});
-        [X,Y,Z] = cylinder(repmat(Grid.Trajectory.Diameter,[1,2]), 20);
-        X = X+Grid.Trajectory.XY(1);
-        Y = Y+Grid.Trajectory.XY(2);
-        Z = Z*-Grid.Trajectory.Length;
-        Grid.Trajectory.Handle      = surf(X, Y, Z, 'facecolor', Grid.Trajectory.Color, 'edgecolor', 'none');
-        set(Grid.Trajectory.Handle, 'Parent', Grid.tformHandle);
-        set(Grid.tformHandle, 'Matrix', Grid.Tform);
+        if ~isempty(Response)
+            if isfield(Grid, 'Trajectory')
+                n = numel(Grid.Trajectory)+1;
+            else
+                n = 1;
+            end
+            Grid.Trajectory(n).XY          = [str2num(Response{1}), str2num(Response{2})];
+            Grid.Trajectory(n).Length      = str2num(Response{3});
+            Grid.Trajectory(n).Diameter    = str2num(Response{4});
+            Grid.Trajectory(n).Color       = str2num(Response{5});
+            [X,Y,Z] = cylinder(repmat(Grid.Trajectory(n).Diameter,[1,2]), 20);
+            X = X+Grid.Trajectory(n).XY(1);
+            Y = Y+Grid.Trajectory(n).XY(2);
+            Z = Z*-Grid.Trajectory(n).Length;
+            Grid.Trajectory(1).Handle(n)  	= surf(X, Y, Z, 'facecolor', Grid.Trajectory(n).Color, 'edgecolor', 'none');
+            set(Grid.Trajectory(1).Handle(n), 'Parent', Grid.tformHandle);
+            set(Grid.tformHandle, 'Matrix', Grid.Tform);
+        end
         
+%     case 7      %=============== SAVE TRANSFORM
+%         [file, path]        = uiputfile('ManualXform.mat', 'Save trasnform matrix');
+%         Grid.TformFile      = fullfile(path, file);
+%         [~,Grid.TformName]	= fileparts(Grid.TformFile);
+%         T = Grid.Tform;
+%         save(Grid.TformFile, 'T');
+%         set(Fig.Grid.InputHandle(1), 'string', Grid.TformName);
         
-    case 7      %=============== SAVE TRANSFORM
-        [file, path]        = uiputfile('ManualXform.mat', 'Save trasnform matrix');
-        Grid.TformFile      = fullfile(path, file);
-        [~,Grid.TformName]	= fileparts(Grid.TformFile);
-        T = Grid.Tform;
-        save(Grid.TformFile, 'T');
-        set(Fig.Grid.InputHandle(1), 'string', Grid.TformName);
-        
+    case 7      %=============== SHOW AXIS-ALIGNED VOLUME SLICE
+        Grid.Tform
+        [nii.new_img, new_M] = affine(nii.img, Grid.Tform);
+        figure;
+        imagesc(squeeze(nii.new_img(:,100,:)));
+        axis equal tight
+        colormap gray
 end
 
 end

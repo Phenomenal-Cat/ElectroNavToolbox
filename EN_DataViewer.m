@@ -45,38 +45,42 @@ addpath(genpath(root));
 global Fig Contact Structures Data MRI Mask 
 
 %==================== LOAD PHYSIOLOGY RESULTS DATA
-if nargin == 0
+if nargin == 0 || ~exist('DataPath', 'var')
     Data.Dir = uigetdir(root, 'Select map data directory');
-else
+elseif nargin == 2
     Data.SubjectID  = SubjectID;
     Data.Dir        = DataPath;
-end 
+end
 
 %================ LOAD DEFAULT PARAMETERS
-[t, CompName]       = system('hostname');
-CompName(find(double(CompName) ==10)) = [];
-DefaultParamsFile   = wildcardsearch(fullfile(root, 'Params'), ['ParamsFile_', CompName, '.mat']);
-if isempty(DefaultParamsFile) || numel(DefaultParamsFile)>1
-    Defaults        = EN_Initialize(DefaultParamsFile, Data.SubjectID);
-else
-    load(DefaultParamsFile{1});
+[t, CompName]       = system('hostname');                               % Get name of local computer
+CompName(find(double(CompName) ==10)) = [];                             % Remove white space, etc.
+DefaultParamsFile   = wildcardsearch(fullfile(root, 'Params'), ['ParamsFile_', CompName, '.mat']); % Find corresponding default parameters file
+if isempty(DefaultParamsFile) || numel(DefaultParamsFile)>1             % If default parameters file was not found
+    Defaults        = EN_Initialize(['ParamsFile_', CompName, '.mat'], Data.SubjectID);	% Run EN_Initialize to create new default params file for this computer
+else 
+    load(DefaultParamsFile{1});                                         % Load default parameters
 end
-SubjectDir          = Defaults.ExpDir;                                                      % Path containing anatomical MRIs and transform matrices for each subject
-SubjectIndx         = find(~cellfun(@isempty, strfind({Defaults.SubjectID}, 'Dexter')));    % Which entry is selected subject?
-MRI.DefaultFile     = Defaults(SubjectIndx).MRI;
+if ~exist('SubjectID','var') 
+    [Selection, Ok] = listdlg('ListString', {Defaults.SubjectID}, 'PromptString', 'Select subject', 'SelectionMode', 'single');
+    Data.SubjectID	= Defaults(Selection).SubjectID; 
+end                                      
+SubjectIndx         = find(~cellfun(@isempty, strfind({Defaults.SubjectID}, Data.SubjectID)));	% Which entry is selected subject?
+SubjectDir          = Defaults(SubjectIndx).ExpDir;                                             % Path containing anatomical MRIs and transform matrices for subject
+MRI.DefaultFile     = Defaults(SubjectIndx).MRI;                                                % Get path of selected subject's anatomical MRI
              
 
 %================ SET ADDITIONAL SUBJECT-SPECIFIC PARAMETERS
 switch Data.SubjectID
     case 'Layla'
-        MRI.DefaultFile	= fullfile(SubjectDir, 'Layla_GridScan_ACPC.nii');
+%         MRI.DefaultFile	= fullfile(SubjectDir, 'Layla_GridScan_ACPC.nii');
 %         MRI.DefaultFile = '/rawdata/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_MDEFT_postelgiloy_025mm_BET_Masked_rot.nii';
 %         MRI.DefaultFile = '/rawdata/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_FLASH_postelgiloy_iso_BET_aligned_rot.nii';
         Fig.Xlim        = [-16, 0];
         StructuresOn    = [2,6,7,9,11];                                    % Pulvinar subdivisions default to 'on'      
         
     case 'Dexter'
-        MRI.DefaultFile	= fullfile(SubjectDir, 'Dexter_20150917_ACPC.nii');
+%         MRI.DefaultFile	= fullfile(SubjectDir, 'Dexter_20150917_ACPC.nii');
         Fig.Xlim        = [0, 16];
         StructuresOn	= [2,4];                                            % Pulvinar subdivisions default to 'on'  
         
@@ -209,10 +213,7 @@ Contact.Indx            = 1;                                                   	
 Fig.ZoomH               = zoom;                                               	% Create zoom object
 
 %================ Plot structures
-if ismac
-    SubjectDir = fullfile('/Volumes',SubjectDir); 
-    MRI.DefaultFile = fullfile('/Volumes', MRI.DefaultFile); 
-end
+fullfile(SubjectDir,'VTKs')
 MeshFiles = wildcardsearch(fullfile(SubjectDir,'VTKs'),'*.vtk');
 Structures                      = Plot3DMeshes(MeshFiles);
 Structures.Materials.Ambient    = 0.3;                              

@@ -8,6 +8,8 @@ function ENT_StereoRender(H, Params)
 
 if nargin == 0
     H = gca;
+    Params.Anaglyph = 1;
+    
 end
     
 %=================== Set parameters
@@ -40,11 +42,15 @@ if exist(tempfile, 'file')
 end
 
 %=================== Create anaglyph
-im{1}(:,:,2:3)  = 0 ;                                       % Removes green and blue from the left eye image
-im{2}(:,:,1)    = 0 ;                                       % Removes red from the right eye image
-anaglyph = im{1} + im{2} ;                                  % Combines the two to produce the finished anaglyph
-figure('name','Stereo Render');                             % Opne new figure window
-imshow(anaglyph,'border','tight') ;                         % Show the anaglyph image
+if Params.Anaglyph == 1
+    im{1}(:,:,2:3)  = 0 ;                                       % Removes green and blue from the left eye image
+    im{2}(:,:,1)    = 0 ;                                       % Removes red from the right eye image
+    stereoimage = im{1} + im{2} ;                            	% Combines the two to produce the finished anaglyph
+elseif Params.Anaglyph == 0
+    stereoimage = [im{1}, im{2}];                             	% Combines the two to produce the side-by-side image
+end
+figure('name','Stereo Render');                                 % Open new figure window
+imshow(stereoimage,'border','tight') ;                          % Show the stereoscopic image
 
 
 end

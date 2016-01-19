@@ -46,33 +46,31 @@ global Fig Contact Structures Data MRI Mask
 
 %==================== LOAD PHYSIOLOGY RESULTS DATA
 if nargin == 0
-%     Data.Dir        = '/Volumes/projects/murphya/Physio/MapPlotTools/MapData/';        % <<< Hardcoded path is TEMPORARY!
-%     Data.SubjectID  = 'Dexter';
     Data.Dir = uigetdir(root, 'Select map data directory');
-else
+elseif nargin == 2
     Data.SubjectID  = SubjectID;
     Data.Dir        = DataPath;
-end 
+end
 
 %================ LOAD DEFAULT PARAMETERS
-[t, CompName] = system('hostname');
-CompName(find(double(CompName) ==10)) = [];
-DefaultParamsFile = wildcardsearch(fullfile(root, 'Params'), ['ParamsFile_', CompName, '.mat']);
-if isempty(DefaultParamsFile) || numel(DefaultParamsFile)>1
-    
+[t, CompName]       = system('hostname');                               % Get name of local computer
+CompName(find(double(CompName) ==10)) = [];                             % Remove white space, etc.
+DefaultParamsFile   = wildcardsearch(fullfile(root, 'Params'), ['ParamsFile_', CompName, '.mat']); % Find corresponding default parameters file
+if isempty(DefaultParamsFile) || numel(DefaultParamsFile)>1             % If default parameters file was not found
+    Defaults        = EN_Initialize(DefaultParamsFile, Data.SubjectID);	% Run EN_Initialize to create new p
+else
+    load(DefaultParamsFile{1});
 end
-load(DefaultParamsFile{1});
-Defaults.SubjectID
-SubjectDir = Defaults.ExpDir;
-
-SubjectIndx         = find(~cellfun(@isempty, strfind({Defaults.SubjectID}, 'Dexter')));    % Which entrysubject
+if ~exist('SubjectID','var')
+    [Selection, Ok] = listdlg('ListString', {Defaults.SubjectID}, 'PromptString', 'Select subject', 'SelectionMode', 'single');
+end
+Data.SubjectID      = Defaults(Selection).SubjectID;
+SubjectDir          = Defaults.ExpDir;                                                      % Path containing anatomical MRIs and transform matrices for each subject
+SubjectIndx         = find(~cellfun(@isempty, strfind({Defaults.SubjectID}, 'Dexter')));    % Which entry is selected subject?
 MRI.DefaultFile     = Defaults(SubjectIndx).MRI;
-    
-SubjectDir	= fullfile('/projects/murphya/EN_data/Subjects/', Data.SubjectID);          % Path containing anatomical MRIs and transform matrices for each subject
-if ismac
-    SubjectDir = fullfile('/Volumes', SubjectDir);
-end
+             
 
+%================ SET ADDITIONAL SUBJECT-SPECIFIC PARAMETERS
 switch Data.SubjectID
     case 'Layla'
         MRI.DefaultFile	= fullfile(SubjectDir, 'Layla_GridScan_ACPC.nii');
@@ -215,10 +213,6 @@ Contact.Indx            = 1;                                                   	
 Fig.ZoomH               = zoom;                                               	% Create zoom object
 
 %================ Plot structures
-if ismac
-    SubjectDir = fullfile('/Volumes',SubjectDir); 
-    MRI.DefaultFile = fullfile('/Volumes', MRI.DefaultFile); 
-end
 MeshFiles = wildcardsearch(fullfile(SubjectDir,'VTKs'),'*.vtk');
 Structures                      = Plot3DMeshes(MeshFiles);
 Structures.Materials.Ambient    = 0.3;                              

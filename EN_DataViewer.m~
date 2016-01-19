@@ -46,6 +46,8 @@ global Fig Contact Structures Data MRI Mask
 
 %==================== LOAD PHYSIOLOGY RESULTS DATA
 if nargin == 0
+%     Data.Dir        = '/Volumes/projects/murphya/Physio/MapPlotTools/MapData/';        % <<< Hardcoded path is TEMPORARY!
+%     Data.SubjectID  = 'Dexter';
     Data.Dir = uigetdir(root, 'Select map data directory');
 else
     Data.SubjectID  = SubjectID;
@@ -53,20 +55,24 @@ else
 end 
 
 %================ LOAD DEFAULT PARAMETERS
-[t, CompName]       = system('hostname');
+[t, CompName] = system('hostname');
 CompName(find(double(CompName) ==10)) = [];
-DefaultParamsFile   = wildcardsearch(fullfile(root, 'Params'), ['ParamsFile_', CompName, '.mat']);
+DefaultParamsFile = wildcardsearch(fullfile(root, 'Params'), ['ParamsFile_', CompName, '.mat']);
 if isempty(DefaultParamsFile) || numel(DefaultParamsFile)>1
-    Defaults        = EN_Initialize(DefaultParamsFile, Data.SubjectID);
-else
-    load(DefaultParamsFile{1});
+    
 end
-SubjectDir          = Defaults.ExpDir;                                                      % Path containing anatomical MRIs and transform matrices for each subject
-SubjectIndx         = find(~cellfun(@isempty, strfind({Defaults.SubjectID}, 'Dexter')));    % Which entry is selected subject?
-MRI.DefaultFile     = Defaults(SubjectIndx).MRI;
-             
+load(DefaultParamsFile{1});
+Defaults.SubjectID
+SubjectDir = Defaults.ExpDir;
 
-%================ SET ADDITIONAL SUBJECT-SPECIFIC PARAMETERS
+SubjectIndx         = find(~cellfun(@isempty, strfind({Defaults.SubjectID}, 'Dexter')));    % Which entrysubject
+MRI.DefaultFile     = Defaults(SubjectIndx).MRI;
+    
+SubjectDir	= fullfile('/projects/murphya/EN_data/Subjects/', Data.SubjectID);          % Path containing anatomical MRIs and transform matrices for each subject
+if ismac
+    SubjectDir = fullfile('/Volumes', SubjectDir);
+end
+
 switch Data.SubjectID
     case 'Layla'
         MRI.DefaultFile	= fullfile(SubjectDir, 'Layla_GridScan_ACPC.nii');

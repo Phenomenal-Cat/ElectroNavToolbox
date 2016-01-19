@@ -8,8 +8,8 @@
 
 function Info = EN_Version()
 
-Info.Version = 1.0;
-Info.ContactEmail = 'murphyap';
-Info.ContactDomain = 'mail.nih.gov';
-Info.GithubSite = 'https://github.com/MonkeyGone2Heaven/ElectroNavToolbox';
-Info.LogoFile = 'ElectroNavLogo1.png';
+Info.Version        = 1.0;
+Info.ContactEmail   = 'murphyap';
+Info.ContactDomain  = 'mail.nih.gov';
+Info.GithubSite     = 'https://github.com/MonkeyGone2Heaven/ElectroNavToolbox';
+Info.LogoFile       = 'ElectroNavLogo1.png';

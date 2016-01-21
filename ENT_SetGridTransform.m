@@ -20,21 +20,24 @@ global Fig Grid nii FV
 if nargin == 0
 %     [file, path]        = uigetfile({'*.nii'}, 'Select ACPC-aligned grid scan');
 %     NiiFile             = fullfile(path, file);
-    NiiFile             = '/Volumes/rawdata/murphya/MRI/Dexter/20151203/Dexter_20151203_MDEFT_hi_ACPC.nii';
-%     NiiFile             = '/Volumes/rawdata/murphya/MRI/Dexter/20151209/Dexter_20151209_ACPC_origin.nii';
-    Grid.TformFile          = '/Volumes/PROJECTS/murphya/EN_data/Subjects/Dexter/ManualXform.mat';
+%     NiiFile             = '/Volumes/rawdata/murphya/MRI/Dexter/20151203/Dexter_20151203_MDEFT_hi_ACPC.nii';
+    NiiFile             = '/Volumes/rawdata/murphya/MRI/Dexter/20151203/Dexter_20151203_MDEFT_hi_ACPC_origin.nii';
+    Grid.TformFile   	= '/Volumes/PROJECTS/murphya/EN_data/Subjects/Dexter/ManualXform_gad2.mat';
 end
 nii = LoadMRI(NiiFile);
+nii.Filename    = NiiFile;
 
 [~,Grid.TformName]      = fileparts(Grid.TformFile);
-T                       = load(Grid.TformFile);
-Grid.Tform             	= T.T;
+load(Grid.TformFile);
+Grid.Tform             	= T;
 Grid.VolFile           	= 'Grid1.nii';
 Grid.SurfFile         	= 'Grid1.stl';
 Grid.nii              	= load_nii(Grid.VolFile);                 	% Load grid volume
 [FV.vertices, FV.faces]	= stlread(Grid.SurfFile);                  	% Load grid surface
-Grid.RotDeg            	= [17, 0, 0];                               % Rotations about cardinal axes (degrees)
-Grid.RotRad             = Grid.RotDeg/180*pi;
+Grid.RotRad(1)          = atan2(T(3,2), T(3,3));
+Grid.RotRad(2)          = atan2(-T(3,1), sqrt(T(3,2)*T(3,2) + T(3,3)*T(3,3)));
+Grid.RotRad(3)          = atan2(T(2,1), T(1,1));
+Grid.RotDeg             = Grid.RotRad/pi*180;                       % Rotations about cardinal axes (degrees)                          
 Grid.Trans              = Grid.Tform(1:3,4)';                     	% Translations relative to AC origin
 Grid.Tform             	= makehgtform('translate',Grid.Trans(1), Grid.Trans(2), Grid.Trans(3),'xrotate',Grid.RotRad(1),'yrotate',Grid.RotRad(2),'zrotate',Grid.RotRad(3));
 FV(2)                   = FV(1);
@@ -86,6 +89,7 @@ for i = 1:numel(Fig.MRI.Labels)
         end
     end
 end
+set(Fig.MRI.InputHandle([7, 8]), 'enable', 'off');
 % set([Fig.MRI.LabelHandle, Fig.MRI.InputHandle], 'BackgroundColor',Fig.Background);
 
 
@@ -282,7 +286,7 @@ global Fig Grid nii
 
 switch indx
     case 1          %=============== LOAD NEW MRI VOLUME
-        [file, path]    = uigetfile('*.nii', 'Select MRI to load');
+        [file, path]    = uigetfile('*.nii', 'Select MRI to load',nii.Filename);
         NiiFile         = fullfile(path, file);
         nii             = LoadMRI(NiiFile);
         nii.Filename    = file;
@@ -304,15 +308,16 @@ switch indx
         nii.OriginVox(indx2)= str2num(get(hObj,'string'));
         nii.OriginMm        = nii.OriginVox.*nii.VoxDim;
         nii.AxLims          = [-nii.OriginMm; nii.DimMm-nii.OriginMm];
+     	nii.hdr.hist.originator(1:3) = nii.OriginVox;
         UpdateSlices(nii.OriginVox);
 
-        
     case 5          %=============== PERMUTE VOLUME
         
         
     case 6          %=============== SAVE VOLUME CHANGES
-        
-        
+        [file, path] = uiputfile('*.nii', 'Save volume', nii.Filename);
+        save_nii(nii, fullfile(path, file));
+        msgbox(sprintf('Volume saved to %s!',fullfile(path, file)), 'Volume saved');
 end
 
 
@@ -329,11 +334,14 @@ switch indx
         
         
     case 2      %=============== LOAD NEW T-FORM
-        [file, path]    = uigetfile('*.mat', 'Select trasnform matrix file');
+        [file, path]    = uigetfile('*.mat', 'Select trasnform matrix file', Grid.TformFile);
         Grid.TformFile 	= fullfile(path, file);
         load(Grid.TformFile);
         Grid.Tform      = T;
-        Grid.RotDeg   	= [];
+        Grid.RotRad(1)  = atan2(T(3,2), T(3,3));
+        Grid.RotRad(2)  = atan2(-T(3,1), sqrt(T(3,2)*T(3,2) + T(3,3)*T(3,3)));
+        Grid.RotRad(3)  = atan2(T(2,1), T(1,1));
+        Grid.RotDeg   	= Grid.RotRad/pi*180;
         Grid.Trans     	= Grid.Tform(1:3,4)';                     	% Translations relative to AC origin
         for n = 1:3
             set(Fig.Grid.MultiInputH(3,n), 'string', num2str(Grid.Trans(n)));
@@ -384,21 +392,22 @@ switch indx
             set(Grid.tformHandle, 'Matrix', Grid.Tform);
         end
         
-%     case 7      %=============== SAVE TRANSFORM
-%         [file, path]        = uiputfile('ManualXform.mat', 'Save trasnform matrix');
-%         Grid.TformFile      = fullfile(path, file);
-%         [~,Grid.TformName]	= fileparts(Grid.TformFile);
-%         T = Grid.Tform;
-%         save(Grid.TformFile, 'T');
-%         set(Fig.Grid.InputHandle(1), 'string', Grid.TformName);
+    case 7      %=============== SAVE TRANSFORM
+        [file, path]        = uiputfile('*.mat', 'Save transform matrix', Grid.TformFile);
+        Grid.TformFile      = fullfile(path, file);
+        [~,Grid.TformName]	= fileparts(Grid.TformFile);
+        T                   = Grid.Tform;
+        save(Grid.TformFile, 'T');
+        set(Fig.Grid.InputHandle(2), 'string', Grid.TformName);
+        msgbox(sprintf('Trasnform matrix saved to %s!',Grid.TformFile), 'Trasnform saved');
         
-    case 7      %=============== SHOW AXIS-ALIGNED VOLUME SLICE
-        Grid.Tform
-        [nii.new_img, new_M] = affine(nii.img, Grid.Tform);
-        figure;
-        imagesc(squeeze(nii.new_img(:,100,:)));
-        axis equal tight
-        colormap gray
+%     case 7      %=============== SHOW AXIS-ALIGNED VOLUME SLICE
+%         Grid.Tform
+%         [nii.new_img, new_M] = affine(nii.img, Grid.Tform);
+%         figure;
+%         imagesc(squeeze(nii.new_img(:,100,:)));
+%         axis equal tight
+%         colormap gray
 end
 
 end

@@ -22,9 +22,9 @@ function MakeRotationGif(fh, Filename, Options)
 
 if nargin == 0
     fh                	= gcf;                           	% Get handle to current figure
-    Filename            = 'Neuromaps_structures.mov';
-    Options.Duration    = 8;                                % Duration of animation (seconds)
-    Options.Stereo      = 2;                                % 1 = red-green anaglyph; 2 = side-by-side
+    Filename            = '329_ECoG_3D.mov';
+    Options.Duration    = 6;                                % Duration of animation (seconds)
+    Options.Stereo      = 0;                                % 1 = red-green anaglyph; 2 = side-by-side
 end
 
 Rect = get(fh,'position');%-[0 0 0 40];                   % Get the size of the figure window
@@ -58,7 +58,7 @@ FPS         = 60;                                               % Default frame 
 TotalFrames = round(Options.Duration*FPS);                     	% Number of frames to render
 [Az, El]    = view;                                 
 Theta       = linspace(Az, Az+360, TotalFrames+1);  
-EyeOffsetDeg = 0.5;                                             % Set rotation (degrees) between two eye's perspectives
+EyeOffsetDeg = -0.5;                                             % Set rotation (degrees) between two eye's perspectives
 if Options.Stereo == 2
     fhsbs = figure('units','pixels','position',[1 1 1920 1080]);
 %     StereoRect = get(fhsbs,'position')
@@ -81,9 +81,11 @@ for f = 1:TotalFrames
             StereoFrame{Eye} = frame2im(getframe(fh, Rect));   	% Capture figure frame
         end
         figure(fhsbs);
+        set(fhsbs, 'name', sprintf('Frame %d/ %d)...', f, TotalFrames));
         FrameIm = [StereoFrame{1}, StereoFrame{2}];
         image(FrameIm);
         axis equal tight off;
+        set(gca, 'units', 'pixels');
         StereoRect = get(gca, 'position');
         Frame = getframe(fhsbs, StereoRect);                  	% Capture figure frame
     end

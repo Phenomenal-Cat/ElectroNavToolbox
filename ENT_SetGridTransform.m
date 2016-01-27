@@ -10,10 +10,9 @@
 % Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
 %==========================================================================
 
-function ENT_SetGridTransform(NiiFile)
+function ENT_SetGridTransform(NiiFile, TransformFile)
 
 
-clear all
 global Fig Grid nii FV
 
 %============= LOAD DATA
@@ -23,10 +22,11 @@ if nargin == 0
 %     NiiFile             = '/Volumes/rawdata/murphya/MRI/Dexter/20151203/Dexter_20151203_MDEFT_hi_ACPC.nii';
     NiiFile             = '/Volumes/rawdata/murphya/MRI/Dexter/20151203/Dexter_20151203_MDEFT_hi_ACPC_origin.nii';
     Grid.TformFile   	= '/Volumes/PROJECTS/murphya/EN_data/Subjects/Dexter/ManualXform_gad2.mat';
+else
+    Grid.TformFile   	= TransformFile;
 end
-nii = LoadMRI(NiiFile);
-nii.Filename    = NiiFile;
-
+nii                     = LoadMRI(NiiFile);
+nii.Filename            = NiiFile;
 [~,Grid.TformName]      = fileparts(Grid.TformFile);
 load(Grid.TformFile);
 Grid.Tform             	= T;

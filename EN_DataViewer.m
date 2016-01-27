@@ -60,6 +60,7 @@ if isempty(DefaultParamsFile) || numel(DefaultParamsFile)>1             % If def
     Defaults        = EN_Initialize(['ParamsFile_', CompName, '.mat'], Data.SubjectID);	% Run EN_Initialize to create new default params file for this computer
 else 
     load(DefaultParamsFile{1});                                         % Load default parameters
+    Defaults        = EN_Initialize(DefaultParamsFile{1}, Data.SubjectID);
 end
 if ~exist('SubjectID','var') 
     [Selection, Ok] = listdlg('ListString', {Defaults.SubjectID}, 'PromptString', 'Select subject', 'SelectionMode', 'single');
@@ -73,17 +74,11 @@ MRI.DefaultFile     = Defaults(SubjectIndx).MRI;                                
 %================ SET ADDITIONAL SUBJECT-SPECIFIC PARAMETERS
 switch Data.SubjectID
     case 'Layla'
-%         MRI.DefaultFile	= fullfile(SubjectDir, 'Layla_GridScan_ACPC.nii');
-%         MRI.DefaultFile = '/rawdata/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_MDEFT_postelgiloy_025mm_BET_Masked_rot.nii';
-%         MRI.DefaultFile = '/rawdata/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_FLASH_postelgiloy_iso_BET_aligned_rot.nii';
         Fig.Xlim        = [-16, 0];
-        StructuresOn    = [2,6,7,9,11];                                    % Pulvinar subdivisions default to 'on'      
-        
+        StructuresOn    = [2,6,7,9,11];                                    % Pulvinar subdivisions default to 'on'       
     case 'Dexter'
-%         MRI.DefaultFile	= fullfile(SubjectDir, 'Dexter_20150917_ACPC.nii');
         Fig.Xlim        = [0, 16];
         StructuresOn	= [2,4];                                            % Pulvinar subdivisions default to 'on'  
-        
     otherwise
         error(sprintf('SubjectID ''%s'' not recognized!', Data.SubjectID));
 end
@@ -213,7 +208,6 @@ Contact.Indx            = 1;                                                   	
 Fig.ZoomH               = zoom;                                               	% Create zoom object
 
 %================ Plot structures
-fullfile(SubjectDir,'VTKs')
 MeshFiles = wildcardsearch(fullfile(SubjectDir,'VTKs'),'*.vtk');
 Structures                      = Plot3DMeshes(MeshFiles);
 Structures.Materials.Ambient    = 0.3;                              

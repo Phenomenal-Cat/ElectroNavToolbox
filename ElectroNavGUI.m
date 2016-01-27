@@ -14,7 +14,7 @@ function h = ElectroNavGUI(SubjectID)
 % 	Graph Theory Toolbox:   http://www.mathworks.com/matlabcentral/fileexchange/5355-toolbox-graph
 %   Nifti toolbox:          http://www.mathworks.us/matlabcentral/fileexchange/8797-tools-for-nifti-and-analyze-image
 %
-% MRI DATA REQUIREMENTS:
+% MRI ATLAS REQUIREMENTS (OPTIONAL):
 %   NeuroMaps:  http://nitrc.org/projects/inia19/
 %   McLaren:    http://brainmap.wisc.edu/monkey.html
 %   Frey:       http://www.bic.mni.mcgill.ca/ServicesAtlases/Rhesus
@@ -86,7 +86,6 @@ Defaults.MRIRootDir     = [];
 Defaults.DateFormats    = {'yyyymmdd','ddmmyy'};   
 Session.Date            = date;
 Session.Subject         = Defaults.SubjectID;
-Session.GuideLength     = 27;                       % Default guidetube length (mm)
 
 
 %=============== CALCULATE ROTATION MATRICES
@@ -121,7 +120,7 @@ for e = ElectrodeNumbers                                                    % Fo
     Electrode(e).MicrodriveDepth    = 0;                                    % Maicrodrive readout depth (relative to start depth)
     Electrode(e).CurrentDepth       = 0;                                    % Total depth (mm)
     Electrode(e).IDColors         	= {'r','b','m','g','c'};              	% Electrode ID color
-    Electrode(e).GuideLength        = 25;                                   % Default guidetube length (mm)
+    Electrode(e).GuideLength        = 27;                                   % Default guidetube length (mm)
 end
 [Electrode.Selected]           = deal(1);  
 
@@ -852,7 +851,7 @@ function M = DrawMRI(Electrode)
             CurrentMRISlice = zeros(numel(X), numel(Y), numel(Z));
             CurrentAlpha = [];
         else
-      	%=============== GET SLICE DATA
+            %=============== GET SLICE DATA
             CurrentMRISlice = squeeze(Layer.MRI(Ln).img(X,Y,Z));
             if ~isempty(Layer.MRI(Ln).AlphaMaskVolume)
                 CurrentAlpha = squeeze(Layer.MRI(Ln).AlphaMaskVolume(X,Y,Z))*Layer.Opacity(Ln);                                     % Get current slice alpha layer
@@ -1023,7 +1022,7 @@ global Layer Fig
                 SelectedStructs{1}(strfind(SelectedStructs{1}, '_')) = ' ';                                     % Replace underscores with space
                 SelectedStructs{1}(1:2) = [];                                                                   % Remove hemisphere label (for Neuromaps)
                 XYZmm(3) = -XYZmm(3);
-                Layer.MRI(indx).text_handle = text(XYZmm(1), XYZmm(2), XYZmm(3), SelectedStructs{1});     % 
+                Layer.MRI(indx).text_handle = text(XYZmm(1), XYZmm(2), XYZmm(3), SelectedStructs{1});           % 
                 set(Layer.MRI(indx).text_handle,'Color',[1 1 1], 'fontsize', 18);                               % Set text appearance
             end
         end
@@ -1185,11 +1184,11 @@ global Electrode Contact
     coordinates = get(axesHandle,'CurrentPoint');
     Ypos = coordinates(1,2);                           
     delete(Electrode(Electrode(1).Selected).CurrentSelectedHandle);                                                             % Delete the previously selected contact highlight
-    if Electrode(Electrode(1).Selected).Tip==objectHandle
+    if Electrode(Electrode(1).Selected).Tip == objectHandle
         set(Electrode(Electrode(1).Selected).Tip, 'edgecolor',[1 1 1]);
      	set(Contact.InputHandle(1),'String','tip');                                                                             % Update text to show current contact #
         set(Contact.InputHandle(2),'String',' ');
-        Electrode(Electrode(1).Selected).CurrentSelected = 0;
+        Electrode(Electrode(1).Selected).CurrentSelected = nan;
     else
       	set(Electrode(Electrode(1).Selected).Tip, 'edgecolor','none');
         Electrode(Electrode(1).Selected).CurrentSelected = find(Electrode(Electrode(1).Selected).C==objectHandle)-1;          	% Find selected contact #
@@ -1608,7 +1607,10 @@ function FileSelect(hObj, Event, Indx, Indx2)
                                                
 
         case 3      %============================= EDIT DEFAULTS
-            Defaults = EN_Initialize;
+            [~,CompName] = system('hostname');
+            CompName(find(double(CompName)==10)) = [];
+            DefaultParamsFile = fullfile(Session.RootDir, 'Params', sprintf('ParamsFile_%s.mat', CompName));
+            Defaults = EN_Initialize(DefaultParamsFile, Session.Subject);
             
 
         case 4      %============================= CAPTURE figure as print-quality image
@@ -1768,7 +1770,7 @@ function EditSelect(hObj, Event, Indx)
             
         case 4      %============================ DELETE ELECTRODE
             if numel(Electrode)==1
-                error('USer attempted to delete only electrode! There must be a minimum of one electrode (/optrode/ cannula) per session.');
+                error('User attempted to delete only electrode! There must be a minimum of one electrode (/optrode/ cannula) per session.');
             end
             
             %======== Delete graphics objects
@@ -1790,7 +1792,8 @@ function EditSelect(hObj, Event, Indx)
             SessionParams(Session.InputHandle(3),[],3);             	% Update number of channels
             
         case 5  %============================ ADJUST GRID TRANSFORM MATRIX
-            Brain.Xform = EN_AdjustTform(Brain.Xform);
+            ENT_SetGridTransform(Defaults.MRI, Defaults.Xform);
+            
             
         case 6  %============================ ADJUST MRI APPEARANCE    
             

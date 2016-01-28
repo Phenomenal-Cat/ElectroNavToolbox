@@ -147,7 +147,7 @@ Brain.SurfaceColors     = [1 0 0;0 1 0;0 0 1;1 1 0;1 0 1;0 1 1];
 Brain.PlanesAlpha       = 0.4;                                                                     
 Brain.PlanesOn          = 1;                                         
 
-%===================== LOAD GRID SCAN AND ATLAS VOLUMES ===================
+%========================= LOAD VOLUMES ===================================
 Layer.Filenames       	= {Defaults.MRI, Defaults.Atlas};
 Layer.Names             = {'Native','Atlas'};       	
 Layer.Colormap          = [];                                        
@@ -157,7 +157,7 @@ Layer.CurrentStructure  = 1;
 Layer.Opacity           = [1, 0.5,0.5,1];                         	% Set default alpha transparency for each layer 
 Layer.Colors            = [0.5,0.5,0.5; 1 0 0; 0 1 0; 0 0 1];     	% Set default colors for each layer (RGB)
 Layer.Smoothing       	= [0, 0.5, 1];                              % Set default Gaussian kernel for each layer (mm)
-Layer.On                = [1 1 1 1];                              	% Set default layer visibility 
+Layer.On                = [1 0];                                    % Set default layer visibility 
 Layer.hsize             = [5 5];                                   	% Size of Gaussian smoothing kernel
 Layer.sigma             = zeros(1,numel(Layer.Names));           	% default sd of Gaussian (mm)
 Layer.SigmaMax          = 5;                                     	% maximum sd (mm)
@@ -1265,7 +1265,7 @@ global Electrode Session Contact Button Defaults
             set(Session.InputHandle(4), 'value', ElectrodeType);
             set(Session.InputHandle(5), 'string', num2str(Electrode(Electrode(1).Selected).ContactNumber));
           	SessionParams(Session.InputHandle(5),[],5);                                         % Update number of channels
-
+            Layer.M = DrawMRI(Electrode);                                                       % Draw new MRI sections
             
         case 4      %==================== Electrode type
             AllBrands = get(hObj,'String');

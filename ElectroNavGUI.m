@@ -595,7 +595,7 @@ end
 function Grid = Draw2DGrid(Grid,Position)
     global Fig
     Grid.Coordinates = [];
-    Grid.Object = [];
+    Grid.Object     = [];
     Grid.Perm(1) = FillCircle(Position([1,2]),Grid.OuterRadius,100,'y');
     hold on;
   	Grid.Perm(2) = plot([0 0],[-Grid.OuterRadius,Grid.OuterRadius],'-k');
@@ -622,6 +622,7 @@ function Grid = Draw2DGrid(Grid,Position)
     Labels(1) = xlabel('Medial-Lateral','Fontsize',Fig.FontSize);                                        
     Labels(2) = ylabel('Posterior-Anterior','Fontsize',Fig.FontSize);
     set(Grid.Object,'ButtonDownFcn',@GridClickCallback);                 	% Set callback function for grid hole selection via mouse
+    uistack(Grid.Perm(1), 'bottom');
 end
 
 

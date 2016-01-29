@@ -330,10 +330,11 @@ switch indx
         msgbox(sprintf('Volume saved to %s!',fullfile(path, file)), 'Volume saved');
         
     case 7          %=============== LOAD MESH
+        Fig = rmfield(Fig,'Mesh');
         [file, path]    = uigetfile({'*.vtk;*.obj;*.stl'},'Select surface mesh');
         Fig.Mesh.File   = fullfile(path, file);
         Fig.Mesh.FV     = ENT_LoadMesh(Fig.Mesh.File);
-        Response = inputdlg({'Mesh color (R,G,B)','Transparency (0-1)'},'Set mesh appearance',{'1 1 1','0.5'});
+        Response = inputdlg({'Mesh color (R,G,B)','Transparency (0-1)'},'Set mesh appearance',1,{'1 1 1','0.5'});
         Fig.Mesh.Facecolor = str2num(Response{1});
         Fig.Mesh.Facealpha = str2num(Response{2});
         axes(Fig.axh(1));

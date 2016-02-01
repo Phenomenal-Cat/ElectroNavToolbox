@@ -5,7 +5,7 @@
 % completed.
 %
 % ELECTRONAV TOOLBOX
-% Developed by Aidan Murphy © Copyleft 2015, GNU General Public License
+% Developed by Aidan Murphy © Copyleft 2016, GNU General Public License
 %==========================================================================
 
 function FigHandle = EN_About(Loading, temp)

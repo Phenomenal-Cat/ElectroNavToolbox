@@ -1,4 +1,4 @@
-function [ContactCoords, SessionParams] = EN_GetContactCoordinates(Dates, SubjectDir)
+function [ContactCoords, SessionParams] = EN_GetContactCoordinates(Dates, SubjectID)
 
 %======================== EN_GetContactCoordinates.m ======================
 % This file reads the recording history file for the specified subject, which
@@ -18,8 +18,8 @@ function [ContactCoords, SessionParams] = EN_GetContactCoordinates(Dates, Subjec
 %               'DD-MMM-YYYY' or 'YYYYMMDD'. Leaving Dates input empty
 %               allows the user to manually select dates from a list of all
 %               dates in the Excel file.
-%   SubjectDir:	the full path of the subject directory (/Subjects/SubjectID/)
-%               containing: 
+%   SubjectID:	string containing subject ID. This will be used to load the
+%               default parameters saved for the specified subject, including:
 %               1)  an Excel or .cvs file containing all electrode position 
 %                   data for all session dates.
 %               2)  a .mat file containing the 4x4 transformation matrix for
@@ -42,31 +42,20 @@ function [ContactCoords, SessionParams] = EN_GetContactCoordinates(Dates, Subjec
 %   17/03/2015 - Simplified and grid -> ACPC coordinate transform added
 %
 % ELECTRONAV TOOLBOX
-% Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
+% Developed by Aidan Murphy, © Copyleft 2014-2016, GNU General Public License
 %========================================================================== 
 
 
-%% =========================== CHECK INPUTS AND FILES
-if ~exist('SubjectDir','var') || isempty(SubjectDir)
-    SubjectDir = uigetdir('','Select a subject directory');
+%% =========================== CHECK INPUTS AND LOCATE FILES
+if ~exist('SubjectID','var')
+    SubjectID = [];
 end
-RootDir = fileparts(mfilename('fullpath'));
-if ~isdir(SubjectDir)
-    error('No directory found for ''%s''!', SubjectDir);
-end
-HistoryFile = wildcardsearch(SubjectDir,'*.xls');                   
-if isempty(HistoryFile)
-    HistoryFile = wildcardsearch(SubjectDir,'*.csv');
-end
-HistoryFile = HistoryFile{1};
-if isempty(HistoryFile)
-    error('No recording history file (.xls/.csv) was found in ''%s''!', SubjectDir);
-end
-TformFile = wildcardsearch(SubjectDir,'*Xform*.mat');
-if ~isempty(TformFile)
-    fprintf('Applying transform matrix from %s...\n', TformFile{1});
-	load(TformFile{1});
-end
+
+Defaults    = ENT_LoadDefaults(SubjectID);
+HistoryFile = Defaults.HistoryFile;
+TformFile   = Defaults.Xform;
+load(TformFile);
+
 if ~exist('T','var')  
     fprintf(['\nWARNING: \tno transformation matrix (.mat) was found in %s!\n',...
     '\t\tReturned coordinates with be in grid-centred space!\n'], SubjectDir);
@@ -82,7 +71,8 @@ if exist('Dates','var') && ~isempty(Dates)
     end
 %     Dates = datestr(sort(datenum(Dates)));                           	% Check date formats and sort in chronological order
     Dates = datestr(datenum(Dates));
-    SessionParams = ENT_LoadSessionParams(HistoryFile, cellstr(Dates));	% Get electrode location information
+    SessionParams = ENT_LoadSessionParams(HistoryFile, cellstr(Dates)); ...
+    % Get electrode location information
 else
     SessionParams = ENT_LoadSessionParams(HistoryFile);               	% Get electrode location information
 end

@@ -77,8 +77,8 @@ switch Data.SubjectID
         Fig.Xlim        = [-16, 0];
         StructuresOn    = [2,6,7,9,11];                                    % Pulvinar subdivisions default to 'on'       
     case 'Dexter'
-        Fig.Xlim        = [0, 16];
-        StructuresOn	= [2,4];                                            % Pulvinar subdivisions default to 'on'  
+        Fig.Xlim        = [0, 18];
+        StructuresOn	= [2];                                              % Pulvinar subdivisions default to 'on'  
     otherwise
         error(sprintf('SubjectID ''%s'' not recognized!', Data.SubjectID));
 end

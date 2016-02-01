@@ -11,24 +11,24 @@
 function ENT_CompareVolumes(NiiFile1, NiiFile2)
 global Fig Nii
 
-% if nargin < 2
-%     DefaultPath = '/Volumes/rawdata/murphya/MRI/';
-%     [File1, Path] = uigetfile({'*.nii;*.img'},'Select first MR volume', DefaultPath);
-%     NiiFile1 = fullfile(Path, File1);
-%     [File2, Path] = uigetfile({'*.nii;*.img'},'Select second MR volume', Path);
-%     NiiFile2 = fullfile(Path, File2);
-% end
+if nargin < 2
+    DefaultPath = '/Volumes/rawdata/murphya/MRI/';
+    [File1, Path] = uigetfile({'*.nii;*.img'},'Select first MR volume', DefaultPath);
+    NiiFile1 = fullfile(Path, File1);
+    [File2, Path] = uigetfile({'*.nii;*.img'},'Select second MR volume', Path);
+    NiiFile2 = fullfile(Path, File2);
+end
 
-% NiiFile1 = '/Volumes/rawdata/murphya/MRI/Layla/20150515_preElgiloy/r20150519_PreElgiloy_MDEFT_025mm_BET.nii';
-% NiiFile2 = '/Volumes/RAWDATA/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_MDEFT_postelgiloy_025mm_BET_Masked_rot.nii';
-
-% NiiFile1 = '/Volumes/rawdata/murphya/MRI/Layla/20150515_preElgiloy/r20150519_PreElgiloy_FLASH_025mm_Aligned_BET.nii';
-% NiiFile2 = '/Volumes/RAWDATA/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_FLASH_postelgiloy_iso_BET_aligned_rot.nii';
-
-% NiiFile1 = '/Volumes/rawdata/murphya/MRI/Dexter/20150917/Dexter_20150917_ACPC_resliced.nii';
-NiiFile2 = '/Volumes/rawdata/murphya/MRI/Dexter/20151209/Dexter_20151209_ACPC.nii';
-NiiFile1 = '/Volumes/rawdata/murphya/MRI/Dexter/20151209/Dexter_20151209_ACPC.nii';
-% NiiFile2 = '/Volumes/RAWDATA/murphya/MRI/Dexter/20140219/Dexter_meanT1_BET_resliced.nii';
+% % NiiFile1 = '/Volumes/rawdata/murphya/MRI/Layla/20150515_preElgiloy/r20150519_PreElgiloy_MDEFT_025mm_BET.nii';
+% % NiiFile2 = '/Volumes/RAWDATA/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_MDEFT_postelgiloy_025mm_BET_Masked_rot.nii';
+% 
+% % NiiFile1 = '/Volumes/rawdata/murphya/MRI/Layla/20150515_preElgiloy/r20150519_PreElgiloy_FLASH_025mm_Aligned_BET.nii';
+% % NiiFile2 = '/Volumes/RAWDATA/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_FLASH_postelgiloy_iso_BET_aligned_rot.nii';
+% 
+% % NiiFile1 = '/Volumes/rawdata/murphya/MRI/Dexter/20150917/Dexter_20150917_ACPC_resliced.nii';
+% NiiFile2 = '/Volumes/rawdata/murphya/MRI/Dexter/20151209/Dexter_20151209_ACPC.nii';
+% NiiFile1 = '/Volumes/rawdata/murphya/MRI/Dexter/20151209/Dexter_20151209_ACPC.nii';
+% % NiiFile2 = '/Volumes/RAWDATA/murphya/MRI/Dexter/20140219/Dexter_meanT1_BET_resliced.nii';
 
 
 %======================= LOAD VOLUMES

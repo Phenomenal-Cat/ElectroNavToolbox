@@ -7,13 +7,13 @@
 %==========================================================================
 
 
-VTKdir = '/Volumes/projects/murphya/EN_data/Subjects/Layla/VTKs/';
-VTKfiles = dir([VTKdir,'*.vtk']);
+VTKdir      = '/Volumes/projects/murphya/EN_data/Subjects/Layla/VTKs/';
+VTKfiles    = dir([VTKdir,'*.vtk']);
 
-ENRootDir = '/Volumes/projects/murphya/Toolboxes/ElectroNavToolbox';
-Atlasfile = '/Volumes/projects/murphya/EN_data/Atlases/inia19/inia19-NeuroMaps.nii';
-MRIfile = '/Volumes/projects/murphya/EN_data/Atlases/inia19/inia19-t1-brain.nii';
-Skullfile = '/Volumes/APM_1/MacaqueAtlasTools/Niftii/Skulls/Skull_ITK_2.vtk';
+ENRootDir   = '/Volumes/projects/murphya/Toolboxes/ElectroNavToolbox';
+Atlasfile   = '/Volumes/projects/murphya/EN_data/Atlases/inia19/inia19-NeuroMaps.nii';
+MRIfile     = '/Volumes/projects/murphya/EN_data/Atlases/inia19/inia19-t1-brain.nii';
+Skullfile   = '/Volumes/APM_1/MacaqueAtlasTools/Niftii/Skulls/Skull_ITK_2.vtk';
 
 Save = 0;                                   % Automatically save figure image?
 smooth = 5;                                 % Smoothing kernel diameter (voxels)

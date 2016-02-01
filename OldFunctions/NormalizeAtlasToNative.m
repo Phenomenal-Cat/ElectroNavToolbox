@@ -12,20 +12,20 @@ function WarpFile = ENT_NormalizeAtlasToNative(NativeFile, Template, LesionMask)
 
 %============ Default settings
 if nargin == 0
-    SubjectDir = fullfile(cd,'/Subjects/Layla');
-    NativeFile = 'Layla_GridScan_ACPC_BET_Masked.nii';
-    LesionMask = 'Layla_ACPC_LesionMask.nii';
-    Template = 'inia19-t1-brain.nii';
-    AtlasFile = 'inia19-NeuroMaps.nii';
+    SubjectDir  = fullfile(cd,'/Subjects/Layla');
+    NativeFile  = 'Layla_GridScan_ACPC_BET_Masked.nii';
+    LesionMask  = 'Layla_ACPC_LesionMask.nii';
+    Template    = 'inia19-t1-brain.nii';
+    AtlasFile   = 'inia19-NeuroMaps.nii';
 end
 
-TemplateSmooth = 0;
-SourceSmooth = 8;
+TemplateSmooth  = 0;
+SourceSmooth    = 8;
 
 
 
 %=========== Check contrast similarity between volumes
-NativeNii = load_nii(fullfile(SubjectDir,NativeFile));
+NativeNii   = load_nii(fullfile(SubjectDir,NativeFile));
 TemplateNii = load_nii(fullfile(SubjectDir,Template));
 
 figure;

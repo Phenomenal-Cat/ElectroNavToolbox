@@ -21,7 +21,7 @@ function Electrode = ENT_GetElectrodeParams(Electrode)
 
 %================ CHECK INPUTS
 Brands = {'AO','NN','PLX','TR'};
-LineNumber = 22;                                                            % Line number to edit from
+LineNumber = 52;                                                            % Line number to edit from
 if nargin == 0                                                              % If no input variable...
     Electrode = Brands;                                                   	% Return list of accepted inputs
     return;                                                                 % Exit function

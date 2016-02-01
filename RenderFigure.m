@@ -2,18 +2,18 @@ function [] = RenderFigure
 
 % Pulvinar targeting figure
 
-Target = [0 0];
-TargetDepth = -50;
-Electrode.CurrentDepth = -35;
+Target              = [0 0];
+TargetDepth         = -50;
+Depth               = -35;
 
-Brain.Specular = 0.5;
-Brain.Ambient = 0.2;
-Brain.Diffuse = 0.6;
-Brain.Alpha = 1;%0.4;
-Brain.RGB = [0.5 0.5 0.5];
-Brain.DefaultView = [-120 20];
+Brain.Specular      = 0.5;
+Brain.Ambient       = 0.2;
+Brain.Diffuse       = 0.6;
+Brain.Alpha         = 1;%0.4;
+Brain.RGB           = [0.5 0.5 0.5];
+Brain.DefaultView   = [-120 20];
 % Brain.ChamberAngle = 38;
-Brain.ChamberAngle = 0;
+Brain.ChamberAngle  = 0;
 
 Surface.Atlas = 'NeuroMaps';
 
@@ -51,57 +51,10 @@ Grid = ENT_GetGridParams('19mm_cylindrical');
 for dim = 1:3
     GridFV.vertices(:,dim) = Grid.vertices(:,dim)+Brain.ChamberOrigin(dim);
 end
-GridFV.faces = Grid.faces;
-
-
-
-Grid.HoleDiameter = 0.5;                                                    % Grid hole diameter (mm)
-Grid.InterHoleSpacing = 1;                                                  % Distance between centres of adjacent holes (mm)
-Grid.HolesPerColumn = [5 9 11 13 15 15 17 17 17 17 17 15 15 13 11 9 5];     % Number of holes per column
-Grid.HolesPerDim = numel(Grid.HolesPerColumn);                              
-Grid.TotalHoles = sum(Grid.HolesPerColumn);                                 % Total number of grid holes
-Grid.OuterRadius = Grid.InterHoleSpacing*(Grid.HolesPerDim+1)/2;            % Outer radius of grid
-Grid.Width = 10;  
-Grid.Height = 10;
-Guide.Top = 10;
-Grid.RGB = [1 1 0];
-
-Electrode.Type = 'NN32';
-switch Electrode.Type
-    
-    case 'PX24'                    %============ Plexon V-probe 24 channel linear multi-electrode array (microfil)
-     	Electrode.Length = 90;                  % Full electrode shaft length (mm)
-        Electrode.Diameter = 0.2;               % shadt diameter (mm)
-        Electrode.TipLength = 1.5;              % distance from tip to first contact (mm)
-        Electrode.ContactSpacing = 0.2;         % distance between adjacent contacts (mm)
-        Electrode.ContactDiameter = 0.1;        % Exagerate contact diameter for visualization
-        Electrode.ContactNumber = 24;           % total number of contacts
-        Electrode.ContactLength = Electrode.ContactSpacing*Electrode.ContactNumber;
-        Electrode.Colour = [1 1 0];             
-        Electrode.ContactColour = [1 0 0];  
-        
-    case 'AO24'                     %============ Alpha Omega 24 channel linear multi-electrode array (microfil)
-        Electrode.Length = 70;                  % Full electrode shaft length (mm)
-        Electrode.Diameter = 0.3;               % shadt diameter (mm)
-        Electrode.TipLength = 1.5;              % distance from tip to first contact (mm)
-        Electrode.ContactSpacing = 0.3;         % distance between adjacent contacts (mm)
-        Electrode.ContactDiameter = 0.1;        % Exagerate contact diameter for visualization
-        Electrode.ContactNumber = 24;           % total number of contacts
-        Electrode.ContactLength = Electrode.ContactSpacing*Electrode.ContactNumber;
-        Electrode.Colour = [0 1 0];             
-        Electrode.ContactColour = [1 0 0];      
-        
-    case 'NN32'                     %============ NeuroNexus 32 channel linear multi-electrode array
-        Electrode.Length = 60;
-        Electrode.Diameter = 0.3;
-        Electrode.TipLength = 1;
-        Electrode.ContactSpacing = 0.3;
-        Electrode.ContactDiameter = 0.1;        % Exagerate contact diameter for visualization
-        Electrode.ContactNumber = 32;
-        Electrode.ContactLength = Electrode.ContactSpacing*Electrode.ContactNumber;
-        Electrode.Colour = [0 0 1];
-        Electrode.ContactColour = [1 0 0];
-end
+GridFV.faces    = Grid.faces;
+Electrode.Type  = 'PLX24';
+Electrode       = ENT_GetElectrodeParams(Electrode);
+Electrode.CurrentDepth = Depth;
 
 [v,f] = read_vtk(Surface.VTKfile);
 FV.vertices = v';

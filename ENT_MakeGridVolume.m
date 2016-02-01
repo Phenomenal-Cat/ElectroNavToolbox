@@ -1,4 +1,4 @@
-function ENT_MakeGridVolume(GridFile, HeaderSource)
+function ENT_MakeGridVolume(GridFile, HeaderSource, VoxelSize)
 
 %========================== ENT_MakeGridVolume.m ==========================
 % Converts a 3D model of a recording grid (saved in .stl/.obj/.ply/.vtk 
@@ -10,6 +10,7 @@ function ENT_MakeGridVolume(GridFile, HeaderSource)
 %   GridFile:       Full path of 3D grid file (.stl/.obj/.ply/.vtk) to convert 
 %   HeaderSource:   Full path of nifti (.nii) file to copy scanner
 %                   alignment data from.
+%   VoxelSize:      dimensions of a single voxel in mm (1x3)
 %
 % REQUIREMENTS (provided in ENSubfunctions folder):
 %   Voxelize.m:     http://www.mathworks.com/matlabcentral/fileexchange/27390-mesh-voxelisation
@@ -20,11 +21,18 @@ function ENT_MakeGridVolume(GridFile, HeaderSource)
 % REVISIONS:
 %   09/01/2014 - Written by Aidan Murphy (murphyap@mail.nih.gov)
 %   05/02/2014 - Updated to copy scanner alignment data from existing header
+%
+% ELECTRONAV TOOLBOX
+% Developed by Aidan Murphy © Copyleft 2016, GNU General Public License
 %==========================================================================
+
 if nargin < 2
-    GridFile    = 'Grid.stl';                                     	% Specify which grid file to convert
-    HeaderSource = 'Layla_fullT1_20091002_MangoBET.nii';          	% Scan to copy scanner alignment data from
+    GridFile     = 'Grid.stl';                                              % Specify which grid file to convert
+    [file, path] = uigetfile('*.nii','Select volume to copy header from'); 	% Scan to copy scanner alignment data from
+    HeaderSource = fullfile(path, file);
+    VoxelSize   = [0.25 0.25 0.25];                                         % Set default voxel size to 0.25mm isotropic
 end
+
 addpath(genpath(fullfile(cd,'ENSubfunctions')));                    % Add required subfunctions to path
 GridFormat  = GridFile(end-2:end);                                	% Get input file format
 switch GridFormat                                                   % Check input format
@@ -45,12 +53,13 @@ switch GridFormat                                                   % Check inpu
     	return;
 end
 GridSize    = max(v)-min(v);                                                % Get grid dimensions
-VoxelSize   = [0.25 0.25 0.25];                                             % Set default voxel size to 0.25mm isotropic
 DimSize     = GridSize.*VoxelSize;                                          % Set volume grid size
 Origin      = DimSize/2;                                                    % Find origin
 Origin(3)   = 0;                                                            % Set origin of z axis to 0
 [gridOUTPUT,gridCOx,gridCOy,gridCOz] = Voxelize(DimSize(1),DimSize(2),DimSize(3));%,GridFile);
 Gridnii     = make_nii(double(gridOUTPUT),VoxelSize,Origin,[],'Grid');      % Create a new .nii file
 Brainnii    = load_nii_hdr(HeaderSource);                                   % Load selected volume header
-Gridnii.hdr.hist = hdr.hist;                                                % Copy scanner alignment to header                         
-save_nii(Gridnii,'Grid/Grid.nii');                                          % Save volume as .nii
+Gridnii.hdr.hist = hdr.hist;                                                % Copy scanner alignment to header 
+[path, file]  = fileparts(GridFile);                                        
+OutputFile  = fullfile(path, [file, '.nii']);                               % Create output file name
+save_nii(Gridnii,OutputFile);                                               % Save volume as .nii

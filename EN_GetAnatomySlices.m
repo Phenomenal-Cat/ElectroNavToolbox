@@ -1,7 +1,9 @@
-function Anatomy = EN_GetAnatomySlices(SubjectID, Plane, SlicePos, AxesLims, Type)
+function Anatomy = EN_GetAnatomySlices(SubjectID, Plane, SlicePos, AxesLims, Type, TestPlot)
 
 %========================== EN_GetAnatomySlices.m =========================
-% This function
+% This function returns slices of anatomical data for a given subject
+% within a range specified by the input parameters. The output data can be
+% from either an MRI volume, outlines of anatomical structures, or both.
 %
 % INPUTS:
 %   SubjectID:      String contaioning subject ID
@@ -11,13 +13,19 @@ function Anatomy = EN_GetAnatomySlices(SubjectID, Plane, SlicePos, AxesLims, Typ
 %                   (in mm relative to the anterior commisure), for each
 %                   plane.
 %   Type:           1 = MRI; 2 = structure outlines; 3 = both;
+%   TestPlot:       set to 1 to plot the anatomy images in a new figure.
+%
+% OUTPUT:
+%   Anatomy:        a 3D matrix of size XxYxN, where N is the number of
+%                   slices requested and X and Y are the number of voxels
+%                   within the axes limits requested. 
 %
 % EXAMPLE:
 %   AxesLims = [0, 16; -30, 10; -20, 20];
-%   Anatomy = EN_GetAnatomySlices('Dexter', 1, 0:2:14, AxesLims, 1);
+%   Anatomy = EN_GetAnatomySlices('Dexter', 2, -20:2:-10, AxesLims, 3, 1);
 %
 % ELECTRONAV TOOLBOX
-% Developed by Aidan Murphy © Copyleft 2016, GNU General Public License
+% Developed by Aidan Murphy © Copyleft 2014-2016, GNU General Public License
 %==========================================================================
 
 %================ CHECK INPUTS
@@ -25,7 +33,7 @@ if (size(AxesLims)~= [3,2])
     error('AxesLims input must be a 3 row by 2 column matrix')
 end
 Defaults    = ENT_LoadDefaults(SubjectID);
-PlotIms     = 1;
+
 
 %================ GET REQUESTED SLICES FROM MRI
 if ismember(Type, [1,3])
@@ -54,6 +62,7 @@ if ismember(Type, [1,3])
         end
     end
 
+    Anatomy = permute(Anatomy,[2,1,3]);     % 
 end
 
 
@@ -64,8 +73,8 @@ if ismember(Type, [2,3])
         error('No .vtk surfaces found in %s!', Defaults.VTKdir);
     else
         for m = 1:numel(PulvMesh)
-            [v,f] = read_vtk(PulvMesh{m});
-            
+%             [v,f] = read_vtk(PulvMesh{m});
+            ENT_MakeGridVolume(PulvMesh{m}, Defaults.MRI);
         
             
             
@@ -73,16 +82,24 @@ if ismember(Type, [2,3])
     end
 end
 
-Anatomy = permute(Anatomy,[2,1,3]);     % 
+
 
 
 %================ PLOT DATA
-if PlotIms == 1
+if TestPlot == 1
     figure;
     axh = tight_subplot(1, numel(SlicePos), 0.02, 0.02, 0.02);
     for S = 1:numel(SlicePos)
         axes(axh(S));
-        imagesc(Anatomy(:,:,S));
+        imh(S) = imagesc(Anatomy(:,:,S));
+        switch Plane
+            case 1
+                set(imh(S),'xdata', AxesLims(2,:),'ydata', AxesLims(3,:));
+            case 2
+                set(imh(S),'xdata', AxesLims(1,:),'ydata', AxesLims(3,:));
+            case 3
+                set(imh(S),'xdata', AxesLims(1,:),'ydata', AxesLims(2,:));
+        end
         axis equal tight xy
         title(sprintf('%.1f mm', SlicePos(S)));
     end

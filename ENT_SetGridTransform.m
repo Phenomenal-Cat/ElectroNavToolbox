@@ -108,7 +108,7 @@ set(Fig.MRI.InputHandle(9), 'value', Fig.SliceView);
 Fig.Grid.BoxPos      = [0.75,0.2,0.2,0.3];
 Fig.Grid.InputDim    = [150 20];
 Fig.Grid.InputSizes  = [150, 150, 40, 40, 60, 100, 100];
-Fig.Grid.Labels      = {'Grid type','Transform matrix','Origin (mm)','Rotation','Transparency','Add trajectory','Save transform'};
+Fig.Grid.Labels      = {'Grid type','Transform matrix','Origin (mm)','Rotation (deg)','Transparency (0-1)','Add trajectory','Save transform'};
 Fig.Grid.Style       = {'popupmenu','pushbutton','edit','edit','edit','pushbutton','pushbutton'};
 Fig.Grid.List        = {{'19mm cylindrical'}, Grid.TformName, Grid.Trans, Grid.RotDeg, Grid.Alpha, 'Add', 'Save'};
 Fig.Grid.UIhandle    = uipanel('Title','Grid','FontSize', Fig.UIFontsize,'BackgroundColor',Fig.Background,'Units','normalized','Position',Fig.Grid.BoxPos);

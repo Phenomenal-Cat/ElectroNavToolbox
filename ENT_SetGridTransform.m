@@ -422,6 +422,11 @@ switch indx
             set(Fig.Grid.MultiInputH(4,n), 'string', num2str(Grid.RotDeg(n)));
         end
         set(Grid.tformHandle, 'Matrix', Grid.Tform);
+       	if Fig.SliceView == 0
+            UpdateSlices(Grid.SliceIndex);
+        else
+            UpdateSlices(nii.OriginVox);
+        end
         
     case 3      %=============== CHANGE ORIGIN
         Grid.Trans(indx2)   = str2num(get(hObj, 'string'));

@@ -245,7 +245,8 @@ global Fig Grid nii FV
     Fig.lineh(2,2) = plot(xlim, [0 0], '--r');
     Grid.OriginLH(1,1) = plot(nii.AxLims(:,2)', repmat(Grid.Trans(1),[1,2]), '-g');
     Grid.OriginLH(1,2) = plot(repmat(Grid.Trans(2),[1,2]), nii.AxLims(:,1)', '-g');
-    Grid.OrientPlot(1) = plot([Grid.Trans(2)-8, Grid.Trans(2)+8], repmat(Grid.Trans(1),[1,2]), '-g', 'linewidth', 3);
+ 	[xr,yr] = pol2cart(Grid.RotRad(3), [-Grid.Radius, Grid.Radius]);
+    Grid.OrientPlot(1) = plot(xr+Grid.Trans(2), yr+Grid.Trans(1), '-g', 'linewidth', 3);
     xlabel('Y (mm)', 'fontsize', 14);
     ylabel('X (mm)', 'fontsize', 14);
     title('Axial', 'fontsize', 16);
@@ -258,7 +259,8 @@ global Fig Grid nii FV
     Fig.lineh(3,2) = plot(xlim, [0 0], '--r');
   	Grid.OriginLH(2,1) = plot(nii.AxLims(:,2)', repmat(Grid.Trans(3),[1,2]), '-g');
   	Grid.OriginLH(2,2) = plot(repmat(Grid.Trans(2),[1,2]), nii.AxLims(:,3)', '-g');
-    Grid.OrientPlot(2) = plot([Grid.Trans(2)-8, Grid.Trans(2)+8], repmat(Grid.Trans(3),[1,2]), '-g', 'linewidth', 3);
+    [xr,yr] = pol2cart(Grid.RotRad(1), [-Grid.Radius, Grid.Radius]);
+    Grid.OrientPlot(2) = plot(xr+Grid.Trans(2), yr+Grid.Trans(3), '-g', 'linewidth', 3);
     xlabel('Y (mm)', 'fontsize', 14);
     ylabel('Z (mm)', 'fontsize', 14);
     title('Sagittal', 'fontsize', 16);
@@ -271,7 +273,8 @@ global Fig Grid nii FV
     Fig.lineh(4,2) = plot(xlim, [0 0], '--r');
    	Grid.OriginLH(3,1) = plot(nii.AxLims(:,1)', repmat(Grid.Trans(3),[1,2]), '-g');
    	Grid.OriginLH(3,2) = plot(repmat(Grid.Trans(1),[1,2]), nii.AxLims(:,3)', '-g');
-    Grid.OrientPlot(3) = plot([Grid.Trans(1)-8, Grid.Trans(1)+8], repmat(Grid.Trans(3),[1,2]), '-g', 'linewidth', 3);
+    [xr,yr] = pol2cart(Grid.RotRad(2), [-Grid.Radius, Grid.Radius]);
+    Grid.OrientPlot(3) = plot(xr+Grid.Trans(1), yr+Grid.Trans(3), '-g', 'linewidth', 3);
     xlabel('X (mm)', 'fontsize', 14);
     ylabel('Z (mm)', 'fontsize', 14);
     title('Coronal', 'fontsize', 16);
@@ -306,20 +309,12 @@ global Fig Grid nii
     set(Grid.OriginLH(3,2), 'xdata', repmat(Grid.Trans(1),[1,2]), 'ydata', nii.AxLims(:,3)');
 
     %============= PLOT GRID ORIENTATION
-    for i = 1:3
-        
-        switch i
-            case 1
-                [xr,yr] = pol2cart(Grid.RotRad(3), repmat(Grid.Radius,[1,2]));
-                set(Grid.OrientPlot(1), 'xdata', xr+Grid.Trans(2), 'ydata', yr+Grid.Trans(1));
-            case 2
-                [xr,yr] = pol2cart(Grid.RotRad(1), repmat(Grid.Radius,[1,2]));
-                set(Grid.OrientPlot(2), 'xdata', xr+Grid.Trans(2), 'ydata', yr+Grid.Trans(3));
-            case 3
-                [xr,yr] = pol2cart(Grid.RotRad(2), repmat(Grid.Radius,[1,2]));
-                set(Grid.OrientPlot(3), 'xdata', xr+Grid.Trans(1), 'ydata', yr+Grid.Trans(3));
-        end
-    end
+    [xr,yr] = pol2cart(Grid.RotRad(3), [-Grid.Radius, Grid.Radius]);
+    set(Grid.OrientPlot(1), 'xdata', xr+Grid.Trans(2), 'ydata', yr+Grid.Trans(1));
+    [xr,yr] = pol2cart(Grid.RotRad(1), [-Grid.Radius, Grid.Radius]);
+    set(Grid.OrientPlot(2), 'xdata', xr+Grid.Trans(2), 'ydata', yr+Grid.Trans(3));
+    [xr,yr] = pol2cart(Grid.RotRad(2), [-Grid.Radius, Grid.Radius]);
+    set(Grid.OrientPlot(3), 'xdata', xr+Grid.Trans(1), 'ydata', yr+Grid.Trans(3));
 
     for ax = 2:4
         axes(Fig.axh(ax));

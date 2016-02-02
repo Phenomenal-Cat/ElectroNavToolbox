@@ -23,13 +23,15 @@ function ENT_MakeGridVolume(GridFile, HeaderSource, VoxelSize)
 %   05/02/2014 - Updated to copy scanner alignment data from existing header
 %
 % ELECTRONAV TOOLBOX
-% Developed by Aidan Murphy © Copyleft 2016, GNU General Public License
+% Developed by Aidan Murphy © Copyleft 2014-2016, GNU General Public License
 %==========================================================================
 
 if nargin < 2
     GridFile     = 'Grid.stl';                                              % Specify which grid file to convert
     [file, path] = uigetfile('*.nii','Select volume to copy header from'); 	% Scan to copy scanner alignment data from
     HeaderSource = fullfile(path, file);
+end
+if nargin < 3
     VoxelSize   = [0.25 0.25 0.25];                                         % Set default voxel size to 0.25mm isotropic
 end
 
@@ -52,11 +54,11 @@ switch GridFormat                                                   % Check inpu
                 '\t- Visualization Toolkit (.VTK)\n']);
     	return;
 end
-GridSize    = max(v)-min(v);                                                % Get grid dimensions
+GridSize    = max(v')-min(v');                                             	% Get grid dimensions
 DimSize     = GridSize.*VoxelSize;                                          % Set volume grid size
 Origin      = DimSize/2;                                                    % Find origin
 Origin(3)   = 0;                                                            % Set origin of z axis to 0
-[gridOUTPUT,gridCOx,gridCOy,gridCOz] = Voxelize(DimSize(1),DimSize(2),DimSize(3));%,GridFile);
+gridOUTPUT  = VOXELISE(DimSize(1),DimSize(2),DimSize(3),GridFile,'xyz');    
 Gridnii     = make_nii(double(gridOUTPUT),VoxelSize,Origin,[],'Grid');      % Create a new .nii file
 Brainnii    = load_nii_hdr(HeaderSource);                                   % Load selected volume header
 Gridnii.hdr.hist = hdr.hist;                                                % Copy scanner alignment to header 

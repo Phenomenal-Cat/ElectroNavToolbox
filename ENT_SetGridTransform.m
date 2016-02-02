@@ -154,7 +154,7 @@ end
 function nii = LoadMRI(NiiFile)
     nii                 = load_nii(NiiFile);                            % Load anatomical volume
     [~, nii.filename]   = fileparts(nii.fileprefix);
-    nii.OriginVox     	= nii.hdr.hist.originator(1:3); 
+    nii.OriginVox     	= round(nii.hdr.hist.originator(1:3)); 
     nii.VoxDim          = nii.hdr.dime.pixdim(2:4);
     nii.DimVox          = nii.hdr.dime.dim(2:4);
     nii.DimMm           = nii.VoxDim.*nii.DimVox;
@@ -330,17 +330,20 @@ switch indx
         msgbox(sprintf('Volume saved to %s!',fullfile(path, file)), 'Volume saved');
         
     case 7          %=============== LOAD MESH
-        Fig = rmfield(Fig,'Mesh');
         [file, path]    = uigetfile({'*.vtk;*.obj;*.stl'},'Select surface mesh');
-        Fig.Mesh.File   = fullfile(path, file);
-        Fig.Mesh.FV     = ENT_LoadMesh(Fig.Mesh.File);
-        Response = inputdlg({'Mesh color (R,G,B)','Transparency (0-1)'},'Set mesh appearance',1,{'1 1 1','0.5'});
-        Fig.Mesh.Facecolor = str2num(Response{1});
-        Fig.Mesh.Facealpha = str2num(Response{2});
+      	if ~isfield(Fig, 'Mesh')
+            Fig.MeshCount = 1;
+        else
+        	Fig.MeshCount = Fig.MeshCount+1;
+        end
+        Fig.Mesh(Fig.MeshCount).File   = fullfile(path, file);
+        Fig.Mesh(Fig.MeshCount).FV     = ENT_LoadMesh(Fig.Mesh(Fig.MeshCount).File);
+        Response = inputdlg({'Mesh color (R,G,B)','Transparency (0-1)'},'Set mesh appearance',1,{'1 0 0','0.5'});
+        Fig.Mesh(Fig.MeshCount).Facecolor = str2num(Response{1});
+        Fig.Mesh(Fig.MeshCount).Facealpha = str2num(Response{2});
         axes(Fig.axh(1));
-        Fig.Mesh.H      = patch(Fig.Mesh.FV, 'edgecolor','none','facecolor', Fig.Mesh.Facecolor,'facealpha',Fig.Mesh.Facealpha);
-        
-        
+        Fig.Mesh(Fig.MeshCount).H      = patch(Fig.Mesh(Fig.MeshCount).FV, 'edgecolor','none','facecolor', Fig.Mesh(Fig.MeshCount).Facecolor,'facealpha',Fig.Mesh(Fig.MeshCount).Facealpha);
+
 end
 
 

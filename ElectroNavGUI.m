@@ -601,7 +601,7 @@ function Grid = Draw2DGrid(Grid,Position)
   	Grid.Perm(2) = plot([0 0],[-Grid.OuterRadius,Grid.OuterRadius],'-k');
     Grid.Perm(3) = plot([-Grid.OuterRadius,Grid.OuterRadius],[0 0],'-k');
     try                                                                     
-        set(Grid.Perm([2,3]),'hittest','off','PickableParts','none');       % 'PickableParts' line property from R2014a
+        set(Grid.Perm,'hittest','off','PickableParts','none');       % 'PickableParts' line property from R2014a
     end
     for i = 1:Grid.HolesPerDim
         for h = 1:Grid.HolesPerColumn(i)

@@ -42,7 +42,7 @@ function [ContactCoords, SessionParams] = EN_GetContactCoordinates(Dates, Subjec
 %   17/03/2015 - Simplified and grid -> ACPC coordinate transform added
 %
 % ELECTRONAV TOOLBOX
-% Developed by Aidan Murphy, © Copyleft 2014-2016, GNU General Public License
+% Developed by Aidan Murphy, ï¿½ Copyleft 2014-2016, GNU General Public License
 %========================================================================== 
 
 

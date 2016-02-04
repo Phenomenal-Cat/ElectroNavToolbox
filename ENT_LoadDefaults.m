@@ -10,7 +10,9 @@ function Defaults = ENT_LoadDefaults(SubjectID, DefaultFilename)
 if ~exist('DefaultFilename' , 'var')                                                            % If default filename input wasn't provided...
     EN_Root         = fileparts(mfilename('fullpath'));                                         
     [t, CompName]   = system('hostname');                                                       % Get computer ID
-    DefaultFilename = fullfile(EN_Root,'Params', sprintf('ParamsFile_%s.mat', CompName(1:end-1)));
+    CompName(strfind(CompName, char(10))) = [];                                                 % Remove white space    
+    CompName(strfind(CompName, char(32))) = [];
+    DefaultFilename = fullfile(EN_Root,'Params', sprintf('ParamsFile_%s.mat', CompName));
 end
 
 if exist(DefaultFilename,'file')~=2                                                             % If default filename doesn't exist...

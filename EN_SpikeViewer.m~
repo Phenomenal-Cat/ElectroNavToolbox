@@ -272,17 +272,15 @@ global Fig Data Waveform Burst
     
     %================ Plot inter-burst interval distribution
     axes(Fig.Pannel.AxH(3)); 
-    if size(Burst(Fig.Current.CellIndx).IBIs) > 1
-        [N,X] = hist(Burst(Fig.Current.CellIndx).IBIs, linspace(0, Burst(Fig.Current.CellIndx).IBIPercentiles(4), 100));
-        ph(9) = bar(X,N);
-        hold on;
-        axis tight
-        set(Fig.Pannel.AxH(3), 'xlim', [0, Burst(Fig.Current.CellIndx).IBIPercentiles(4)], 'ylim', [0 max(N(N<max(N)))]); % Use 3rd quartile as axis limit
-        ph(10) = plot(repmat(median(Burst(Fig.Current.CellIndx).IBIs),[1,2]),ylim,'-r','linewidth',2);
-%       ph(12) = plot(repmat(mean(Burst(Fig.Current.CellIndx).IBIs),[1,2]),ylim,'-m');
-    else
-        ph([9,10]) = [nan, nan];
-    end
+    [N,X] = hist(Burst(Fig.Current.CellIndx).IBIs, linspace(0, Burst(Fig.Current.CellIndx).IBIPercentiles(4), 100));
+	ph(10) = bar(X,N);
+    hold on;
+	axis tight
+    max(N)
+    set(Fig.Pannel.AxH(3), 'xlim', [0, Burst(Fig.Current.CellIndx).IBIPercentiles(4)], 'ylim', [0 max(N(N<max(N)))]); % Use 3rd quartile as axis limit
+   	ph(11) = plot(repmat(median(Burst(Fig.Current.CellIndx).IBIs),[1,2]),ylim,'-r','linewidth',2);
+%     ph(12) = plot(repmat(mean(Burst(Fig.Current.CellIndx).IBIs),[1,2]),ylim,'-m');
+    
     Xlabels = {'Time (us)','ISI (ms)', 'IBI (ms)'};
     Ylabels = {'Voltage (uV)','No. spikes','No. bursts'};
     for a = 1:size(Fig.Pannel.AxPos,1)

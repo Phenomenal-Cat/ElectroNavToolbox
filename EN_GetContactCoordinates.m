@@ -52,9 +52,11 @@ if ~exist('SubjectID','var')
 end
 
 Defaults    = ENT_LoadDefaults(SubjectID);
-HistoryFile = Defaults.HistoryFile;
-TformFile   = Defaults.Xform;
-load(TformFile);
+if exist(Defaults.Xform, 'file')
+    load(Defaults.Xform);
+else
+    error('Default transform matrix file ''%s'' does not exist!', Defaults.Xform)
+end
 
 if ~exist('T','var')  
     fprintf(['\nWARNING: \tno transformation matrix (.mat) was found in %s!\n',...
@@ -71,10 +73,10 @@ if exist('Dates','var') && ~isempty(Dates)
     end
 %     Dates = datestr(sort(datenum(Dates)));                           	% Check date formats and sort in chronological order
     Dates = datestr(datenum(Dates));
-    SessionParams = ENT_LoadSessionParams(HistoryFile, cellstr(Dates)); ...
+    SessionParams = ENT_LoadSessionParams(Defaults.HistoryFile, cellstr(Dates)); ...
     % Get electrode location information
 else
-    SessionParams = ENT_LoadSessionParams(HistoryFile);               	% Get electrode location information
+    SessionParams = ENT_LoadSessionParams(Defaults.HistoryFile);               	% Get electrode location information
 end
 
 

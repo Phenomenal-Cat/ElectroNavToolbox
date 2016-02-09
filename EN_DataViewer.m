@@ -83,7 +83,8 @@ switch Data.SubjectID
         error(sprintf('SubjectID ''%s'' not recognized!', Data.SubjectID));
 end
 
-DefaultMaskFile = fullfile(Data.Dir,sprintf('%s_SpikeOrNot_Mask.mat', Data.SubjectID));
+UseMask         = 0;                                                                        % Automatically load and apply default mask?
+DefaultMaskFile = fullfile(Data.Dir,sprintf('%s_SpikeOrNot_Mask.mat', Data.SubjectID));     
 Data.Files      = wildcardsearch(Data.Dir,[Data.SubjectID, '*.mat']);  
 for d = 1:numel(Data.Files)
     [a,Data.Filenames{d},c] = fileparts(Data.Files{d});
@@ -138,7 +139,6 @@ end
 if min(size(Contact.ColorVals))>1                                                 	% If data was not provided in vector format...
     Contact.ColorVals = reshape(Contact.ColorVals, [numel(Contact.ColorVals), 1]);	% Reshape Session# x Contact# matrix into vector
 end
-
 RadRange = [min(Contact.rad), max(Contact.rad)];                                    % Get range of radius values
 if numel(unique(Contact.rad))>1
     Contact.NormRad = (Contact.rad-RadRange(1))/ diff(RadRange);                  	% Normalize radius values (0-1)
@@ -146,7 +146,7 @@ if numel(unique(Contact.rad))>1
 else
     Contact.NormRad = ones(size(Contact.rad))*Fig.SphereRadii(2);                   % If all radii supplied are same, use max
 end
-if exist('DefaultMaskFile', 'var') && exist(DefaultMaskFile, 'file')
+if exist('DefaultMaskFile', 'var') && exist(DefaultMaskFile, 'file') && UseMask == 1
     Mask = load(DefaultMaskFile);                                                 	% Load default mask data
     MaskData(Mask);
     [~,MaskLabel] = fileparts(DefaultMaskFile);
@@ -164,6 +164,8 @@ else
 end
 Fig.Handles.MainAx = axes('units','normalized','position',[0.05,0.1,0.5,0.85]);
 
+
+%================ PLOT 3D DATA
 for d = [unique(Contact.CellIndxData(:,2))]'                                      	% For each session date...
     SessionIndx = find(Contact.CellIndxData(:,2)==d);                               % Get indices of current session
     for ch = [unique(Contact.CellIndxData(SessionIndx,3))]'                      	% For each contact location...
@@ -184,6 +186,7 @@ for d = [unique(Contact.CellIndxData(:,2))]'                                    
     end
 end
 set(Contact.Handles,'ButtonDownFcn',@ContactSelect);                                % Set callback function for mouse selection of 3D data points    
+
 
 %================ Set plot appearance
 shading interp; 
@@ -881,11 +884,11 @@ global Contact
                 DateMatch(d) = MatchIndex;
             end
         end
-        MissingDates = find(DateMatch==0);
-        AvailableDates = find(DateMatch~=0);
+        MissingDates    = find(DateMatch==0);
+        AvailableDates  = find(DateMatch~=0);
         if numel(MissingDates) > 0
-            WarnMsg = sprintf(['Selected mask data %s does not specify mask values for %d/%d sessions ',...
-                'of %s! Data from these sessions will not be displayed.'], file, numel(MissingDates), numel(DateMatch), Data.Files{Data.Selected});
+            WarnMsg = sprintf(['Selected mask data does not specify mask values for %d/%d sessions ',...
+                'of %s! Data from these sessions will not be displayed.'], numel(MissingDates), numel(DateMatch), Data.Files{Data.Selected});
             uiwait(warndlg(WarnMsg));
         end
         Contact.Mask = zeros(size(Contact.Alpha));                                   

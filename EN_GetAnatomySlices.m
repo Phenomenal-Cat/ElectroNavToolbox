@@ -19,13 +19,20 @@ function [Anatomy, Structures] = EN_GetAnatomySlices(SubjectID, Plane, SlicePos,
 %   Anatomy:     	a 3D matrix of size XxYxN, where N is the number of
 %                   slices requested and X and Y are the number of voxels
 %                   within the axes limits requested. 
-%   Structures:     a 1xM cell array, with each cell containing a 3D matric
-%                   of size XxYxN, where M is sthe number of structure
+%   Structures:     a 1xM cell array, with each cell containing a 3D matrix
+%                   of size XxYxN, where M is the number of structure
 %                   volumes, and N is the number of slices requested.
+%   Outlines:       an MxS cell array, where M is the number of structures
+%                   and S is the number of slices. Each cell contains a 2xN
+%                   matrix of in-slice coordinates 
 %
 % EXAMPLE:
 %   AxesLims = [0, 16; -30, 10; -20, 20];
 %   [Anatomy, Structures] = EN_GetAnatomySlices('Dexter', 2, -18:0.5:-12, AxesLims, 3, 1);
+%   imagesc(Anatomy(:,:,1));
+%
+%   AxesLims = [0, 16; -30, 10; -20, 20];
+%   [Anatomy, Structures] = EN_GetAnatomySlices('inia19', 2, -18:0.5:-12, AxesLims, 3, 1);
 %
 % ELECTRONAV TOOLBOX
 % Developed by Aidan Murphy © Copyleft 2014-2016, GNU General Public License
@@ -35,7 +42,28 @@ function [Anatomy, Structures] = EN_GetAnatomySlices(SubjectID, Plane, SlicePos,
 if (size(AxesLims)~= [3,2])
     error('AxesLims input must be a 3 row by 2 column matrix')
 end
-Defaults    = ENT_LoadDefaults(SubjectID);
+
+switch SubjectID
+    case {'D99','Saleem'}
+        
+       	Defaults.MRI    = '/Volumes/PROJECTS/murphya/EN_data/Atlases/D99/D99_template.nii'; 
+        Defaults.VTKdir = '/Volumes/PROJECTS/murphya/EN_data/Atlases/D99/VTKs';
+        Thresh          = 200;
+    case {'neuromaps','inia19'}
+        Defaults.MRI    = '/Volumes/PROJECTS/murphya/EN_data/Atlases/inia19/inia19-t1.nii'; 
+        Defaults.VTKdir = '/Volumes/PROJECTS/murphya/EN_data/Atlases/inia19/VTKs';
+        Thresh          = 160; 
+    case 'Frey'
+      	Defaults.MRI    = '/Volumes/PROJECTS/murphya/EN_data/Atlases/Frey/rhesus_7_model-MNI.nii'; 
+        Defaults.VTKdir = '/Volumes/PROJECTS/murphya/EN_data/Atlases/Frey/VTKs';
+    case 'Dexter'
+     	Thresh      = 15000;   
+        Defaults    = ENT_LoadDefaults(SubjectID);
+    case 'Layla'
+        Thresh      = 15000;   
+        Defaults    = ENT_LoadDefaults(SubjectID);
+end
+StructVolumes   = wildcardsearch(Defaults.VTKdir, '*ROI.nii');
 
 
 %================ GET REQUESTED SLICES FROM MRI
@@ -44,8 +72,7 @@ if ismember(Type, [1,3])
     OriginVox  	= nii.hdr.hist.originator(1:3);
     VoxSize     = nii.hdr.dime.pixdim(2:4);
     VolSize     = nii.hdr.dime.dim(2:4);
- 	OriginMM    = OriginVox.*VoxSize;
-    Thresh      = 15000;                        
+ 	OriginMM    = OriginVox.*VoxSize;                     
     nii.img(nii.img>Thresh) = Thresh;
     
     for i = 1:3
@@ -73,7 +100,6 @@ end
 
 %================ CREATE STRUCTURE OUTLINES FROM MESHES
 if ismember(Type, [2,3])
-    StructVolumes   = wildcardsearch(Defaults.VTKdir, '*ROI.nii');
     if isempty(StructVolumes)
         error('No .nii structure volumes found in %s!', Defaults.VTKdir);
     else
@@ -87,9 +113,6 @@ if ismember(Type, [2,3])
                 StructAxesLimsVox(i,:) = StructOriginVox(i)+(AxesLims(i,:)/StructVoxSize(i));
                 StructAxRange{i} = StructAxesLimsVox(i,1):StructAxesLimsVox(i,2);
             end
-%             if size(StructNii.img) ~= size(nii.img)
-%                 error('MRI volume %s and structure volume %s are different sizes! (%d) Please reslice volumes to match.', Defaults.MRI, StructVolumes{m});
-%             end
             for S = 1:numel(SlicePos)
                 StructSliceIndx(S) = round(SlicePos(S)/StructVoxSize(Plane))+StructOriginVox(Plane);  
                 switch Plane
@@ -114,30 +137,31 @@ end
 
 %================ PLOT DATA
 if TestPlot == 1
-    figure;
-    axh             = tight_subplot(1, numel(SlicePos), 0.02, 0.02, 0.02);
-    StructColors    = jet(numel(Structures)+1);
-    MaskAlpha       = 0.2; 
-    FillStruct      = 0;
+    figure('name', sprintf('EN_GetAnatomySlices: %s', SubjectID));
+    axh             = tight_subplot(2, ceil(numel(SlicePos)/2), 0.02, 0.02, 0.02);
+    StructColors    = jet(numel(Structures));
+    MaskAlpha       = 0.3; 
+    FillStruct      = 1;
     
     for S = 1:numel(SlicePos)
         axes(axh(S));
-        AnatomyRGB{S} = repmat(double(Anatomy(:,:,S))/double(max(max(Anatomy(:,:,S)))), [1,1,3]);
-        imh(S) = image(AnatomyRGB{S});
+        AnatomyRGB{S}   = repmat(double(Anatomy(:,:,S))/double(max(max(Anatomy(:,:,S)))), [1,1,3]);
+        imh(S)          = image(AnatomyRGB{S});
         hold on;
         
         %================== Plot structure overlay
         if exist('Structures','var')
             for N = 1:numel(Structures)
                 if FillStruct == 1
-                    imsh(S,N) = imagesc(Structures{N}(:,:,S)*N,'alphadata', double(Structures{N}(:,:,S))*MaskAlpha);  	% Plot structure filled
+                    StructBinary{N}(:,:,S) = double(Structures{N}(:,:,S))/double(max(max(Structures{N}(:,:,S))));        	% Normalize mask values
+                    imsh(S,N) = imagesc(StructBinary{N}(:,:,S)*N,'alphadata', StructBinary{N}(:,:,S)*MaskAlpha);              % Plot structure filled
                 end
-                B = bwboundaries(Structures{N}(:,:,S));                                                             % Get structure outline for each slice
+                B = bwboundaries(Structures{N}(:,:,S));                                                                     % Get structure outline for each slice
                 for k = 1:length(B)
 %                     B{k}(:,1) = B{k}(:,1)*VoxSize(3);% + OriginMM(3);
 %                     B{k}(:,2) = B{k}(:,2)*VoxSize(1);% + OriginMM(1);
                     StructLineH(S,N) = plot(B{k}(:,2), B{k}(:,1),'-w','linewidth',1);     % Plot structure boundary outline
-                    set(StructLineH(S,N), 'color',StructColors(N,:));
+                    set(StructLineH(S,N), 'color', StructColors(N,:));
                 end
             end
         end

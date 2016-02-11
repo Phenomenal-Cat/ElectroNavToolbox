@@ -261,18 +261,25 @@ global Fig Data Waveform Burst
     
     %================ Plot inter-spike interval distribution
     axes(Fig.Pannel.AxH(2)); 	
-    [N,X] = hist(Burst(Fig.Current.CellIndx).ISIs, linspace(0, Burst(Fig.Current.CellIndx).ISIPercentiles(4), 100));
-    ph(7) = bar(X,N);
-    hold on;
-	axis tight
-    set(Fig.Pannel.AxH(2), 'xlim', [0, Burst(Fig.Current.CellIndx).ISIPercentiles(4)], 'ylim', [0 max(N(N<max(N)))]); % Use 3rd quartile as axis limit
-   	ph(8) = plot(repmat(median(Burst(Fig.Current.CellIndx).ISIs),[1,2]),ylim,'-r','linewidth',2);
-%     ph(9) = plot(repmat(mean(Burst(Fig.Current.CellIndx).ISIs),[1,2]),ylim,'-m');
-    legend({'','median'});
+    if numel(Burst(Fig.Current.CellIndx).ISIs)>1
+        set(Fig.Pannel.AxH(2), 'color', [1 1 1]);
+        [N,X] = hist(Burst(Fig.Current.CellIndx).ISIs, linspace(0, Burst(Fig.Current.CellIndx).ISIPercentiles(4), 100));
+        ph(7) = bar(X,N);
+        hold on;
+        axis tight
+        set(Fig.Pannel.AxH(2), 'xlim', [0, Burst(Fig.Current.CellIndx).ISIPercentiles(4)], 'ylim', [0 max(N(N<max(N)))]); % Use 3rd quartile as axis limit
+        ph(8) = plot(repmat(median(Burst(Fig.Current.CellIndx).ISIs),[1,2]),ylim,'-r','linewidth',2);
+    %     ph(9) = plot(repmat(mean(Burst(Fig.Current.CellIndx).ISIs),[1,2]),ylim,'-m');
+        legend({'','median'});
+    else
+        ph([7,8]) = 0;
+        set(Fig.Pannel.AxH(2), 'color', [0.5,0.5,0.5]);
+    end
     
     %================ Plot inter-burst interval distribution
     axes(Fig.Pannel.AxH(3)); 
-    if size(Burst(Fig.Current.CellIndx).IBIs) > 1
+    if numel(Burst(Fig.Current.CellIndx).IBIs) > 1
+        set(Fig.Pannel.AxH(3), 'color', [1 1 1]);
         [N,X] = hist(Burst(Fig.Current.CellIndx).IBIs, linspace(0, Burst(Fig.Current.CellIndx).IBIPercentiles(4), 100));
         ph(9) = bar(X,N);
         hold on;
@@ -281,8 +288,10 @@ global Fig Data Waveform Burst
         ph(10) = plot(repmat(median(Burst(Fig.Current.CellIndx).IBIs),[1,2]),ylim,'-r','linewidth',2);
 %       ph(12) = plot(repmat(mean(Burst(Fig.Current.CellIndx).IBIs),[1,2]),ylim,'-m');
     else
-        ph([9,10]) = [nan, nan];
+        ph([9, 10]) = 0;
+        set(Fig.Pannel.AxH(3), 'color', [0.5,0.5,0.5]);
     end
+    Fig.Current.Handles(5+(1:numel(ph))) = ph;
     Xlabels = {'Time (us)','ISI (ms)', 'IBI (ms)'};
     Ylabels = {'Voltage (uV)','No. spikes','No. bursts'};
     for a = 1:size(Fig.Pannel.AxPos,1)
@@ -290,7 +299,6 @@ global Fig Data Waveform Burst
         xlabel(Xlabels{a}, 'fontsize', 16);
         ylabel(Ylabels{a}, 'fontsize', 16);
     end
-    Fig.Current.Handles(6:end) = ph;
 	set(Fig.Pannel.AxH, 'box','off');
 end
 

@@ -33,13 +33,14 @@ function [Anatomy, Structures] = EN_GetAnatomySlices(SubjectID, Plane, SlicePos,
 %
 %   AxesLims = [0, 16; -30, 10; -20, 20];
 %   [Anatomy, Structures] = EN_GetAnatomySlices('inia19', 2, -18:0.5:-12, AxesLims, 3, 1);
+%   [Anatomy, Structures] = EN_GetAnatomySlices('D99', 2, -18:0.5:-12, AxesLims, 3, 1);
 %
 % ELECTRONAV TOOLBOX
 % Developed by Aidan Murphy © Copyleft 2014-2016, GNU General Public License
 %==========================================================================
 
 %================ CHECK INPUTS
-if (size(AxesLims)~= [3,2])
+if ~all(size(AxesLims)== [3,2])
     error('AxesLims input must be a 3 row by 2 column matrix')
 end
 
@@ -60,7 +61,7 @@ switch SubjectID
      	Thresh      = 15000;   
         Defaults    = ENT_LoadDefaults(SubjectID);
     case 'Layla'
-        Thresh      = 15000;   
+        Thresh      = 10000;   
         Defaults    = ENT_LoadDefaults(SubjectID);
 end
 StructVolumes   = wildcardsearch(Defaults.VTKdir, '*ROI.nii');
@@ -69,6 +70,7 @@ StructVolumes   = wildcardsearch(Defaults.VTKdir, '*ROI.nii');
 %================ GET REQUESTED SLICES FROM MRI
 if ismember(Type, [1,3])
 	nii         = load_nii(Defaults.MRI);
+    T           = [nii.hdr.hist.srow_x; nii.hdr.hist.srow_y; nii.hdr.hist.srow_z; 0 0 0 1];
     OriginVox  	= nii.hdr.hist.originator(1:3);
     VoxSize     = nii.hdr.dime.pixdim(2:4);
     VolSize     = nii.hdr.dime.dim(2:4);

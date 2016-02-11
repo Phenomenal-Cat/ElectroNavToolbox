@@ -1,7 +1,8 @@
 function Defaults = ENT_LoadDefaults(SubjectID, DefaultFilename)
 
 %============================ ENT_LoadDefaults.m ==========================
-% This function loads default parameters for a given subject, for the 
+% This function loads default parameters for a given subject, based on data
+% saved locally in the 'Params' subdirectory of ElectroNav.
 %
 % ELECTRONAV TOOLBOX
 % Developed by Aidan Murphy, © Copyleft 2014-2016, GNU General Public License
@@ -12,7 +13,7 @@ if ~exist('DefaultFilename' , 'var')                                            
     [t, CompName]   = system('hostname');                                                       % Get computer ID
     CompName(strfind(CompName, char(10))) = [];                                                 % Remove white space    
     CompName(strfind(CompName, char(32))) = [];
-    DefaultFilename = fullfile(EN_Root,'Params', sprintf('ParamsFile_%s.mat', CompName));
+    DefaultFilename = fullfile(EN_Root,'Params', sprintf('ParamsFile_%s.mat', CompName));       % Construct default filename
 end
 
 if exist(DefaultFilename,'file')~=2                                                             % If default filename doesn't exist...

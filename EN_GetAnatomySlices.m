@@ -1,4 +1,4 @@
-function [Anatomy, Structures] = EN_GetAnatomySlices(SubjectID, Plane, SlicePos, AxesLims, Type, TestPlot)
+function [Anatomy, Structures, Outlines] = EN_GetAnatomySlices(SubjectID, Plane, SlicePos, AxesLims, Type, TestPlot)
 
 %========================== EN_GetAnatomySlices.m =========================
 % This function returns slices of anatomical data for a given subject
@@ -22,9 +22,10 @@ function [Anatomy, Structures] = EN_GetAnatomySlices(SubjectID, Plane, SlicePos,
 %   Structures:     a 1xM cell array, with each cell containing a 3D matrix
 %                   of size XxYxN, where M is the number of structure
 %                   volumes, and N is the number of slices requested.
-%   Outlines:       an MxS cell array, where M is the number of structures
-%                   and S is the number of slices. Each cell contains a 2xN
-%                   matrix of in-slice coordinates 
+%   Outlines:       an SxMxk cell array, where M is the number of
+%                   tructures, S is the number of slices and k is the number
+%                   of separate parts of the structure. Each cell contains a 2xN
+%                   matrix of in-slice coordinates.
 %
 % EXAMPLE:
 %   AxesLims = [0, 16; -30, 10; -20, 20];
@@ -44,25 +45,26 @@ if ~all(size(AxesLims)== [3,2])
     error('AxesLims input must be a 3 row by 2 column matrix')
 end
 
-switch SubjectID
-    case {'D99','Saleem'}
-        
+switch lower(SubjectID)
+    case lower({'D99','Saleem'})
        	Defaults.MRI    = '/Volumes/PROJECTS/murphya/EN_data/Atlases/D99/D99_template.nii'; 
         Defaults.VTKdir = '/Volumes/PROJECTS/murphya/EN_data/Atlases/D99/VTKs';
         Thresh          = 200;
-    case {'neuromaps','inia19'}
+    case lower({'neuromaps','inia19'})
         Defaults.MRI    = '/Volumes/PROJECTS/murphya/EN_data/Atlases/inia19/inia19-t1.nii'; 
         Defaults.VTKdir = '/Volumes/PROJECTS/murphya/EN_data/Atlases/inia19/VTKs';
         Thresh          = 160; 
-    case 'Frey'
+    case lower('Frey')
       	Defaults.MRI    = '/Volumes/PROJECTS/murphya/EN_data/Atlases/Frey/rhesus_7_model-MNI.nii'; 
         Defaults.VTKdir = '/Volumes/PROJECTS/murphya/EN_data/Atlases/Frey/VTKs';
-    case 'Dexter'
+    case lower('Dexter')
      	Thresh      = 15000;   
         Defaults    = ENT_LoadDefaults(SubjectID);
-    case 'Layla'
+    case lower('Layla')
         Thresh      = 10000;   
         Defaults    = ENT_LoadDefaults(SubjectID);
+    otherwise
+        error('Unknown atlas/ subject: %s', SubjectID);
 end
 StructVolumes   = wildcardsearch(Defaults.VTKdir, '*ROI.nii');
 
@@ -129,6 +131,24 @@ if ismember(Type, [2,3])
                 end
             end
              Structures{m} = permute( Structures{m},[2,1,3]);     % Switch x and y to prepare for image plotting
+             for S = 1:numel(SlicePos)
+                B = bwboundaries(Structures{m}(:,:,S));
+                 for k = 1:length(B)
+                 	switch Plane    %============ Convert coordinates from image pixels to mm from origin
+                        case 1
+                         	B{k}(:,1) = (B{k}(:,1) + AxesLims(3,1)/VoxSize(3)-1)*VoxSize(3);
+                            B{k}(:,2) = (B{k}(:,2) + AxesLims(2,1)/VoxSize(2)-1)*VoxSize(2);
+                        case 2
+                            B{k}(:,1) = (B{k}(:,1) + AxesLims(3,1)/VoxSize(3)-1)*VoxSize(3);
+                            B{k}(:,2) = (B{k}(:,2) + AxesLims(1,1)/VoxSize(1)-1)*VoxSize(1);
+                        case 3
+                        	B{k}(:,1) = (B{k}(:,1) + AxesLims(2,1)/VoxSize(2)-1)*VoxSize(2);
+                            B{k}(:,2) = (B{k}(:,2) + AxesLims(1,1)/VoxSize(1)-1)*VoxSize(1);
+                    end
+                     
+                 	Outlines{S,m,k} = B{k}(:,[2,1]);
+                 end
+             end
         end
         
     end
@@ -158,31 +178,45 @@ if TestPlot == 1
                     StructBinary{N}(:,:,S) = double(Structures{N}(:,:,S))/double(max(max(Structures{N}(:,:,S))));        	% Normalize mask values
                     imsh(S,N) = imagesc(StructBinary{N}(:,:,S)*N,'alphadata', StructBinary{N}(:,:,S)*MaskAlpha);              % Plot structure filled
                 end
-                B = bwboundaries(Structures{N}(:,:,S));                                                                     % Get structure outline for each slice
-                for k = 1:length(B)
-%                     B{k}(:,1) = B{k}(:,1)*VoxSize(3);% + OriginMM(3);
-%                     B{k}(:,2) = B{k}(:,2)*VoxSize(1);% + OriginMM(1);
-                    StructLineH(S,N) = plot(B{k}(:,2), B{k}(:,1),'-w','linewidth',1);     % Plot structure boundary outline
-                    set(StructLineH(S,N), 'color', StructColors(N,:));
+                for k = 1:size(Outlines, 3)
+                    if ~isempty(Outlines{S,N,k})
+                        StructLineH(S,N) = plot(Outlines{S,N,k}(:,1), Outlines{S,N,k}(:,2),'-w','linewidth',1);     % Plot structure boundary outline
+                        set(StructLineH(S,N), 'color', StructColors(N,:));
+                    end
                 end
             end
         end
         
         %================== Scale images to mm
-%         switch Plane
-%             case 1
-%                 set(imh(S),'xdata', AxesLims(2,:),'ydata', AxesLims(3,:));
-%                 set(imsh(S,:),'xdata', AxesLims(2,:),'ydata', AxesLims(3,:));
-%             case 2
-%                 set(imh(S),'xdata', AxesLims(1,:),'ydata', AxesLims(3,:));
-%                 set(imsh(S,:),'xdata', AxesLims(1,:),'ydata', AxesLims(3,:));
-%             case 3
-%                 set(imh(S),'xdata', AxesLims(1,:),'ydata', AxesLims(2,:));
-%                 set(imsh(S,:),'xdata', AxesLims(1,:),'ydata', AxesLims(2,:));
-%         end
+        switch Plane
+            case 1
+                set(imh(S),'xdata', AxesLims(2,:),'ydata', AxesLims(3,:));
+                set(imsh(S,:),'xdata', AxesLims(2,:),'ydata', AxesLims(3,:));
+            case 2
+                set(imh(S),'xdata', AxesLims(1,:),'ydata', AxesLims(3,:));
+                set(imsh(S,:),'xdata', AxesLims(1,:),'ydata', AxesLims(3,:));
+            case 3
+                set(imh(S),'xdata', AxesLims(1,:),'ydata', AxesLims(2,:));
+                set(imsh(S,:),'xdata', AxesLims(1,:),'ydata', AxesLims(2,:));
+        end
 
         axis equal tight xy
         title(sprintf('%.1f mm', SlicePos(S)));
     end
+    
+    %================== Plot legend
+    axes(axh(S+1));
+    for S = 1:numel(StructVolumes)
+        X = [0,0,1,1];
+        Y = [0,1,1,0]-(S*1.5);
+        patch(X,Y,ones(size(X))*S);
+        [~,Filename] = fileparts(StructVolumes{S});
+        Indx = strfind(Filename, '_ROI')-1;
+        Filename(strfind(Filename, '_')) = ' ';
+        Label{S} = Filename(1:Indx);
+        text(X(3)+1, mean(Y([1,2])), Label{S},'fontsize',14);
+    end
+    set(axh(S+1),'xlim',[-10 10],'ylim',[-10 10]);
     colormap jet;
+    axis tight equal off;
 end

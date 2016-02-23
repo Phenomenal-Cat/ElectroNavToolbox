@@ -7,8 +7,7 @@ function h = ElectroNavGUI(SubjectID)
 % visualization through the GUI.
 %
 % INPUTS:
-%       ParamsFile:     full filename of .mat file containing default directories
-%       Subject ID:     animal name or ID number
+%	Subject ID:     string containing animal name or ID number
 %
 % MATLAB REQUIREMENTS (INCLUDED):
 % 	Graph Theory Toolbox:   http://www.mathworks.com/matlabcentral/fileexchange/5355-toolbox-graph
@@ -866,8 +865,13 @@ function M = DrawMRI(Electrode)
             CurrentAlpha = flipud(rot90(CurrentAlpha));
         end
         %=============== APPLY INTENSITY SCALING
-        if Ln >= 2
+        if Ln == 2
             CurrentMRISlice = ((CurrentMRISlice-Layer.MRI(Ln).MRImin)/(Layer.MRI(Ln).MRImax-Layer.MRI(Ln).MRImin))+Ln-1;
+        elseif Ln > 2
+            CurrentMRISlice = repmat(CurrentMRISlice, [1,1,3]);
+            for rgb = 1:3
+                CurrentMRISlice(:,:,rgb) = CurrentMRISlice(:,:,rgb)*Layer.Colors(Ln, rgb);
+            end
         end
         
         %=============== APPLY FILTERING
@@ -884,7 +888,10 @@ function M = DrawMRI(Electrode)
             hold on;
             if ~isempty(CurrentAlpha)
                 set(Layer.MRI(Ln).ImageHandle,'FaceAlpha','texturemap', 'alphadata', CurrentAlpha);                              	% Set slice alpha in axes
-            end                                               
+            end 
+            if numel(Layer.On) < Ln
+                Layer.On(Ln) = 1;
+            end
             if Layer.On(Ln) == 0
                 set(Layer.MRI(Ln).ImageHandle, 'visible', 'off');
             end
@@ -1683,7 +1690,7 @@ function EditSelect(hObj, Event, Indx)
     global Electrode Fig Session Button Defaults Layer Brain
     switch Indx
         case 1      %============================ ADD VOLUME OVERLAY
-            AllStructures = wildcardsearch(Defaults.VolumeDir, '*.nii');
+            AllStructures = wildcardsearch(Defaults.VTKdir, '*.nii');
             for S = 1:numel(AllStructures)
                 [a,b,c] = fileparts(AllStructures{S});
                 StructureNames{S} = b;
@@ -1697,9 +1704,9 @@ function EditSelect(hObj, Event, Indx)
             for S = 1:numel(Selection)
                 waitbar((S-1)/numel(Selection),H);
                 set(Hh, 'string', sprintf('Loading selected structure %d of %d...',S,numel(Selection)));
-            	StructNii(S) = load_nii(AllStructures{Selection(S)});
-                VoxelDim(S,:) = StructNii(S).hdr.dime.pixdim(2:4);                     % Get voxel dimensions
-                VolumeDim(S,:) = size(StructNii(S).img);                               % Get volume dimensions
+            	StructNii(S)    = load_nii(AllStructures{Selection(S)});
+                VoxelDim(S,:)   = StructNii(S).hdr.dime.pixdim(2:4);                        % Get voxel dimensions
+                VolumeDim(S,:)  = size(StructNii(S).img);                                   % Get volume dimensions
             end
             close(H);
        

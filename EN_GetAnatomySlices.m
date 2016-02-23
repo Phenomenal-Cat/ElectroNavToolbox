@@ -45,18 +45,24 @@ if ~all(size(AxesLims)== [3,2])
     error('AxesLims input must be a 3 row by 2 column matrix')
 end
 
+if ismac, 
+    pathroot = '/Volumes/PROJECTS'; 
+else
+    pathroot = '/projects';
+end
+
 switch lower(SubjectID)
     case lower({'D99','Saleem'})
-       	Defaults.MRI    = '/Volumes/PROJECTS/murphya/EN_data/Atlases/D99/D99_template.nii'; 
-        Defaults.VTKdir = '/Volumes/PROJECTS/murphya/EN_data/Atlases/D99/VTKs';
+       	Defaults.MRI    = [pathroot,'/murphya/EN_data/Atlases/D99/D99_template.nii']; 
+        Defaults.VTKdir = [pathroot,'/murphya/EN_data/Atlases/D99/VTKs'];
         Thresh          = 200;
     case lower({'neuromaps','inia19'})
-        Defaults.MRI    = '/Volumes/PROJECTS/murphya/EN_data/Atlases/inia19/inia19-t1.nii'; 
-        Defaults.VTKdir = '/Volumes/PROJECTS/murphya/EN_data/Atlases/inia19/VTKs';
+        Defaults.MRI    = [pathroot,'/murphya/EN_data/Atlases/inia19/inia19-t1.nii']; 
+        Defaults.VTKdir = [pathroot,'/murphya/EN_data/Atlases/inia19/VTKs'];
         Thresh          = 160; 
     case lower('Frey')
-      	Defaults.MRI    = '/Volumes/PROJECTS/murphya/EN_data/Atlases/Frey/rhesus_7_model-MNI.nii'; 
-        Defaults.VTKdir = '/Volumes/PROJECTS/murphya/EN_data/Atlases/Frey/VTKs';
+      	Defaults.MRI    = [pathroot,'/murphya/EN_data/Atlases/Frey/rhesus_7_model-MNI.nii']; 
+        Defaults.VTKdir = [pathroot,'/murphya/EN_data/Atlases/Frey/VTKs'];
     case lower('Dexter')
      	Thresh      = 15000;   
         Defaults    = ENT_LoadDefaults(SubjectID);

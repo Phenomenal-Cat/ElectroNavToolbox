@@ -76,7 +76,7 @@ if ~exist('SessionDate','var')
         SessionParams = [];
         return;
     end
-    SessionDate = mat2cell(DateStrings(Selection,:),ones(1,size(DateStrings,1)),size(DateStrings,2));
+    SessionDate = mat2cell(DateStrings(Selection,:),ones(1,numel(Selection)),size(DateStrings,2));
 end
 
 if ischar(SessionDate) && strcmpi(SessionDate, 'all')

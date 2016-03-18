@@ -19,7 +19,7 @@ Params.RootDir = fileparts(mfilename('fullpath'));                          % Ge
 addpath(genpath(Params.RootDir));                                           % Add ElectroNav to Matlab path
 
 %======================= CHECK INPUT
-if nargin ==0 || ~exist(DefaultParamsFile,'file')
+if isempty(DefaultParamsFile) || ~exist(DefaultParamsFile,'file')
     if nargin ==0 
         Msg = sprintf('A parameters file must be provided!');
     elseif ~exist(DefaultParamsFile,'file')

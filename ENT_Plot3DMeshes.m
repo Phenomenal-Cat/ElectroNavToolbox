@@ -19,7 +19,7 @@ if ~iscell(MeshFiles) && isdir(MeshFiles)
     MeshFiles = wildcardsearch(MeshFiles,'*.vtk');
 end
 
-Cmap            = hsv;
+Cmap            = jet;
 facecolors      = Cmap(round(linspace(1,64,numel(MeshFiles))),:);
 DefaultAlpha    = 0.25;           
 

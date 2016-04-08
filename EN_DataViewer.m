@@ -212,7 +212,7 @@ Fig.ZoomH               = zoom;                                               	%
 
 %================ Plot structures
 MeshFiles = wildcardsearch(fullfile(SubjectDir,'VTKs'),'*.vtk');
-Structures                      = Plot3DMeshes(MeshFiles);
+Structures                      = ENT_Plot3DMeshes(MeshFiles);
 Structures.Materials.Ambient    = 0.3;                              
 Structures.Materials.Diffuse    = 0.5;          
 Structures.Materials.Specular   = 0.4;         

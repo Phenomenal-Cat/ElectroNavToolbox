@@ -1,6 +1,6 @@
 function [XYZ] = ENT_ShowChannel(SubjectID, Date, Ch)
 
-%============================ ENT_ShowChannel.m ===============================
+%============================ ENT_ShowChannel.m ===========================
 % Plots the location of the requested cell over the available anatomy for
 % the specified subject. 
 %

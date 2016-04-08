@@ -334,7 +334,7 @@ Fig.DataMenuH{1} = uimenu(Fig.Handle,'Label','Data');                           
 Fig.DataLabels{1} = {'Raw','Experimental','Recording history'};                 	% List main data tab options
 Fig.DataLabels{2} = {'LFPs','Spike waveforms'};                                     % List sub options for each main option  
 Fig.DataLabels{3} = {'RF mapping','Pic tuning','Movie'};
-Fig.DataLabels{4} = {'Frequency by hole','Recency by hole'};
+Fig.DataLabels{4} = {'Frequency by hole','Recency by hole','Plot 3D'};
 
 for m = 1:numel(Fig.DataLabels{1})                                                     
     Fig.DataMenuH{2}(m) = uimenu(Fig.DataMenuH{1},'Label',Fig.DataLabels{1}{m});  	% Create option
@@ -1895,7 +1895,14 @@ switch Indx1
 
         
     case 3      %======================= VIEW GENERAL RECORDING HISTORY DATA
-        GridHistHandle = EN_GridHistory(Defaults.HistoryFile,Indx2, Defaults.GridID);
+        switch Indx2
+            case 1
+                GridHistHandle = EN_GridHistory(Defaults.HistoryFile,Indx2, Defaults.GridID);
+            case 2
+                GridHistHandle = EN_GridHistory(Defaults.HistoryFile,Indx2, Defaults.GridID);
+            case 3
+                ENT_RecordingHistory3D(Session.Subject);
+        end
 
 end
 end

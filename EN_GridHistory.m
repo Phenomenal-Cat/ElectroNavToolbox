@@ -34,13 +34,13 @@ end
 
 %=========================== Set grid parameters
 if ~exist('GridID','var')
-    GridIDs = ENT_GetGridParams;                         	% Get list available types of grid
-    [Selection,ok] = listdlg('ListString',GridIDs,'PromptString','Select grid type');
-    GridID = GridIDs{Selection};
+    GridIDs         = ENT_GetGridParams;                         	% Get list available types of grid
+    [Selection,ok]  = listdlg('ListString',GridIDs,'PromptString','Select grid type');
+    GridID          = GridIDs{Selection};
 end
-Grid = ENT_GetGridParams(GridID);                          	% Get grid parameters based on grid ID                 
+Grid            = ENT_GetGridParams(GridID);                          	% Get grid parameters based on grid ID                 
 HoleCoordinates = nan(Grid.TotalHoles,2);                   
-HoleNumber = 1;
+HoleNumber      = 1;
 for i = 1:Grid.HolesPerDim
     for h = 1:Grid.HolesPerColumn(i)
       	x = ((-((Grid.HolesPerColumn(i)-1)/2)+(h-1))*Grid.InterHoleSpacing);
@@ -60,8 +60,8 @@ end
 
 AllDateNumes    = [];
 Target          = [];
-TargetDepth     =[];
-GuideLength     =[];
+TargetDepth     = [];
+GuideLength     = [];
 for S = 1:numel(Selection)
     for e = 1:numel(Hist(Selection(S)).Target)
         AllDateNumes(end+1)     = Hist(Selection(S)).DateNum;
@@ -107,6 +107,8 @@ FigHandle = figure( 'Name','Recording History',...          % Open a figure wind
                     'NumberTitle','off',...                 % Remove figure number from title
                     'Color',FigBackground,...               % Set the figure window background color
                     'Menu','none','Toolbar','none');       	% Turn off toolbars to save space
+
+axh(1) = subplot(1,2,1);
 GridObject = DrawGrid(Grid);
 title(sprintf('Total recordings: %s - %s',Hist(Selection(1)).DateString, Hist(Selection(end)).DateString),'FontWeight','bold','FontSize',18);
 set(gca,'XTick',-8:2:8);
@@ -121,24 +123,28 @@ cbr = colorbar;
 colormap(ColormapMode);
 set(cbr,'YTick',YTicks,'YLim',YLims);
 set(get(cbr,'ylabel'),'String', ColorTitle,'FontSize',16);
+
+axh(2) = subplot(1,2,2);
+ENT_RecordingHistory3D(SubjectID
+
 end
 
 
 %% ========================= SUBFUNCTIONS =================================
 function h = PlotCircle(x,y,r,c)
-th = 0:pi/50:2*pi;
-xunit = r * cos(th) + x;
-yunit = r * sin(th) + y;
-h = plot(xunit, yunit,c);
+    th = 0:pi/50:2*pi;
+    xunit = r * cos(th) + x;
+    yunit = r * sin(th) + y;
+    h = plot(xunit, yunit,c);
 end
 
 function h = FillCircle(target,r,N,c)
-THETA=linspace(0,2*pi,N);
-RHO=ones(1,N)*r;
-[X,Y] = pol2cart(THETA,RHO);
-X=X+target(1);
-Y=Y+target(2);
-h=fill(X,Y,c,'EdgeColor','none');
+    THETA=linspace(0,2*pi,N);
+    RHO=ones(1,N)*r;
+    [X,Y] = pol2cart(THETA,RHO);
+    X=X+target(1);
+    Y=Y+target(2);
+    h=fill(X,Y,c,'EdgeColor','none');
 end
 
 %============================== DRAW GRID =================================

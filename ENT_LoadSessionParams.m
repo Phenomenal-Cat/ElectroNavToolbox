@@ -82,17 +82,21 @@ end
 if ischar(SessionDate) && strcmpi(SessionDate, 'all')
     SessionDate = cellstr(DateStrings);
     Selection   = 1:numel(SessionDate);
-else
+end
+if ~exist('Selection','var')
     if ischar(SessionDate)
         SessionDate = {SessionDate};
     end
-    Selection = nan(1,numel(SessionDate));
-    for d = 1:numel(SessionDate)
-        Selection(d) = strmatch(SessionDate{d}, DateStrings);
+    Selection = nan(1,size(DateStrings,1));
+    for d = 1:size(DateStrings,1) % numel(SessionDate)
+   %     Selection(d) = strmatch(SessionDate{d}, DateStrings);
+%         Selection(d) = any(strcmp(SessionDate{d}, DateStrings));
+        Selection(d) = any(strcmp(SessionDate, DateStrings(d,:)));
         if isempty(Selection(d))
             error('Specified session date ''%s'' was not found in %s!', SessionDate{d}, HistoryFile);
         end
     end
+    Selection = find(Selection==1);
 end
 
 

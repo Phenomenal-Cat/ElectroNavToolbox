@@ -73,8 +73,7 @@ if exist('Dates','var') && ~isempty(Dates)
     end
 %     Dates = datestr(sort(datenum(Dates)));                           	% Check date formats and sort in chronological order
     Dates = datestr(datenum(Dates));
-    SessionParams = ENT_LoadSessionParams(Defaults.HistoryFile, cellstr(Dates)); ...
-    % Get electrode location information
+    SessionParams = ENT_LoadSessionParams(Defaults.HistoryFile, cellstr(Dates)); % Get electrode location information
 else
     SessionParams = ENT_LoadSessionParams(Defaults.HistoryFile);               	% Get electrode location information
 end
@@ -84,26 +83,31 @@ end
 NoContacts  = 24;                                                               
 GridCoords  = nan(numel(SessionParams),3,NoContacts*2);                       	% Pre-allocate at matrix to store all contact coordinates
 for d = 1:numel(SessionParams)                                                  % For each session date requested...
-    Electrode = cell2struct(SessionParams(d).ElectrodeID,'ID');                 % Convert electrode ID(s) to structure
-    Electrode = ENT_GetElectrodeParams(Electrode);                              % Get the electrode paramaters for the electrode(s) used in this session
-    ChIndx = 1;                                                                 % Keep count of channel number (includes all electrodes within a session)
-    for e = 1:numel(Electrode)                                                  % For each electrode used...
-        if SessionParams(d).Depth{e} > 0                                        % If tip depth (mm) is positive
-            SessionParams(d).Depth{e} = -SessionParams(d).Depth{e};          	% Invert the depth
-        end
-        for c = 1:Electrode(e).ContactNumber                                    % For each electrode contact...
-            GridCoords(d,[1,2],ChIndx) = SessionParams(d).Target{e};          	% Get the grid hole coordinates
-            GridCoords(d,3,ChIndx) = SessionParams(d).Depth{e}+Electrode(e).TipLength+((c-1)*Electrode(e).ContactSpacing);
-         	ChIndx = ChIndx+1;
-        end
-    end
-    
-    if exist('T','var')                                                     % If transformation matrix was loaded...
-        GridCoords(d,4,:) = 1;                                              % Pad 4th row with 1s
-        temp = T*squeeze(GridCoords(d,:,:));                                % Apply transformation
-        ContactCoords(d,:,1:size(temp,2)) = temp(1:3,:);                  	% Remove 4th row
+    if isempty(SessionParams(d).ElectrodeID)
+        error('No electrode ID for session %s!\n', Dates(d,:))
     else
-        ContactCoords(d,:,:) = GridCoords(d,:,:);
+        Electrode = cell2struct(SessionParams(d).ElectrodeID,'ID');                 % Convert electrode ID(s) to structure
+        Electrode = ENT_GetElectrodeParams(Electrode);                              % Get the electrode paramaters for the electrode(s) used in this session
+        ChIndx = 1;                                                                 % Keep count of channel number (includes all electrodes within a session)
+        for e = 1:numel(Electrode)                                                  % For each electrode used...
+            if SessionParams(d).Depth{e} > 0                                        % If tip depth (mm) is positive
+                SessionParams(d).Depth{e} = -SessionParams(d).Depth{e};          	% Invert the depth
+            end
+            for c = 1:Electrode(e).ContactNumber                                    % For each electrode contact...
+                GridCoords(d,[1,2],ChIndx) = SessionParams(d).Target{e};          	% Get the grid hole coordinates
+                GridCoords(d,3,ChIndx) = SessionParams(d).Depth{e}+Electrode(e).TipLength+((c-1)*Electrode(e).ContactSpacing);
+                ChIndx = ChIndx+1;
+            end
+        end
+
+        if exist('T','var')                                                     % If transformation matrix was loaded...
+            GridCoords(d,4,:) = 1;                                              % Pad 4th row with 1s
+            temp = T*squeeze(GridCoords(d,:,:));                                % Apply transformation
+            ContactCoords(d,:,1:size(temp,2)) = temp(1:3,:);                  	% Remove 4th row
+        else
+            ContactCoords(d,:,:) = GridCoords(d,:,:);
+        end
+        clear Electrode
     end
 end
 

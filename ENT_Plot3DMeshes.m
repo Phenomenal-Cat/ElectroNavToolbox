@@ -1,4 +1,4 @@
-function [MeshStruct] = ENT_Plot3DMeshes(MeshFiles)
+function MeshStruct = ENT_Plot3DMeshes(MeshFiles)
 
 %========================= ENT_Plot3DMeshes.m =============================
 % Plots all 3D surface meshes listed in the input array of full path
@@ -12,7 +12,7 @@ function [MeshStruct] = ENT_Plot3DMeshes(MeshFiles)
 %==========================================================================
 
 % addpath(genpath(cd))
-if nargin == 0
+if nargin == 0 || numel(MeshFiles) == 0
     MeshFiles = uipickfiles('FilterSpec',fullfile(cd,'*.stl'));
 end
 if ~iscell(MeshFiles) && isdir(MeshFiles)    
@@ -21,7 +21,8 @@ end
 
 Cmap            = jet;
 facecolors      = Cmap(round(linspace(1,64,numel(MeshFiles))),:);
-DefaultAlpha    = 0.25;           
+DefaultAlpha    = 0.25;       
+ 
 
 %================= LOAD MESH DATA
 for i = 1:numel(MeshFiles)

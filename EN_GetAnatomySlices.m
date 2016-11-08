@@ -37,7 +37,7 @@ function [Anatomy, Structures, Outlines] = EN_GetAnatomySlices(SubjectID, Plane,
 %   [Anatomy, Structures] = EN_GetAnatomySlices('D99', 2, -18:0.5:-12, AxesLims, 3, 1);
 %
 % ELECTRONAV TOOLBOX
-% Developed by Aidan Murphy © Copyleft 2014-2016, GNU General Public License
+% Developed by Aidan Murphy ï¿½ Copyleft 2014-2016, GNU General Public License
 %==========================================================================
 
 %================ CHECK INPUTS
@@ -67,7 +67,9 @@ switch lower(SubjectID)
      	Thresh      = 15000;   
         Defaults    = ENT_LoadDefaults(SubjectID);
     case lower('Layla')
-        Thresh      = 10000;   
+        %Thresh      = 10000;   
+        Thresh      = 30000;   
+
         Defaults    = ENT_LoadDefaults(SubjectID);
     otherwise
         error('Unknown atlas/ subject: %s', SubjectID);

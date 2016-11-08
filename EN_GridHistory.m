@@ -108,7 +108,7 @@ FigHandle = figure( 'Name','Recording History',...          % Open a figure wind
                     'Color',FigBackground,...               % Set the figure window background color
                     'Menu','none','Toolbar','none');       	% Turn off toolbars to save space
 
-axh(1) = subplot(1,2,1);
+% axh(1) = subplot(1,2,1);
 GridObject = DrawGrid(Grid);
 title(sprintf('Total recordings: %s - %s',Hist(Selection(1)).DateString, Hist(Selection(end)).DateString),'FontWeight','bold','FontSize',18);
 set(gca,'XTick',-8:2:8);
@@ -124,8 +124,8 @@ colormap(ColormapMode);
 set(cbr,'YTick',YTicks,'YLim',YLims);
 set(get(cbr,'ylabel'),'String', ColorTitle,'FontSize',16);
 
-axh(2) = subplot(1,2,2);
-ENT_RecordingHistory3D(SubjectID
+% axh(2) = subplot(1,2,2);
+% ENT_RecordingHistory3D(Session.Subject);
 
 end
 

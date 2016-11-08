@@ -45,10 +45,13 @@ addpath(genpath(root));
 global Fig Contact Structures Data MRI Mask 
 
 %==================== LOAD PHYSIOLOGY RESULTS DATA
-if nargin == 0 || ~exist('DataPath', 'var')
+if nargin == 0
+    error('Must provide subject ID as input!');
+end
+Data.SubjectID  = SubjectID;
+if ~exist('DataPath', 'var')
     Data.Dir = uigetdir(root, 'Select map data directory');
-elseif nargin == 2
-    Data.SubjectID  = SubjectID;
+else
     Data.Dir        = DataPath;
 end
 
@@ -211,7 +214,9 @@ Contact.Indx            = 1;                                                   	
 Fig.ZoomH               = zoom;                                               	% Create zoom object
 
 %================ Plot structures
-MeshFiles = wildcardsearch(fullfile(SubjectDir,'VTKs'),'*.vtk');
+disp(SubjectDir)
+
+MeshFiles = wildcardsearch(fullfile(SubjectDir,'VTKs'),'*.vtk')
 Structures                      = ENT_Plot3DMeshes(MeshFiles);
 Structures.Materials.Ambient    = 0.3;                              
 Structures.Materials.Diffuse    = 0.5;          
@@ -1101,8 +1106,8 @@ global Contact Fig Structures MRI
             title(sprintf('%s (N = %d)', Contact.DataVariable, size(Contact.ColorVals,1)),'horizontalalignment','left','fontsize',18);
             
             %=========== Create stereoscopic 3D render from new figure
-            Params = EN_Initialize3D;
-            ENT_StereoRender(TempFigH, Params);
+%             Params = EN_Initialize3D;
+            ENT_StereoRender(Fig.Handles.MainAx, 1);
 %             AtlasViewer3D(Params, Contacts, Structures);
     end
 end

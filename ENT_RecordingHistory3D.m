@@ -1,4 +1,4 @@
-function fh = ENT_RecordingHistory3D(SubjectID, Structures)
+function [fh, Eh] = ENT_RecordingHistory3D(SubjectID, Structures)
 
 if nargin == 0
     SubjectID = 'Dexter';
@@ -13,7 +13,7 @@ Eh = [];
 PenetrationColors = jet(size(ContactCoords,1));
 for d = 1:size(ContactCoords,1)
     for ch = 1:size(ContactCoords,3)
-        Eh(end+1) = PlotSphere(squeeze(ContactCoords(d,:,ch)), Radius, PenetrationColors(d,:));
+        Eh(d, ch) = PlotSphere(squeeze(ContactCoords(d,:,ch)), Radius, PenetrationColors(d,:));
         hold on;
     end
 end

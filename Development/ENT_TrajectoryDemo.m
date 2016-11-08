@@ -14,7 +14,7 @@ function EN_TrajectoryDemo(SubjectID)
 global ChamberTform
 
 if nargin == 0
-    SubjectID   = 'Layla';
+    SubjectID   = 'Dexter';
 end
 
 %================== LOAD DATA

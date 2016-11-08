@@ -1585,6 +1585,7 @@ end
 %========================== FILE MENU CALLBACK ============================
 function FileSelect(hObj, Event, Indx, Indx2)
     global Electrode Fig Session Button Defaults Layer
+    Indx2 = 3;  %% <<<<<<< TEMPORARY FUDGE
     switch Indx
         case 1          %============================= LOAD previous session
             Params = ENT_LoadSessionParams(Defaults.HistoryFile);
@@ -1642,17 +1643,26 @@ function FileSelect(hObj, Event, Indx, Indx2)
                 s(1) = copyobj(Fig.PlotHandle(4), NewFigH);
                 set(s(1),'position',[0.05 0.1 0.4 0.8]);
                 colormap gray;
-                Session.Date
 %                 title(sprintf('%s %s - hole = [%d, %d]', Session.Subject, Session.Date, Electrode(Electrode(1).Selected).Target(1), Electrode(Electrode(1).Selected).Target(2)),'units','normalized','position',[0,1.1],'fontsize',18);
-                title(sprintf('%s %s - hole = [%d, %d]', Session.Subject, Session.Date, Electrode(Electrode(1).Selected).Target(1), Electrode(Electrode(1).Selected).Target(2)),'horizontalalignment','left','fontsize',18);
+                title(sprintf('%s %s - hole = [%d, %d]', Session.Subject, Session.Date, Electrode(Electrode(1).Selected).Target(1), Electrode(Electrode(1).Selected).Target(2)),'horizontalalignment','left','verticalalignment','top','fontsize',18);
+                title('');
                 s(2) = copyobj(Fig.PlotHandle(4), NewFigH);
                 set(s(2),'position',[0.55 0.1 0.4 0.8]);
                 set(gca,'zlim',[-20 40],'ylim',[-48 30]);
              	set(s,'clim',[0 1]);
+                                title('');
                 export_fig(FullFilename,['-',ImFormat],'-nocrop');
                 close(NewFigH);
               	Message = sprintf('Figure was saved to %s', FullFilename);
                 h = msgbox(Message,'Saved!');
+                
+            elseif Indx2 == 3
+                 NewFigH = figure('Color',Fig.Background,...             % Set the figure window background color
+                              	'Renderer','OpenGL',...               	% Use OpenGL renderer
+                                'OuterPosition', Fig.Rect);          	% position figure window to fit fullscreen;
+                s(1) = copyobj(Fig.PlotHandle(4), NewFigH);
+                colormap gray;
+                title('');
             end
             
         case 5      %============================= OPEN POST-SESSION STRUCTURAL MRI

@@ -8,7 +8,7 @@
 %
 %
 % ELECTRONAV TOOLBOX
-% Developed by Aidan Murphy, © Copyleft 2015, GNU General Public License
+% Developed by Aidan Murphy, ï¿½ Copyleft 2015, GNU General Public License
 %==========================================================================
 
 function EN_SpikeViewer(DataFile)
@@ -17,10 +17,14 @@ global Fig Data Waveform Burst SpikeData
 [ENroot, b, c]= fileparts(mfilename('fullpath'));
 addpath(genpath(ENroot));
 if nargin == 0
-    DefaultPath = '/Volumes/PROJECTS/murphya/Physio/Analysis/SpikeAnalysis/SpikeWaveformData*';
+    if ismac
+        Append = '/Volumes';
+    else
+        Append = [];
+    end
+    DefaultPath = fullfile(Append, '/procdata/murphya/Physio/SpikeWaveforms/SA_data/');
     [file, path] = uigetfile(DefaultPath, 'Select waveform data file');
     Data.File = fullfile(path, file);
-%     Data.File = '/Volumes/PROJECTS/murphya/Physio/Analysis/SpikeAnalysis/SpikeWaveformData_20140130-20150319.mat';
 end
 
 %================= LOAD SPIKE WAVEFORM DATA

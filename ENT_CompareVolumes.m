@@ -18,6 +18,8 @@ if nargin < 2
     [File2, Path] = uigetfile({'*.nii;*.img'},'Select second MR volume', Path);
     NiiFile2 = fullfile(Path, File2);
 end
+NiiFile{1} = NiiFile1;
+NiiFile{2} = NiiFile2;
 
 % % NiiFile1 = '/Volumes/rawdata/murphya/MRI/Layla/20150515_preElgiloy/r20150519_PreElgiloy_MDEFT_025mm_BET.nii';
 % % NiiFile2 = '/Volumes/RAWDATA/murphya/MRI/Layla/20150602_post_elgiloy/r20150602_MDEFT_postelgiloy_025mm_BET_Masked_rot.nii';
@@ -32,16 +34,31 @@ end
 
 
 %======================= LOAD VOLUMES
-fprintf('Loading volumes...\n')
-Nii{1} = load_nii(NiiFile1);
-Nii{2} = load_nii(NiiFile2);
+for n = 1:2
+    fprintf('Loading volume %d: %s...\n', n, NiiFile{n})
+    Nii{n} = load_nii(NiiFile{n});
+end
 
 if Nii{1}.hdr.dime.pixdim(2:4) ~= Nii{2}.hdr.dime.pixdim(2:4)
-   error('Volume resolution mismatch! Please reslice volumes to match and try again.');
+    fprintf('WARNING: Volume resolution mismatch!\n')
+    for n = 1:2
+       fprintf('\t%s voxel size = [%.2f, %.2f, %.2f] mm\n', NiiFile{n}, Nii{n}.hdr.dime.pixdim(2:4));
+    end
+    [~,FileToReslice] = max([prod(Nii{1}.hdr.dime.pixdim(2:4)), prod(Nii{2}.hdr.dime.pixdim(2:4))]);
+    FileNotToReslice = find([1,2]~= FileToReslice);
+	fprintf('Attempting to reslice lower res volume (%s) to match higher res...\n', NiiFile{FileToReslice});
+    [path,file,ext] = fileparts(NiiFile{FileToReslice});
+    ReslicedFilename = fullfile(path, sprintf('%s_resliced%s', file, ext));
+    Verbose = 1;        % Show progress of reslice
+    Method  = 1;        % Trilinear interpolation
+	reslice_nii(NiiFile{FileToReslice}, ReslicedFilename, Nii{FileNotToReslice}.hdr.dime.pixdim(2:4), Verbose, Method);
+    NiiFile{FileToReslice} = ReslicedFilename;
+    Nii{FileToReslice} = load_nii(NiiFile{FileToReslice});
 end
+
 for n = 1:2
     Fig.VoxelDim{n}       	= Nii{n}.hdr.dime.pixdim(2:4);
-    Fig.Origin{n}          	= Nii{n}.hdr.hist.originator(1:3);
+    Fig.Origin{n}          	= round(Nii{n}.hdr.hist.originator(1:3));
     Fig.OriginMM{n}        	= Nii{n}.hdr.hist.originator(1:3).*Fig.VoxelDim{n};
     Fig.VolumeDim{n}       	= size(Nii{n}.img);
     Fig.VolumeDimMM{n}    	= size(Nii{n}.img).*Fig.VoxelDim{n};
@@ -80,26 +97,30 @@ set(Fig.MenuInputH([5,6]),'value',0);
 set(Fig.MenuInputH([7,8]),'value',1);
 
 
-%======================= PLOT DATA               
-Fig.ax(1) = axes('units','normalized','position',[0.05 0.1 0.3 0.6]);
-Fig.Im(1) = imagesc(Fig.AxLims{1}(2,1):Fig.AxLims{1}(2,2), Fig.AxLims{1}(1,1):Fig.AxLims{1}(1,2), Nii{1}.img(:,:,Fig.Origin{1}(Fig.SliceOrientation)));
-axis equal tight xy;
-hold on;
-Fig.OriginHx(1) = plot(xlim, [0 0],'--c');
-Fig.OriginHy(1) = plot([0 0], ylim,'--c');
-[path, name, ext] = fileparts(NiiFile1);
-name(strfind(name,'_'))=' ';
-title(name, 'fontsize',18);
+%======================= PLOT DATA          
+Fig.AxPos = {[0.05 0.1 0.3 0.6], [0.4 0.1 0.3 0.6]};
+for n = 1:2
+    Fig.ax(n) = axes('units','normalized','position',Fig.AxPos{n});
+    SliceImage = squeeze(Nii{n}.img(Fig.Origin{n}(Fig.SliceOrientation),:,:));
+    Fig.Im(n) = imagesc(Fig.AxLims{n}(2,1):Fig.AxLims{n}(2,2), Fig.AxLims{n}(1,1):Fig.AxLims{n}(1,2), SliceImage);
+    axis equal tight xy;
+    hold on;
+    Fig.OriginHx(n) = plot(xlim, [0 0],'--c');
+    Fig.OriginHy(n) = plot([0 0], ylim,'--c');
+    [path, name, ext] = fileparts(NiiFile{n});
+    name(strfind(name,'_'))=' ';
+    title(name, 'fontsize',18);
+end
 
-Fig.ax(2) = axes('units','normalized','position',[0.4 0.1 0.3 0.6]);
-Fig.Im(2) = imagesc(Fig.AxLims{2}(2,1):Fig.AxLims{2}(2,2), Fig.AxLims{2}(1,1):Fig.AxLims{2}(1,2), Nii{2}.img(:,:,Fig.Origin{2}(Fig.SliceOrientation)));
-axis equal tight xy;
-hold on;
-Fig.OriginHx(2) = plot(xlim, [0 0],'--c');
-Fig.OriginHy(2) = plot([0 0], ylim,'--c');
-[path, name, ext] = fileparts(NiiFile2);
-name(strfind(name,'_'))=' ';
-title(name, 'fontsize',18);
+% Fig.ax(2) = axes('units','normalized','position',[0.4 0.1 0.3 0.6]);
+% Fig.Im(2) = imagesc(Fig.AxLims{2}(2,1):Fig.AxLims{2}(2,2), Fig.AxLims{2}(1,1):Fig.AxLims{2}(1,2), Nii{2}.img(:,:,Fig.Origin{2}(Fig.SliceOrientation)));
+% axis equal tight xy;
+% hold on;
+% Fig.OriginHx(2) = plot(xlim, [0 0],'--c');
+% Fig.OriginHy(2) = plot([0 0], ylim,'--c');
+% [path, name, ext] = fileparts(NiiFile{2});
+% name(strfind(name,'_'))=' ';
+% title(name, 'fontsize',18);
 
 linkaxes(Fig.ax([1,2]));
 colormap gray;

@@ -53,6 +53,7 @@ for i = 1:numel(MeshFiles)
     try
         handles(i).PickableParts = 'none';                  % Make surface invisible to mouse clicks so that interior data points can be selected
     end
+    MeshStruct.FV(i)        = FV(i);
     MeshStruct.Handles{i}   = handles(i);
     MeshStruct.Colors(i,:)  = facecolors(i,:);
     MeshStruct.Opacity(i)   = DefaultAlpha;
